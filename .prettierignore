@@ -1,4 +1,4 @@
-test/e2e/
+e2e/
 
 .changeset/
 .github/workflows/PULL_REQUEST_TEMPLATE.md

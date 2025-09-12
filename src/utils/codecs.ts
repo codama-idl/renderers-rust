@@ -1,28 +1,16 @@
-import { BytesEncoding } from '@codama/nodes';
-import {
-    getBase16Decoder,
-    getBase16Encoder,
-    getBase58Encoder,
-    getBase64Encoder,
-    getUtf8Encoder,
-    ReadonlyUint8Array,
-} from '@solana/codecs';
+import { BytesValueNode } from '@codama/nodes';
+import { getBase16Encoder, getBase58Encoder, getBase64Encoder, getUtf8Encoder } from '@solana/codecs-strings';
 
-export function encodeStringValue(encoding: BytesEncoding, data: string): ReadonlyUint8Array {
-    switch (encoding) {
+export function getBytesFromBytesValueNode(node: BytesValueNode): Uint8Array {
+    switch (node.encoding) {
         case 'utf8':
-            return getUtf8Encoder().encode(data);
+            return getUtf8Encoder().encode(node.data) as Uint8Array;
         case 'base16':
-            return getBase16Encoder().encode(data);
+            return getBase16Encoder().encode(node.data) as Uint8Array;
         case 'base58':
-            return getBase58Encoder().encode(data);
+            return getBase58Encoder().encode(node.data) as Uint8Array;
         case 'base64':
         default:
-            return getBase64Encoder().encode(data);
+            return getBase64Encoder().encode(node.data) as Uint8Array;
     }
-}
-
-export function getStringValueAsHexadecimals(encoding: BytesEncoding, data: string): string {
-    if (encoding === 'base16') return '0x' + data;
-    return '0x' + getBase16Decoder().decode(encodeStringValue(encoding, data));
 }

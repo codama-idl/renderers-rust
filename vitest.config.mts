@@ -6,7 +6,7 @@ export type Platform = 'browser' | 'node' | 'react-native';
 
 export default defineConfig({
     test: {
-        projects: [getVitestConfig('browser'), getVitestConfig('node'), getVitestConfig('react-native')],
+        projects: [getVitestConfig('node')],
     },
 });
 

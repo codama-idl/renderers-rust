@@ -18,7 +18,7 @@
         "strict": true,
         "target": "ESNext"
     },
-    "display": "@codama/renderers-demo",
+    "display": "@codama/renderers-rust",
     "include": ["src", "test", "tsup.config.ts"],
-    "exclude": ["node_modules"]
+    "exclude": ["node_modules", "e2e"]
 }
