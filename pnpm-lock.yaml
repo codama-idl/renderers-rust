@@ -9,16 +9,16 @@ importers:
   .:
     dependencies:
       '@codama/errors':
-        specifier: ^1.3.6
+        specifier: ^1.3.7
         version: 1.3.7
       '@codama/nodes':
-        specifier: ^1.3.6
+        specifier: ^1.3.7
         version: 1.3.7
       '@codama/renderers-core':
-        specifier: ^1.2.1
+        specifier: ^1.2.2
         version: 1.2.2
       '@codama/visitors-core':
-        specifier: ^1.3.6
+        specifier: ^1.3.7
         version: 1.3.7
       '@solana/codecs-strings':
         specifier: ^3.0.3
@@ -34,7 +34,7 @@ importers:
         specifier: ^2.29.7
         version: 2.29.7(@types/node@24.5.2)
       '@codama/nodes-from-anchor':
-        specifier: ^1.2.8
+        specifier: ^1.2.9
         version: 1.2.9(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.2)
       '@solana/eslint-config-solana':
         specifier: ^5.0.0
@@ -4054,8 +4054,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.43.0(typescript@5.9.2)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.43.0(typescript@5.9.2)
-      '@typescript-eslint/types': 8.43.0
+      '@typescript-eslint/tsconfig-utils': 8.44.0(typescript@5.9.2)
+      '@typescript-eslint/types': 8.44.0
       debug: 4.4.3
       typescript: 5.9.2
     transitivePeerDependencies:
