@@ -1,5 +1,11 @@
 # @codama/renderers-rust
 
+## 1.2.6
+
+### Patch Changes
+
+- [#9](https://github.com/codama-idl/renderers-rust/pull/9) [`ebaf0bb`](https://github.com/codama-idl/renderers-rust/commit/ebaf0bb4203b30d8ec97572f81f5f9d949f474c1) Thanks [@lorisleiva](https://github.com/lorisleiva)! - Bump Codama
+
 ## 1.2.4
 
 ### Patch Changes
