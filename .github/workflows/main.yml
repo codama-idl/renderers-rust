@@ -74,7 +74,6 @@ jobs:
       - name: Ensure working directory is clean
         run: |
           git status
-          git diff
           test -z "$(git status --porcelain)"
 
   release:
