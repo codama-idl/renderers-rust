@@ -10,22 +10,24 @@ serde = ["dep:serde", "dep:serde_with", "dep:serde-big-array"]
 test-sbf = []
 
 [dependencies]
-anchor-lang = { version = "~0.31", optional = true }
-borsh = "^0.10"
-kaigan = "0.2.5"
-num-derive = "^0.4"
-num-traits = "^0.2"
-serde = { version = "^1.0", features = ["derive"], optional = true }
-serde-big-array = { version = "^0.5", optional = true }
-serde_with = { version = "^3.0", optional = true }
-solana-account-info = "~2.3"
-solana-cpi = "~2.2"
-solana-decode-error = "~2.3"
-solana-instruction = "~2.3"
-solana-program-error = "~2.2"
-solana-pubkey = { version = "~2.3", features = ["curve25519"] }
-thiserror = "^1.0"
+anchor-lang = { workspace = true, optional = true }
+borsh = { workspace = true }
+kaigan = { workspace = true }
+num-derive = { workspace = true }
+num-traits = { workspace = true }
+serde = { workspace = true, features = ["derive"], optional = true }
+serde-big-array = { workspace = true, optional = true }
+serde_with = { workspace = true, optional = true }
+solana-account = { workspace = true }
+solana-account-info = { workspace = true }
+solana-client = { workspace = true, optional = true }
+solana-cpi = { workspace = true }
+solana-decode-error = { workspace = true }
+solana-instruction = { workspace = true }
+solana-program-error = { workspace = true }
+solana-pubkey = { workspace = true, features = ["curve25519", "borsh"] }
+thiserror = { workspace = true }
 
 [dev-dependencies]
-assert_matches = "1.5.0"
-solana-sdk = "~2.3"
+assert_matches = { workspace = true }
+solana-sdk = { workspace = true }
