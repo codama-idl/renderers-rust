@@ -10,6 +10,7 @@ env:
   DO_NOT_TRACK: '1'
   NODE_VERSION: 20
   SOLANA_VERSION: 2.1.9
+  RUST_TOOLCHAIN: '1.86.0'
 
 jobs:
   lint:
@@ -43,6 +44,12 @@ jobs:
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
+
+      - name: Install Rust Toolchain and Components
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          components: clippy, rustfmt
 
       - name: Install Solana ${{ env.SOLANA_VERSION }}
         uses: solana-program/actions/install-solana@v1

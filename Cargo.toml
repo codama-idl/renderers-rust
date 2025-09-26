@@ -1,0 +1,24 @@
+[workspace]
+members = ["e2e/*"]
+resolver = "2"
+
+[workspace.dependencies]
+anchor-lang = "~0.31"
+borsh = "^0.10"
+kaigan = "0.2.6"
+num-derive = "^0.4"
+num-traits = "^0.2"
+serde = "^1.0"
+serde-big-array = "^0.5"
+serde_with = "^3.0"
+solana-account = "~2.2"
+solana-account-info = "~2.3"
+solana-client = "~2.2"
+solana-cpi = "~2.2"
+solana-decode-error = "~2.3"
+solana-instruction = "~2.3"
+solana-program-error = "~2.2"
+solana-pubkey = "~2.3"
+solana-sdk = "~2.3"
+thiserror = "^1.0"
+assert_matches = "1.5.0"

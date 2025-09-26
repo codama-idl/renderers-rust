@@ -25,8 +25,13 @@ export function renderVisitor(path: string, options: RenderOptions = {}) {
         // format the code
         if (options.formatCode) {
             if (options.crateFolder) {
-                const toolchain = options.toolchain ?? '+stable';
-                runFormatter('cargo', [toolchain, 'fmt', '--manifest-path', `${options.crateFolder}/Cargo.toml`]);
+                const removeFalsy = <T>(arg: T | false | null | undefined): arg is T => Boolean(arg);
+                runFormatter(
+                    'cargo',
+                    [options.toolchain, 'fmt', '--manifest-path', `${options.crateFolder}/Cargo.toml`].filter(
+                        removeFalsy,
+                    ),
+                );
             } else {
                 logWarn('No crate folder specified, skipping formatting.');
             }
