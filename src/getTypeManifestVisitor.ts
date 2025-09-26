@@ -1,9 +1,12 @@
 import { CODAMA_ERROR__RENDERERS__UNSUPPORTED_NODE, CodamaError } from '@codama/errors';
 import {
+    AccountNode,
     arrayTypeNode,
     CountNode,
+    DefinedTypeNode,
     definedTypeNode,
     fixedCountNode,
+    InstructionNode,
     isNode,
     NumberTypeNode,
     numberTypeNode,
@@ -18,7 +21,13 @@ import {
 import { extendVisitor, mergeVisitor, pipe, visit } from '@codama/visitors-core';
 
 import { ImportMap } from './ImportMap';
-import { GetImportFromFunction, GetTraitsFromNodeFunction, rustDocblock } from './utils';
+import {
+    GetImportFromFunction,
+    getSerdeFieldAttribute,
+    GetTraitsFromNodeFunction,
+    rustDocblock,
+    TraitOptions,
+} from './utils';
 
 export type TypeManifest = {
     imports: ImportMap;
@@ -31,12 +40,14 @@ export function getTypeManifestVisitor(options: {
     getTraitsFromNode: GetTraitsFromNodeFunction;
     nestedStruct?: boolean;
     parentName?: string | null;
+    traitOptions?: TraitOptions;
 }) {
-    const { getImportFrom, getTraitsFromNode } = options;
+    const { getImportFrom, getTraitsFromNode, traitOptions } = options;
     let parentName: string | null = options.parentName ?? null;
     let nestedStruct: boolean = options.nestedStruct ?? false;
     let inlineStruct: boolean = false;
     let parentSize: NumberTypeNode | number | null = null;
+    let parentNode: AccountNode | DefinedTypeNode | InstructionNode | null = null;
 
     return pipe(
         mergeVisitor(
@@ -51,10 +62,12 @@ export function getTypeManifestVisitor(options: {
             extendVisitor(v, {
                 visitAccount(account, { self }) {
                     parentName = pascalCase(account.name);
+                    parentNode = account;
                     const manifest = visit(account.data, self);
                     const traits = getTraitsFromNode(account);
                     manifest.imports.mergeWith(traits.imports);
                     parentName = null;
+                    parentNode = null;
                     return {
                         ...manifest,
                         type: traits.render + manifest.type,
@@ -140,10 +153,12 @@ export function getTypeManifestVisitor(options: {
 
                 visitDefinedType(definedType, { self }) {
                     parentName = pascalCase(definedType.name);
+                    parentNode = definedType;
                     const manifest = visit(definedType.type, self);
                     const traits = getTraitsFromNode(definedType);
                     manifest.imports.mergeWith(traits.imports);
                     parentName = null;
+                    parentNode = null;
 
                     const renderedType = isNode(definedType.type, ['enumTypeNode', 'structTypeNode'])
                         ? manifest.type
@@ -204,12 +219,18 @@ export function getTypeManifestVisitor(options: {
                     parentName = originalParentName;
 
                     let derive = '';
-                    if (childManifest.type === '(Pubkey)') {
-                        derive =
-                            '#[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]\n';
-                    } else if (childManifest.type === '(Vec<Pubkey>)') {
-                        derive =
-                            '#[cfg_attr(feature = "serde", serde(with = "serde_with::As::<Vec<serde_with::DisplayFromStr>>"))]\n';
+                    if (parentNode && childManifest.type === '(Pubkey)') {
+                        derive = getSerdeFieldAttribute(
+                            'serde_with::As::<serde_with::DisplayFromStr>',
+                            parentNode,
+                            traitOptions,
+                        );
+                    } else if (parentNode && childManifest.type === '(Vec<Pubkey>)') {
+                        derive = getSerdeFieldAttribute(
+                            'serde_with::As::<Vec<serde_with::DisplayFromStr>>',
+                            parentNode,
+                            traitOptions,
+                        );
                     }
 
                     return {
@@ -385,25 +406,36 @@ export function getTypeManifestVisitor(options: {
                     const resolvedNestedType = resolveNestedTypeNode(structFieldType.type);
 
                     let derive = '';
-                    if (fieldManifest.type === 'Pubkey') {
-                        derive =
-                            '#[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]\n';
-                    } else if (fieldManifest.type === 'Vec<Pubkey>') {
-                        derive =
-                            '#[cfg_attr(feature = "serde", serde(with = "serde_with::As::<Vec<serde_with::DisplayFromStr>>"))]\n';
-                    } else if (
-                        isNode(resolvedNestedType, 'arrayTypeNode') &&
-                        isNode(resolvedNestedType.count, 'fixedCountNode') &&
-                        resolvedNestedType.count.value > 32
-                    ) {
-                        derive = '#[cfg_attr(feature = "serde", serde(with = "serde_big_array::BigArray"))]\n';
-                    } else if (
-                        isNode(resolvedNestedType, ['bytesTypeNode', 'stringTypeNode']) &&
-                        isNode(structFieldType.type, 'fixedSizeTypeNode') &&
-                        structFieldType.type.size > 32
-                    ) {
-                        derive =
-                            '#[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::Bytes>"))]\n';
+                    if (parentNode) {
+                        if (fieldManifest.type === 'Pubkey') {
+                            derive = getSerdeFieldAttribute(
+                                'serde_with::As::<serde_with::DisplayFromStr>',
+                                parentNode,
+                                traitOptions,
+                            );
+                        } else if (fieldManifest.type === 'Vec<Pubkey>') {
+                            derive = getSerdeFieldAttribute(
+                                'serde_with::As::<Vec<serde_with::DisplayFromStr>>',
+                                parentNode,
+                                traitOptions,
+                            );
+                        } else if (
+                            isNode(resolvedNestedType, 'arrayTypeNode') &&
+                            isNode(resolvedNestedType.count, 'fixedCountNode') &&
+                            resolvedNestedType.count.value > 32
+                        ) {
+                            derive = getSerdeFieldAttribute('serde_big_array::BigArray', parentNode, traitOptions);
+                        } else if (
+                            isNode(resolvedNestedType, ['bytesTypeNode', 'stringTypeNode']) &&
+                            isNode(structFieldType.type, 'fixedSizeTypeNode') &&
+                            structFieldType.type.size > 32
+                        ) {
+                            derive = getSerdeFieldAttribute(
+                                'serde_with::As::<serde_with::Bytes>',
+                                parentNode,
+                                traitOptions,
+                            );
+                        }
                     }
 
                     return {
