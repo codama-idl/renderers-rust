@@ -1,14 +1,20 @@
 import {
     accountNode,
+    arrayTypeNode,
+    bytesTypeNode,
     camelCase,
     definedTypeNode,
     enumEmptyVariantTypeNode,
     enumStructVariantTypeNode,
     enumTypeNode,
+    fixedCountNode,
+    fixedSizeTypeNode,
     instructionArgumentNode,
     instructionNode,
     numberTypeNode,
+    prefixedCountNode,
     programNode,
+    publicKeyTypeNode,
     rootNode,
     structFieldTypeNode,
     structTypeNode,
@@ -478,5 +484,214 @@ describe('conditional try_to_vec generation', () => {
         expect(instruction).not.toContain('pub(crate) fn try_to_vec(&self)');
         expect(instruction).not.toContain('borsh::to_vec');
         expect(instruction).toContain('#[derive(Clone, Debug)]');
+    });
+});
+
+describe('conditional serde field attributes', () => {
+    test('it generates cfg_attr serde field attributes when serde is feature-flagged (default)', () => {
+        // Given an account with a Pubkey field.
+        const node = accountNode({
+            data: structTypeNode([
+                structFieldTypeNode({ name: 'authority', type: publicKeyTypeNode() }),
+                structFieldTypeNode({
+                    name: 'tokens',
+                    type: arrayTypeNode(publicKeyTypeNode(), prefixedCountNode(numberTypeNode('u32'))),
+                }),
+            ]),
+            name: 'myAccount',
+        });
+
+        // When we render with default traits (serde is feature-flagged).
+        const renderMap = visit(
+            rootNode(programNode({ accounts: [node], name: 'myProgram', publicKey: '1111' })),
+            getRenderMapVisitor(),
+        );
+
+        // Then we expect field attributes to be wrapped in cfg_attr.
+        const account = renderMap.get('accounts/my_account.rs') as string;
+        expect(account).toContain(
+            '#[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]',
+        );
+        expect(account).toContain(
+            '#[cfg_attr(feature = "serde", serde(with = "serde_with::As::<Vec<serde_with::DisplayFromStr>>"))]',
+        );
+    });
+
+    test('it generates plain serde field attributes when serde is not feature-flagged', () => {
+        // Given an account with a Pubkey field.
+        const node = accountNode({
+            data: structTypeNode([
+                structFieldTypeNode({ name: 'authority', type: publicKeyTypeNode() }),
+                structFieldTypeNode({
+                    name: 'tokens',
+                    type: arrayTypeNode(publicKeyTypeNode(), prefixedCountNode(numberTypeNode('u32'))),
+                }),
+            ]),
+            name: 'myAccount',
+        });
+
+        // When we render with serde in base defaults but no feature flags.
+        const renderMap = visit(
+            rootNode(programNode({ accounts: [node], name: 'myProgram', publicKey: '1111' })),
+            getRenderMapVisitor({
+                traitOptions: {
+                    baseDefaults: [
+                        'BorshSerialize',
+                        'BorshDeserialize',
+                        'serde::Serialize',
+                        'serde::Deserialize',
+                        'Clone',
+                        'Debug',
+                        'Eq',
+                        'PartialEq',
+                    ],
+                    featureFlags: {}, // No feature flags
+                },
+            }),
+        );
+
+        // Then we expect field attributes without cfg_attr.
+        const account = renderMap.get('accounts/my_account.rs') as string;
+        expect(account).toContain('#[serde(with = "serde_with::As::<serde_with::DisplayFromStr>")]');
+        expect(account).toContain('#[serde(with = "serde_with::As::<Vec<serde_with::DisplayFromStr>>")]');
+        expect(account).not.toContain('#[cfg_attr(feature = "serde"');
+    });
+
+    test('it omits serde field attributes when serde traits are removed', () => {
+        // Given an account with a Pubkey field.
+        const node = accountNode({
+            data: structTypeNode([
+                structFieldTypeNode({ name: 'authority', type: publicKeyTypeNode() }),
+                structFieldTypeNode({
+                    name: 'tokens',
+                    type: arrayTypeNode(publicKeyTypeNode(), prefixedCountNode(numberTypeNode('u32'))),
+                }),
+            ]),
+            name: 'myAccount',
+        });
+
+        // When we render without serde traits.
+        const renderMap = visit(
+            rootNode(programNode({ accounts: [node], name: 'myProgram', publicKey: '1111' })),
+            getRenderMapVisitor({
+                traitOptions: {
+                    baseDefaults: ['BorshSerialize', 'BorshDeserialize', 'Clone', 'Debug'],
+                    featureFlags: {},
+                },
+            }),
+        );
+
+        // Then we expect no serde field attributes at all.
+        const account = renderMap.get('accounts/my_account.rs') as string;
+        expect(account).not.toContain('serde(with');
+        expect(account).not.toContain('serde_with::As');
+        expect(account).not.toContain('DisplayFromStr');
+    });
+
+    test('it handles large array serde attributes conditionally', () => {
+        // Given an account with a large fixed array field.
+        const node = accountNode({
+            data: structTypeNode([
+                structFieldTypeNode({
+                    name: 'data',
+                    type: fixedSizeTypeNode(arrayTypeNode(numberTypeNode('u8'), fixedCountNode(64)), 64),
+                }),
+            ]),
+            name: 'myAccount',
+        });
+
+        // When we render with default traits (serde is feature-flagged).
+        const renderMap = visit(
+            rootNode(programNode({ accounts: [node], name: 'myProgram', publicKey: '1111' })),
+            getRenderMapVisitor(),
+        );
+
+        // Then we expect the big array attribute to be feature-flagged.
+        const account = renderMap.get('accounts/my_account.rs') as string;
+        expect(account).toContain('#[cfg_attr(feature = "serde", serde(with = "serde_big_array::BigArray"))]');
+    });
+
+    test('it handles bytes serde attributes conditionally', () => {
+        // Given an account with a fixed-size bytes field.
+        const node = accountNode({
+            data: structTypeNode([
+                structFieldTypeNode({
+                    name: 'signature',
+                    type: fixedSizeTypeNode(bytesTypeNode(), 64),
+                }),
+            ]),
+            name: 'myAccount',
+        });
+
+        // When we render with serde not feature-flagged.
+        const renderMap = visit(
+            rootNode(programNode({ accounts: [node], name: 'myProgram', publicKey: '1111' })),
+            getRenderMapVisitor({
+                traitOptions: {
+                    baseDefaults: ['serde::Serialize', 'serde::Deserialize', 'Clone', 'Debug'],
+                    featureFlags: {},
+                },
+            }),
+        );
+
+        // Then we expect the bytes attribute without cfg_attr.
+        const account = renderMap.get('accounts/my_account.rs') as string;
+        expect(account).toContain('#[serde(with = "serde_with::As::<serde_with::Bytes>")]');
+        expect(account).not.toContain('#[cfg_attr(feature = "serde"');
+    });
+
+    test('it uses custom feature names for serde field attributes', () => {
+        // Given an account with a Pubkey field.
+        const node = accountNode({
+            data: structTypeNode([structFieldTypeNode({ name: 'authority', type: publicKeyTypeNode() })]),
+            name: 'myAccount',
+        });
+
+        // When we render with serde under a custom feature name.
+        const renderMap = visit(
+            rootNode(programNode({ accounts: [node], name: 'myProgram', publicKey: '1111' })),
+            getRenderMapVisitor({
+                traitOptions: {
+                    baseDefaults: ['BorshSerialize', 'BorshDeserialize', 'serde::Serialize', 'serde::Deserialize'],
+                    featureFlags: {
+                        json_support: ['serde::Serialize', 'serde::Deserialize'],
+                    },
+                },
+            }),
+        );
+
+        // Then we expect field attributes with the custom feature name.
+        const account = renderMap.get('accounts/my_account.rs') as string;
+        expect(account).toContain(
+            '#[cfg_attr(feature = "json_support", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]',
+        );
+        expect(account).not.toContain('#[cfg_attr(feature = "serde"');
+    });
+
+    test('it respects overrides for serde field attributes', () => {
+        // Given an account with a Pubkey field.
+        const node = accountNode({
+            data: structTypeNode([structFieldTypeNode({ name: 'authority', type: publicKeyTypeNode() })]),
+            name: 'myAccount',
+        });
+
+        // When we render with overrides that include serde but not feature-flagged.
+        const renderMap = visit(
+            rootNode(programNode({ accounts: [node], name: 'myProgram', publicKey: '1111' })),
+            getRenderMapVisitor({
+                traitOptions: {
+                    baseDefaults: ['Clone', 'Debug'],
+                    featureFlags: {},
+                    overrides: {
+                        myAccount: ['serde::Serialize', 'serde::Deserialize', 'Clone', 'Debug'],
+                    },
+                },
+            }),
+        );
+
+        // Then we expect field attributes without cfg_attr since override has serde but no feature flag.
+        const account = renderMap.get('accounts/my_account.rs') as string;
+        expect(account).toContain('#[serde(with = "serde_with::As::<serde_with::DisplayFromStr>")]');
+        expect(account).not.toContain('#[cfg_attr(feature = "serde"');
     });
 });

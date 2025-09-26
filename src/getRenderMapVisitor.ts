@@ -56,7 +56,11 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
     const dependencyMap = options.dependencyMap ?? {};
     const getImportFrom = getImportFromFactory(options.linkOverrides ?? {});
     const getTraitsFromNode = getTraitsFromNodeFactory(options.traitOptions);
-    const typeManifestVisitor = getTypeManifestVisitor({ getImportFrom, getTraitsFromNode });
+    const typeManifestVisitor = getTypeManifestVisitor({
+        getImportFrom,
+        getTraitsFromNode,
+        traitOptions: options.traitOptions,
+    });
     const anchorTraits = options.anchorTraits ?? true;
 
     return pipe(

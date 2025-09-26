@@ -174,3 +174,60 @@ function extractFullyQualifiedNames(traits: string[], imports: ImportMap): strin
         return trait.slice(index + 2);
     });
 }
+
+/**
+ * Helper function to get the serde field attribute format based on trait configuration.
+ * Returns the appropriate attribute string for serde field customization, or empty string if no serde traits.
+ */
+export function getSerdeFieldAttribute(
+    serdeWith: string,
+    node: AccountNode | DefinedTypeNode | InstructionNode,
+    userOptions: TraitOptions = {},
+): string {
+    assertIsNode(node, ['accountNode', 'definedTypeNode', 'instructionNode']);
+    const options: Required<TraitOptions> = { ...DEFAULT_TRAIT_OPTIONS, ...userOptions };
+
+    // Get the node type and return early if it's a type alias.
+    const nodeType = getNodeType(node);
+    if (nodeType === 'alias') {
+        return '';
+    }
+
+    // Find all the traits for the node.
+    const sanitizedOverrides = Object.fromEntries(
+        Object.entries(options.overrides).map(([key, value]) => [camelCase(key), value]),
+    );
+    const nodeOverrides: string[] | undefined = sanitizedOverrides[node.name];
+    const allTraits = nodeOverrides === undefined ? getDefaultTraits(nodeType, options) : nodeOverrides;
+
+    // Check if serde traits are present.
+    const hasSerdeSerialize = allTraits.some(t => t === 'serde::Serialize' || t === 'Serialize');
+    const hasSerdeDeserialize = allTraits.some(t => t === 'serde::Deserialize' || t === 'Deserialize');
+
+    if (!hasSerdeSerialize && !hasSerdeDeserialize) {
+        return '';
+    }
+
+    // Check if serde is feature-flagged.
+    const partitionedTraits = partitionTraitsInFeatures(allTraits, options.featureFlags);
+    const featuredTraits = partitionedTraits[1];
+
+    // Find which feature flag contains serde traits.
+    let serdeFeatureName: string | undefined;
+    for (const [feature, traits] of Object.entries(featuredTraits)) {
+        if (
+            traits.some(
+                t => t === 'serde::Serialize' || t === 'serde::Deserialize' || t === 'Serialize' || t === 'Deserialize',
+            )
+        ) {
+            serdeFeatureName = feature;
+            break;
+        }
+    }
+
+    if (serdeFeatureName) {
+        return `#[cfg_attr(feature = "${serdeFeatureName}", serde(with = "${serdeWith}"))]\n`;
+    } else {
+        return `#[serde(with = "${serdeWith}")]\n`;
+    }
+}
