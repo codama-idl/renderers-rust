@@ -1,5 +1,13 @@
 # @codama/renderers-rust
 
+## 1.2.7
+
+### Patch Changes
+
+- [#12](https://github.com/codama-idl/renderers-rust/pull/12) [`ac05970`](https://github.com/codama-idl/renderers-rust/commit/ac05970d7413c1cbb59c0eaeb0b15107b8de59c7) Thanks [@buffalojoec](https://github.com/buffalojoec)! - Don't generate `borsh::to_vec` if no borsh traits
+
+- [#13](https://github.com/codama-idl/renderers-rust/pull/13) [`33a297d`](https://github.com/codama-idl/renderers-rust/commit/33a297dce6bd044d5ce606cde0c3351f66a92116) Thanks [@buffalojoec](https://github.com/buffalojoec)! - fix: make serde field attributes dynamic and optional
+
 ## 1.2.6
 
 ### Patch Changes
