@@ -58,7 +58,7 @@
         "@types/nunjucks": "^3.2.6",
         "agadoo": "^3.0.0",
         "eslint": "^9.35.0",
-        "happy-dom": "^18.0.1",
+        "happy-dom": "^19.0.1",
         "prettier": "^3.6.2",
         "rimraf": "6.0.1",
         "tsup": "^8.5.0",
