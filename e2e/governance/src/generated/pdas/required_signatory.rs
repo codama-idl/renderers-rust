@@ -8,7 +8,7 @@
 use crate::SPL_GOVERNANCE_ID;
 
 pub const REQUIRED_SIGNATORY_SEED: &'static [u8] = b"required-signatory";
-
+/// Required signatory on a governance
 pub fn create_required_signatory_pda(
     governance: solana_pubkey::Pubkey,
     signatory: solana_pubkey::Pubkey,
@@ -24,7 +24,7 @@ pub fn create_required_signatory_pda(
         &SPL_GOVERNANCE_ID,
     )
 }
-
+/// Required signatory on a governance
 pub fn find_required_signatory_pda(
     governance: &solana_pubkey::Pubkey,
     signatory: &solana_pubkey::Pubkey,

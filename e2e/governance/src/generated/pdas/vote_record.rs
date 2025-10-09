@@ -8,7 +8,7 @@
 use crate::SPL_GOVERNANCE_ID;
 
 pub const VOTE_RECORD_SEED: &'static [u8] = b"governance";
-
+/// Vote record on a proposal
 pub fn create_vote_record_pda(
     proposal: solana_pubkey::Pubkey,
     token_owner_record: solana_pubkey::Pubkey,
@@ -24,7 +24,7 @@ pub fn create_vote_record_pda(
         &SPL_GOVERNANCE_ID,
     )
 }
-
+/// Vote record on a proposal
 pub fn find_vote_record_pda(
     proposal: &solana_pubkey::Pubkey,
     token_owner_record: &solana_pubkey::Pubkey,

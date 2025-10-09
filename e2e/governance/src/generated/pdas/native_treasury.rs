@@ -8,7 +8,7 @@
 use crate::SPL_GOVERNANCE_ID;
 
 pub const NATIVE_TREASURY_SEED: &'static [u8] = b"native-treasury";
-
+/// Governance's native SOL treasury account
 pub fn create_native_treasury_pda(
     governance: solana_pubkey::Pubkey,
     bump: u8,
@@ -18,7 +18,7 @@ pub fn create_native_treasury_pda(
         &SPL_GOVERNANCE_ID,
     )
 }
-
+/// Governance's native SOL treasury account
 pub fn find_native_treasury_pda(governance: &solana_pubkey::Pubkey) -> (solana_pubkey::Pubkey, u8) {
     solana_pubkey::Pubkey::find_program_address(
         &[NATIVE_TREASURY_SEED, governance.as_ref()],

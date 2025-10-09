@@ -8,7 +8,7 @@
 use crate::SPL_GOVERNANCE_ID;
 
 pub const PROPOSAL_DEPOSIT_SEED: &'static [u8] = b"proposal-deposit";
-
+/// Proposal deposit made by a specific payer
 pub fn create_proposal_deposit_pda(
     proposal: solana_pubkey::Pubkey,
     deposit_payer: solana_pubkey::Pubkey,
@@ -24,7 +24,7 @@ pub fn create_proposal_deposit_pda(
         &SPL_GOVERNANCE_ID,
     )
 }
-
+/// Proposal deposit made by a specific payer
 pub fn find_proposal_deposit_pda(
     proposal: &solana_pubkey::Pubkey,
     deposit_payer: &solana_pubkey::Pubkey,

@@ -16,6 +16,7 @@ pub const {{ pda.name | snakeCase | upper }}_SEED{% if constantSeeds.length > 1 
   {% endif %}
 {% endfor %}
 
+{{- macros.docblock(pda.docs) -}}
 pub fn create_{{ pda.name | snakeCase }}_pda(
   {% if hasVariableSeeds %}
     {% for seed in seeds %}
@@ -59,6 +60,7 @@ pub fn create_{{ pda.name | snakeCase }}_pda(
     )
 }
 
+{{- macros.docblock(pda.docs) -}}
 pub fn find_{{ pda.name | snakeCase }}_pda(
 {% if hasVariableSeeds %}
   {% for seed in seeds %}

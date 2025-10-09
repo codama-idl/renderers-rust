@@ -8,7 +8,7 @@
 use crate::SPL_GOVERNANCE_ID;
 
 pub const COMMUNITY_TOKEN_HOLDING_SEED: &'static [u8] = b"governance";
-
+/// Community token holding account of a realm
 pub fn create_community_token_holding_pda(
     realm: solana_pubkey::Pubkey,
     community_mint: solana_pubkey::Pubkey,
@@ -24,7 +24,7 @@ pub fn create_community_token_holding_pda(
         &SPL_GOVERNANCE_ID,
     )
 }
-
+/// Community token holding account of a realm
 pub fn find_community_token_holding_pda(
     realm: &solana_pubkey::Pubkey,
     community_mint: &solana_pubkey::Pubkey,

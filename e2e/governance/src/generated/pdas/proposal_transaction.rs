@@ -8,7 +8,7 @@
 use crate::SPL_GOVERNANCE_ID;
 
 pub const PROPOSAL_TRANSACTION_SEED: &'static [u8] = b"governance";
-
+/// Transaction within a proposal option
 pub fn create_proposal_transaction_pda(
     proposal: solana_pubkey::Pubkey,
     option_index: u8,
@@ -26,7 +26,7 @@ pub fn create_proposal_transaction_pda(
         &SPL_GOVERNANCE_ID,
     )
 }
-
+/// Transaction within a proposal option
 pub fn find_proposal_transaction_pda(
     proposal: &solana_pubkey::Pubkey,
     option_index: u8,
