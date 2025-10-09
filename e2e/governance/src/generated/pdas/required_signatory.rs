@@ -7,36 +7,34 @@
 
 use crate::SPL_GOVERNANCE_ID;
 
+pub const REQUIRED_SIGNATORY_SEED: &'static [u8] = b"required-signatory";
 
-  pub const REQUIRED_SIGNATORY_SEED: &'static [u8] = b"required-signatory";
-          
 pub fn create_required_signatory_pda(
-                                  governance: solana_pubkey::Pubkey,
-                                    signatory: solana_pubkey::Pubkey,
-                        bump: u8,
+    governance: solana_pubkey::Pubkey,
+    signatory: solana_pubkey::Pubkey,
+    bump: u8,
 ) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
     solana_pubkey::Pubkey::create_program_address(
         &[
-                                      REQUIRED_SIGNATORY_SEED,
-                                                    governance.as_ref(),
-                                        signatory.as_ref(),
-                              &[bump],
+            REQUIRED_SIGNATORY_SEED,
+            governance.as_ref(),
+            signatory.as_ref(),
+            &[bump],
         ],
-                &SPL_GOVERNANCE_ID,
-            )
+        &SPL_GOVERNANCE_ID,
+    )
 }
 
 pub fn find_required_signatory_pda(
-                      governance: &solana_pubkey::Pubkey,
-                          signatory: &solana_pubkey::Pubkey,
-            ) -> (solana_pubkey::Pubkey, u8) {
+    governance: &solana_pubkey::Pubkey,
+    signatory: &solana_pubkey::Pubkey,
+) -> (solana_pubkey::Pubkey, u8) {
     solana_pubkey::Pubkey::find_program_address(
         &[
-                                      REQUIRED_SIGNATORY_SEED,
-                                                    governance.as_ref(),
-                                        signatory.as_ref(),
-                          ],
-                &SPL_GOVERNANCE_ID,
-            )
+            REQUIRED_SIGNATORY_SEED,
+            governance.as_ref(),
+            signatory.as_ref(),
+        ],
+        &SPL_GOVERNANCE_ID,
+    )
 }
-

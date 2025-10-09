@@ -7,40 +7,38 @@
 
 use crate::SPL_GOVERNANCE_ID;
 
+pub const PROPOSAL_SEED: &'static [u8] = b"governance";
 
-  pub const PROPOSAL_SEED: &'static [u8] = b"governance";
-            
 pub fn create_proposal_pda(
-                                  governance: solana_pubkey::Pubkey,
-                                    governing_token_mint: solana_pubkey::Pubkey,
-                                    proposal_seed: solana_pubkey::Pubkey,
-                        bump: u8,
+    governance: solana_pubkey::Pubkey,
+    governing_token_mint: solana_pubkey::Pubkey,
+    proposal_seed: solana_pubkey::Pubkey,
+    bump: u8,
 ) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
     solana_pubkey::Pubkey::create_program_address(
         &[
-                                      PROPOSAL_SEED,
-                                                    governance.as_ref(),
-                                        governing_token_mint.as_ref(),
-                                        proposal_seed.as_ref(),
-                              &[bump],
+            PROPOSAL_SEED,
+            governance.as_ref(),
+            governing_token_mint.as_ref(),
+            proposal_seed.as_ref(),
+            &[bump],
         ],
-                &SPL_GOVERNANCE_ID,
-            )
+        &SPL_GOVERNANCE_ID,
+    )
 }
 
 pub fn find_proposal_pda(
-                      governance: &solana_pubkey::Pubkey,
-                          governing_token_mint: &solana_pubkey::Pubkey,
-                          proposal_seed: &solana_pubkey::Pubkey,
-            ) -> (solana_pubkey::Pubkey, u8) {
+    governance: &solana_pubkey::Pubkey,
+    governing_token_mint: &solana_pubkey::Pubkey,
+    proposal_seed: &solana_pubkey::Pubkey,
+) -> (solana_pubkey::Pubkey, u8) {
     solana_pubkey::Pubkey::find_program_address(
         &[
-                                      PROPOSAL_SEED,
-                                                    governance.as_ref(),
-                                        governing_token_mint.as_ref(),
-                                        proposal_seed.as_ref(),
-                          ],
-                &SPL_GOVERNANCE_ID,
-            )
+            PROPOSAL_SEED,
+            governance.as_ref(),
+            governing_token_mint.as_ref(),
+            proposal_seed.as_ref(),
+        ],
+        &SPL_GOVERNANCE_ID,
+    )
 }
-

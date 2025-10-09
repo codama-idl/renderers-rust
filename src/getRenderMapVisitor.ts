@@ -356,6 +356,7 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                         definedTypesToExport,
                         hasAnythingToExport,
                         instructionsToExport,
+                        pdasToExport,
                         programsToExport,
                         root: node,
                     };

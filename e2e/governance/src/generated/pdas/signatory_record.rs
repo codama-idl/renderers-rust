@@ -7,36 +7,30 @@
 
 use crate::SPL_GOVERNANCE_ID;
 
+pub const SIGNATORY_RECORD_SEED: &'static [u8] = b"governance";
 
-  pub const SIGNATORY_RECORD_SEED: &'static [u8] = b"governance";
-          
 pub fn create_signatory_record_pda(
-                                  proposal: solana_pubkey::Pubkey,
-                                    signatory: solana_pubkey::Pubkey,
-                        bump: u8,
+    proposal: solana_pubkey::Pubkey,
+    signatory: solana_pubkey::Pubkey,
+    bump: u8,
 ) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
     solana_pubkey::Pubkey::create_program_address(
         &[
-                                      SIGNATORY_RECORD_SEED,
-                                                    proposal.as_ref(),
-                                        signatory.as_ref(),
-                              &[bump],
+            SIGNATORY_RECORD_SEED,
+            proposal.as_ref(),
+            signatory.as_ref(),
+            &[bump],
         ],
-                &SPL_GOVERNANCE_ID,
-            )
+        &SPL_GOVERNANCE_ID,
+    )
 }
 
 pub fn find_signatory_record_pda(
-                      proposal: &solana_pubkey::Pubkey,
-                          signatory: &solana_pubkey::Pubkey,
-            ) -> (solana_pubkey::Pubkey, u8) {
+    proposal: &solana_pubkey::Pubkey,
+    signatory: &solana_pubkey::Pubkey,
+) -> (solana_pubkey::Pubkey, u8) {
     solana_pubkey::Pubkey::find_program_address(
-        &[
-                                      SIGNATORY_RECORD_SEED,
-                                                    proposal.as_ref(),
-                                        signatory.as_ref(),
-                          ],
-                &SPL_GOVERNANCE_ID,
-            )
+        &[SIGNATORY_RECORD_SEED, proposal.as_ref(), signatory.as_ref()],
+        &SPL_GOVERNANCE_ID,
+    )
 }
-

@@ -7,40 +7,38 @@
 
 use crate::SPL_GOVERNANCE_ID;
 
+pub const PROPOSAL_TRANSACTION_SEED: &'static [u8] = b"governance";
 
-  pub const PROPOSAL_TRANSACTION_SEED: &'static [u8] = b"governance";
-            
 pub fn create_proposal_transaction_pda(
-                                  proposal: solana_pubkey::Pubkey,
-                                    option_index: u8,
-                                    index: u16,
-                        bump: u8,
+    proposal: solana_pubkey::Pubkey,
+    option_index: u8,
+    index: u16,
+    bump: u8,
 ) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
     solana_pubkey::Pubkey::create_program_address(
         &[
-                                      PROPOSAL_TRANSACTION_SEED,
-                                                    proposal.as_ref(),
-                                        option_index.to_string().as_ref(),
-                                        index.to_string().as_ref(),
-                              &[bump],
+            PROPOSAL_TRANSACTION_SEED,
+            proposal.as_ref(),
+            option_index.to_string().as_ref(),
+            index.to_string().as_ref(),
+            &[bump],
         ],
-                &SPL_GOVERNANCE_ID,
-            )
+        &SPL_GOVERNANCE_ID,
+    )
 }
 
 pub fn find_proposal_transaction_pda(
-                      proposal: &solana_pubkey::Pubkey,
-                          option_index: u8,
-                          index: u16,
-            ) -> (solana_pubkey::Pubkey, u8) {
+    proposal: &solana_pubkey::Pubkey,
+    option_index: u8,
+    index: u16,
+) -> (solana_pubkey::Pubkey, u8) {
     solana_pubkey::Pubkey::find_program_address(
         &[
-                                      PROPOSAL_TRANSACTION_SEED,
-                                                    proposal.as_ref(),
-                                        option_index.to_string().as_ref(),
-                                        index.to_string().as_ref(),
-                          ],
-                &SPL_GOVERNANCE_ID,
-            )
+            PROPOSAL_TRANSACTION_SEED,
+            proposal.as_ref(),
+            option_index.to_string().as_ref(),
+            index.to_string().as_ref(),
+        ],
+        &SPL_GOVERNANCE_ID,
+    )
 }
-

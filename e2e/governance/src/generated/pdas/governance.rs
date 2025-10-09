@@ -7,36 +7,25 @@
 
 use crate::SPL_GOVERNANCE_ID;
 
+pub const GOVERNANCE_SEED: &'static [u8] = b"account-governance";
 
-  pub const GOVERNANCE_SEED: &'static [u8] = b"account-governance";
-          
 pub fn create_governance_pda(
-                                  realm: solana_pubkey::Pubkey,
-                                    seed: solana_pubkey::Pubkey,
-                        bump: u8,
+    realm: solana_pubkey::Pubkey,
+    seed: solana_pubkey::Pubkey,
+    bump: u8,
 ) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
     solana_pubkey::Pubkey::create_program_address(
-        &[
-                                      GOVERNANCE_SEED,
-                                                    realm.as_ref(),
-                                        seed.as_ref(),
-                              &[bump],
-        ],
-                &SPL_GOVERNANCE_ID,
-            )
+        &[GOVERNANCE_SEED, realm.as_ref(), seed.as_ref(), &[bump]],
+        &SPL_GOVERNANCE_ID,
+    )
 }
 
 pub fn find_governance_pda(
-                      realm: &solana_pubkey::Pubkey,
-                          seed: &solana_pubkey::Pubkey,
-            ) -> (solana_pubkey::Pubkey, u8) {
+    realm: &solana_pubkey::Pubkey,
+    seed: &solana_pubkey::Pubkey,
+) -> (solana_pubkey::Pubkey, u8) {
     solana_pubkey::Pubkey::find_program_address(
-        &[
-                                      GOVERNANCE_SEED,
-                                                    realm.as_ref(),
-                                        seed.as_ref(),
-                          ],
-                &SPL_GOVERNANCE_ID,
-            )
+        &[GOVERNANCE_SEED, realm.as_ref(), seed.as_ref()],
+        &SPL_GOVERNANCE_ID,
+    )
 }
-

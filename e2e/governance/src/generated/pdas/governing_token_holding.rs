@@ -7,36 +7,34 @@
 
 use crate::SPL_GOVERNANCE_ID;
 
+pub const GOVERNING_TOKEN_HOLDING_SEED: &'static [u8] = b"governance";
 
-  pub const GOVERNING_TOKEN_HOLDING_SEED: &'static [u8] = b"governance";
-          
 pub fn create_governing_token_holding_pda(
-                                  realm: solana_pubkey::Pubkey,
-                                    governing_token_mint: solana_pubkey::Pubkey,
-                        bump: u8,
+    realm: solana_pubkey::Pubkey,
+    governing_token_mint: solana_pubkey::Pubkey,
+    bump: u8,
 ) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
     solana_pubkey::Pubkey::create_program_address(
         &[
-                                      GOVERNING_TOKEN_HOLDING_SEED,
-                                                    realm.as_ref(),
-                                        governing_token_mint.as_ref(),
-                              &[bump],
+            GOVERNING_TOKEN_HOLDING_SEED,
+            realm.as_ref(),
+            governing_token_mint.as_ref(),
+            &[bump],
         ],
-                &SPL_GOVERNANCE_ID,
-            )
+        &SPL_GOVERNANCE_ID,
+    )
 }
 
 pub fn find_governing_token_holding_pda(
-                      realm: &solana_pubkey::Pubkey,
-                          governing_token_mint: &solana_pubkey::Pubkey,
-            ) -> (solana_pubkey::Pubkey, u8) {
+    realm: &solana_pubkey::Pubkey,
+    governing_token_mint: &solana_pubkey::Pubkey,
+) -> (solana_pubkey::Pubkey, u8) {
     solana_pubkey::Pubkey::find_program_address(
         &[
-                                      GOVERNING_TOKEN_HOLDING_SEED,
-                                                    realm.as_ref(),
-                                        governing_token_mint.as_ref(),
-                          ],
-                &SPL_GOVERNANCE_ID,
-            )
+            GOVERNING_TOKEN_HOLDING_SEED,
+            realm.as_ref(),
+            governing_token_mint.as_ref(),
+        ],
+        &SPL_GOVERNANCE_ID,
+    )
 }
-
