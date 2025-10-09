@@ -8,7 +8,7 @@
 use crate::SPL_GOVERNANCE_ID;
 
 pub const GOVERNANCE_SEED: &'static [u8] = b"account-governance";
-
+/// Governance account within a realm
 pub fn create_governance_pda(
     realm: solana_pubkey::Pubkey,
     seed: solana_pubkey::Pubkey,
@@ -19,7 +19,7 @@ pub fn create_governance_pda(
         &SPL_GOVERNANCE_ID,
     )
 }
-
+/// Governance account within a realm
 pub fn find_governance_pda(
     realm: &solana_pubkey::Pubkey,
     seed: &solana_pubkey::Pubkey,

@@ -8,7 +8,7 @@
 use crate::SPL_GOVERNANCE_ID;
 
 pub const TOKEN_OWNER_RECORD_SEED: &'static [u8] = b"governance";
-
+/// Token owner's record within a realm
 pub fn create_token_owner_record_pda(
     realm: solana_pubkey::Pubkey,
     governing_token_mint: solana_pubkey::Pubkey,
@@ -26,7 +26,7 @@ pub fn create_token_owner_record_pda(
         &SPL_GOVERNANCE_ID,
     )
 }
-
+/// Token owner's record within a realm
 pub fn find_token_owner_record_pda(
     realm: &solana_pubkey::Pubkey,
     governing_token_mint: &solana_pubkey::Pubkey,

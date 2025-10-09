@@ -8,7 +8,7 @@
 use crate::SPL_GOVERNANCE_ID;
 
 pub const PROPOSAL_SEED: &'static [u8] = b"governance";
-
+/// Governance proposal
 pub fn create_proposal_pda(
     governance: solana_pubkey::Pubkey,
     governing_token_mint: solana_pubkey::Pubkey,
@@ -26,7 +26,7 @@ pub fn create_proposal_pda(
         &SPL_GOVERNANCE_ID,
     )
 }
-
+/// Governance proposal
 pub fn find_proposal_pda(
     governance: &solana_pubkey::Pubkey,
     governing_token_mint: &solana_pubkey::Pubkey,

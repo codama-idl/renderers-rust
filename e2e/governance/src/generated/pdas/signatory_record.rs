@@ -8,7 +8,7 @@
 use crate::SPL_GOVERNANCE_ID;
 
 pub const SIGNATORY_RECORD_SEED: &'static [u8] = b"governance";
-
+/// Signatory's record on a proposal
 pub fn create_signatory_record_pda(
     proposal: solana_pubkey::Pubkey,
     signatory: solana_pubkey::Pubkey,
@@ -24,7 +24,7 @@ pub fn create_signatory_record_pda(
         &SPL_GOVERNANCE_ID,
     )
 }
-
+/// Signatory's record on a proposal
 pub fn find_signatory_record_pda(
     proposal: &solana_pubkey::Pubkey,
     signatory: &solana_pubkey::Pubkey,
