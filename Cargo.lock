@@ -863,6 +863,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "codama-renderers-rust-e2e-governance"
+version = "0.0.0"
+dependencies = [
+ "anchor-lang",
+ "assert_matches",
+ "borsh 0.10.4",
+ "kaigan",
+ "num-derive",
+ "num-traits",
+ "serde",
+ "serde-big-array",
+ "serde_with",
+ "solana-account",
+ "solana-account-info",
+ "solana-client",
+ "solana-cpi",
+ "solana-decode-error",
+ "solana-instruction",
+ "solana-program-error",
+ "solana-pubkey",
+ "solana-sdk",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "codama-renderers-rust-e2e-memo"
 version = "0.0.0"
 dependencies = [

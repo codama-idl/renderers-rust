@@ -3,12 +3,12 @@ import {
     getAllAccounts,
     getAllDefinedTypes,
     getAllInstructionsWithSubs,
+    getAllPdas,
     getAllPrograms,
     InstructionNode,
     isNode,
     isNodeFilter,
     pascalCase,
-    ProgramNode,
     resolveNestedTypeNode,
     snakeCase,
     structTypeNodeFromInstructionArgumentNodes,
@@ -17,6 +17,7 @@ import {
 import { addToRenderMap, createRenderMap, mergeRenderMaps } from '@codama/renderers-core';
 import {
     extendVisitor,
+    findProgramNodeFromPath,
     LinkableDictionary,
     NodeStack,
     pipe,
@@ -50,7 +51,6 @@ export type GetRenderMapOptions = {
 export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
     const linkables = new LinkableDictionary();
     const stack = new NodeStack();
-    let program: ProgramNode | null = null;
 
     const renderParentInstructions = options.renderParentInstructions ?? false;
     const dependencyMap = options.dependencyMap ?? {};
@@ -65,11 +65,16 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
 
     return pipe(
         staticVisitor(() => createRenderMap(), {
-            keys: ['rootNode', 'programNode', 'instructionNode', 'accountNode', 'definedTypeNode'],
+            keys: ['rootNode', 'programNode', 'instructionNode', 'accountNode', 'definedTypeNode', 'pdaNode'],
         }),
         v =>
             extendVisitor(v, {
                 visitAccount(node) {
+                   const accountPath = stack.getPath('accountNode');
+                    const program = findProgramNodeFromPath(accountPath);
+                    if (!program) {
+                        throw new Error('Account must be visited inside a program.');
+                    }
                     const typeManifest = visit(node, typeManifestVisitor);
 
                     // Discriminator constants.
@@ -148,6 +153,11 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                 },
 
                 visitInstruction(node) {
+                    const instructionPath = stack.getPath('instructionNode');
+                    const program = findProgramNodeFromPath(instructionPath);
+                    if (!program) {
+                        throw new Error('Instruction must be visited inside a program.');
+                    }
                     // Imports.
                     const imports = new ImportMap();
 
@@ -249,19 +259,66 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                             instruction: node,
                             instructionArgs,
                             program,
-                            typeManifest,
+                            typeManifest
+                        }),
+                    );
+                },
+
+                visitPda(node) {
+                    const pdaPath = stack.getPath('pdaNode');
+                    const program = findProgramNodeFromPath(pdaPath);
+                    if (!program) {
+                        throw new Error('PDA must be visited inside a program.');
+                    }
+                    const imports = new ImportMap();
+
+                    // Process seeds
+                    const seeds = node.seeds.map(seed => {
+                        if (isNode(seed, 'variablePdaSeedNode')) {
+                            const seedManifest = visit(seed.type, typeManifestVisitor);
+                            imports.mergeWith(seedManifest.imports);
+                            const resolvedType = resolveNestedTypeNode(seed.type);
+                            return { ...seed, resolvedType, typeManifest: seedManifest };
+                        }
+                        if (isNode(seed.value, 'programIdValueNode')) {
+                            return seed;
+                        }
+                        const seedManifest = visit(seed.type, typeManifestVisitor);
+                        const valueManifest = renderValueNode(seed.value, getImportFrom, true);
+                        imports.mergeWith(valueManifest.imports);
+                        const resolvedType = resolveNestedTypeNode(seed.type);
+                        return { ...seed, resolvedType, typeManifest: seedManifest, valueManifest };
+                    });
+
+                    const hasVariableSeeds = node.seeds.filter(isNodeFilter('variablePdaSeedNode')).length > 0;
+                    const constantSeeds = seeds
+                        .filter(isNodeFilter('constantPdaSeedNode'))
+                        .filter(seed => !isNode(seed.value, 'programIdValueNode'));
+
+                    const programAddress = node.programId ?? program?.publicKey;
+
+                    return createRenderMap(
+                        `pdas/${snakeCase(node.name)}.rs`,
+                        render('pdasPage.njk', {
+                            constantSeeds,
+                            hasVariableSeeds,
+                            imports: imports.toString(dependencyMap),
+                            pda: node,
+                            program,
+                            programAddress,
+                            seeds,
                         }),
                     );
                 },
 
                 visitProgram(node, { self }) {
-                    program = node;
                     let renders = mergeRenderMaps([
                         ...node.accounts.map(account => visit(account, self)),
                         ...node.definedTypes.map(type => visit(type, self)),
                         ...getAllInstructionsWithSubs(node, {
                             leavesOnly: !renderParentInstructions,
                         }).map(ix => visit(ix, self)),
+                        ...node.pdas.map(pda => visit(pda, self)),
                     ]);
 
                     // Errors.
@@ -277,7 +334,6 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                         );
                     }
 
-                    program = null;
                     return renders;
                 },
 
@@ -287,6 +343,7 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                     const instructionsToExport = getAllInstructionsWithSubs(node, {
                         leavesOnly: !renderParentInstructions,
                     });
+                    const pdasToExport = getAllPdas(node);
                     const definedTypesToExport = getAllDefinedTypes(node);
                     const hasAnythingToExport =
                         programsToExport.length > 0 ||
@@ -311,6 +368,7 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                             ['instructions/mod.rs']:
                                 instructionsToExport.length > 0 ? render('instructionsMod.njk', ctx) : undefined,
                             ['mod.rs']: render('rootMod.njk', ctx),
+                            ['pdas/mod.rs']: pdasToExport.length > 0 ? render('pdasMod.njk', ctx) : undefined,
                             ['programs.rs']: programsToExport.length > 0 ? render('programsMod.njk', ctx) : undefined,
                             ['shared.rs']: accountsToExport.length > 0 ? render('sharedPage.njk', ctx) : undefined,
                             ['types/mod.rs']:
