@@ -7,32 +7,21 @@
 
 use crate::SPL_GOVERNANCE_ID;
 
+pub const NATIVE_TREASURY_SEED: &'static [u8] = b"native-treasury";
 
-  pub const NATIVE_TREASURY_SEED: &'static [u8] = b"native-treasury";
-        
 pub fn create_native_treasury_pda(
-                                  governance: solana_pubkey::Pubkey,
-                        bump: u8,
+    governance: solana_pubkey::Pubkey,
+    bump: u8,
 ) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
     solana_pubkey::Pubkey::create_program_address(
-        &[
-                                      NATIVE_TREASURY_SEED,
-                                                    governance.as_ref(),
-                              &[bump],
-        ],
-                &SPL_GOVERNANCE_ID,
-            )
+        &[NATIVE_TREASURY_SEED, governance.as_ref(), &[bump]],
+        &SPL_GOVERNANCE_ID,
+    )
 }
 
-pub fn find_native_treasury_pda(
-                      governance: &solana_pubkey::Pubkey,
-            ) -> (solana_pubkey::Pubkey, u8) {
+pub fn find_native_treasury_pda(governance: &solana_pubkey::Pubkey) -> (solana_pubkey::Pubkey, u8) {
     solana_pubkey::Pubkey::find_program_address(
-        &[
-                                      NATIVE_TREASURY_SEED,
-                                                    governance.as_ref(),
-                          ],
-                &SPL_GOVERNANCE_ID,
-            )
+        &[NATIVE_TREASURY_SEED, governance.as_ref()],
+        &SPL_GOVERNANCE_ID,
+    )
 }
-

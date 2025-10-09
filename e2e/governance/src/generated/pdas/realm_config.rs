@@ -7,32 +7,21 @@
 
 use crate::SPL_GOVERNANCE_ID;
 
+pub const REALM_CONFIG_SEED: &'static [u8] = b"realm-config";
 
-  pub const REALM_CONFIG_SEED: &'static [u8] = b"realm-config";
-        
 pub fn create_realm_config_pda(
-                                  realm: solana_pubkey::Pubkey,
-                        bump: u8,
+    realm: solana_pubkey::Pubkey,
+    bump: u8,
 ) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
     solana_pubkey::Pubkey::create_program_address(
-        &[
-                                      REALM_CONFIG_SEED,
-                                                    realm.as_ref(),
-                              &[bump],
-        ],
-                &SPL_GOVERNANCE_ID,
-            )
+        &[REALM_CONFIG_SEED, realm.as_ref(), &[bump]],
+        &SPL_GOVERNANCE_ID,
+    )
 }
 
-pub fn find_realm_config_pda(
-                      realm: &solana_pubkey::Pubkey,
-            ) -> (solana_pubkey::Pubkey, u8) {
+pub fn find_realm_config_pda(realm: &solana_pubkey::Pubkey) -> (solana_pubkey::Pubkey, u8) {
     solana_pubkey::Pubkey::find_program_address(
-        &[
-                                      REALM_CONFIG_SEED,
-                                                    realm.as_ref(),
-                          ],
-                &SPL_GOVERNANCE_ID,
-            )
+        &[REALM_CONFIG_SEED, realm.as_ref()],
+        &SPL_GOVERNANCE_ID,
+    )
 }
-

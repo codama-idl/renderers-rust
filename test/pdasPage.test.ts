@@ -1,15 +1,16 @@
 import {
-    constantPdaSeedNodeFromString,
+    bytesTypeNode,
     constantPdaSeedNode,
+    constantPdaSeedNodeFromString,
+    fixedSizeTypeNode,
+    getAllPdas,
+    numberTypeNode,
+    numberValueNode,
     pdaNode,
     programNode,
     publicKeyTypeNode,
-    variablePdaSeedNode,
-    numberTypeNode,
-    numberValueNode,
-    bytesTypeNode,
-    fixedSizeTypeNode,
     rootNode,
+    variablePdaSeedNode,
 } from '@codama/nodes';
 import { getFromRenderMap } from '@codama/renderers-core';
 import { visit } from '@codama/visitors-core';
@@ -22,7 +23,6 @@ test('it renders a standalone PDA with variable seeds', () => {
     // Given a program with a PDA that has variable seeds.
     const node = programNode({
         name: 'myProgram',
-        publicKey: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
         pdas: [
             pdaNode({
                 name: 'myPda',
@@ -32,6 +32,7 @@ test('it renders a standalone PDA with variable seeds', () => {
                 ],
             }),
         ],
+        publicKey: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
     });
 
     // When we render it.
@@ -53,7 +54,6 @@ test('it renders a PDA with only constant seeds', () => {
     // Given a program with a PDA that has only constant seeds.
     const node = programNode({
         name: 'myProgram',
-        publicKey: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
         pdas: [
             pdaNode({
                 name: 'configPda',
@@ -63,6 +63,7 @@ test('it renders a PDA with only constant seeds', () => {
                 ],
             }),
         ],
+        publicKey: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
     });
 
     // When we render it.
@@ -83,7 +84,6 @@ test('it renders a PDA with byte array seeds', () => {
     // Given a program with a PDA that has byte array seeds.
     const node = programNode({
         name: 'myProgram',
-        publicKey: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
         pdas: [
             pdaNode({
                 name: 'hashPda',
@@ -93,6 +93,7 @@ test('it renders a PDA with byte array seeds', () => {
                 ],
             }),
         ],
+        publicKey: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
     });
 
     // When we render it.
@@ -113,7 +114,6 @@ test('it renders a PDA module file', () => {
     // Given a root node with a program containing multiple PDAs.
     const program = programNode({
         name: 'myProgram',
-        publicKey: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
         pdas: [
             pdaNode({
                 name: 'firstPda',
@@ -124,6 +124,7 @@ test('it renders a PDA module file', () => {
                 seeds: [constantPdaSeedNodeFromString('utf8', 'second')],
             }),
         ],
+        publicKey: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
     });
     const node = rootNode(program);
 
@@ -143,15 +144,17 @@ test('it includes PDAs module in the root mod file', () => {
     // Given a root node with a program containing PDAs.
     const program = programNode({
         name: 'myProgram',
-        publicKey: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
         pdas: [
             pdaNode({
                 name: 'myPda',
                 seeds: [constantPdaSeedNodeFromString('utf8', 'test')],
             }),
         ],
+        publicKey: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
     });
     const node = rootNode(program);
+
+    console.log("PDAs", getAllPdas(node))
 
     // When we render it.
     const renderMap = visit(node, getRenderMapVisitor());

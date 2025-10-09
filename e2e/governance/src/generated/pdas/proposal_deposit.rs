@@ -7,36 +7,34 @@
 
 use crate::SPL_GOVERNANCE_ID;
 
+pub const PROPOSAL_DEPOSIT_SEED: &'static [u8] = b"proposal-deposit";
 
-  pub const PROPOSAL_DEPOSIT_SEED: &'static [u8] = b"proposal-deposit";
-          
 pub fn create_proposal_deposit_pda(
-                                  proposal: solana_pubkey::Pubkey,
-                                    deposit_payer: solana_pubkey::Pubkey,
-                        bump: u8,
+    proposal: solana_pubkey::Pubkey,
+    deposit_payer: solana_pubkey::Pubkey,
+    bump: u8,
 ) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
     solana_pubkey::Pubkey::create_program_address(
         &[
-                                      PROPOSAL_DEPOSIT_SEED,
-                                                    proposal.as_ref(),
-                                        deposit_payer.as_ref(),
-                              &[bump],
+            PROPOSAL_DEPOSIT_SEED,
+            proposal.as_ref(),
+            deposit_payer.as_ref(),
+            &[bump],
         ],
-                &SPL_GOVERNANCE_ID,
-            )
+        &SPL_GOVERNANCE_ID,
+    )
 }
 
 pub fn find_proposal_deposit_pda(
-                      proposal: &solana_pubkey::Pubkey,
-                          deposit_payer: &solana_pubkey::Pubkey,
-            ) -> (solana_pubkey::Pubkey, u8) {
+    proposal: &solana_pubkey::Pubkey,
+    deposit_payer: &solana_pubkey::Pubkey,
+) -> (solana_pubkey::Pubkey, u8) {
     solana_pubkey::Pubkey::find_program_address(
         &[
-                                      PROPOSAL_DEPOSIT_SEED,
-                                                    proposal.as_ref(),
-                                        deposit_payer.as_ref(),
-                          ],
-                &SPL_GOVERNANCE_ID,
-            )
+            PROPOSAL_DEPOSIT_SEED,
+            proposal.as_ref(),
+            deposit_payer.as_ref(),
+        ],
+        &SPL_GOVERNANCE_ID,
+    )
 }
-
