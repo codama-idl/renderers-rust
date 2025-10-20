@@ -56,7 +56,7 @@ importers:
         version: 9.37.0
       happy-dom:
         specifier: ^20.0.0
-        version: 20.0.4
+        version: 20.0.7
       prettier:
         specifier: ^3.6.2
         version: 3.6.2
@@ -71,7 +71,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^3.2.4
-        version: 3.2.4(@types/node@24.8.1)(happy-dom@20.0.4)
+        version: 3.2.4(@types/node@24.8.1)(happy-dom@20.0.7)
 
 packages:
 
@@ -1350,8 +1350,8 @@ packages:
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
 
-  baseline-browser-mapping@2.8.17:
-    resolution: {integrity: sha512-j5zJcx6golJYTG6c05LUZ3Z8Gi+M62zRT/ycz4Xq4iCOdpcxwg7ngEYD4KA0eWZC7U17qh/Smq8bYbACJ0ipBA==}
+  baseline-browser-mapping@2.8.18:
+    resolution: {integrity: sha512-UYmTpOBwgPScZpS4A+YbapwWuBwasxvO/2IOHArSsAhL/+ZdmATBXTex3t+l2hXwLVYK382ibr/nKoY9GKe86w==}
     hasBin: true
 
   better-path-resolve@1.0.0:
@@ -1888,8 +1888,8 @@ packages:
   graphemer@1.4.0:
     resolution: {integrity: sha512-EtKwoO6kxCL9WO5xipiHTZlSzBm7WLT627TqC/uVRd0HKmq8NXyebnNYxDoBi7wt8eTWrUrKXCOVaFq9x1kgag==}
 
-  happy-dom@20.0.4:
-    resolution: {integrity: sha512-WxFtvnij6G64/MtMimnZhF0nKx3LUQKc20zjATD6tKiqOykUwQkd+2FW/DZBAFNjk4oWh0xdv/HBleGJmSY/Iw==}
+  happy-dom@20.0.7:
+    resolution: {integrity: sha512-CywLfzmYxP5OYpuAG0usFY0CpxJtwYR+w8Mms5J8W29Y2Pzf6rbfQS2M523tRZTb0oLA+URopPtnAQX2fupHZQ==}
     engines: {node: '>=20.0.0'}
 
   has-flag@4.0.0:
@@ -4490,7 +4490,7 @@ snapshots:
 
   balanced-match@1.0.2: {}
 
-  baseline-browser-mapping@2.8.17: {}
+  baseline-browser-mapping@2.8.18: {}
 
   better-path-resolve@1.0.0:
     dependencies:
@@ -4511,7 +4511,7 @@ snapshots:
 
   browserslist@4.26.3:
     dependencies:
-      baseline-browser-mapping: 2.8.17
+      baseline-browser-mapping: 2.8.18
       caniuse-lite: 1.0.30001751
       electron-to-chromium: 1.5.237
       node-releases: 2.0.25
@@ -5041,7 +5041,7 @@ snapshots:
 
   graphemer@1.4.0: {}
 
-  happy-dom@20.0.4:
+  happy-dom@20.0.7:
     dependencies:
       '@types/node': 20.19.22
       '@types/whatwg-mimetype': 3.0.2
@@ -6150,7 +6150,7 @@ snapshots:
       '@types/node': 24.8.1
       fsevents: 2.3.3
 
-  vitest@3.2.4(@types/node@24.8.1)(happy-dom@20.0.4):
+  vitest@3.2.4(@types/node@24.8.1)(happy-dom@20.0.7):
     dependencies:
       '@types/chai': 5.2.2
       '@vitest/expect': 3.2.4
@@ -6177,7 +6177,7 @@ snapshots:
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/node': 24.8.1
-      happy-dom: 20.0.4
+      happy-dom: 20.0.7
     transitivePeerDependencies:
       - jiti
       - less
