@@ -60,7 +60,7 @@
         "eslint": "^9.35.0",
         "happy-dom": "^20.0.0",
         "prettier": "^3.6.2",
-        "rimraf": "6.0.1",
+        "rimraf": "6.1.0",
         "tsup": "^8.5.0",
         "typescript": "^5.9.2",
         "vitest": "^4.0.1"
