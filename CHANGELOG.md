@@ -1,5 +1,11 @@
 # @codama/renderers-rust
 
+## 1.2.8
+
+### Patch Changes
+
+- [#61](https://github.com/codama-idl/renderers-rust/pull/61) [`8d51891`](https://github.com/codama-idl/renderers-rust/commit/8d51891aa8597b27cf6cfa77771ead65652ccc2a) Thanks [@lorisleiva](https://github.com/lorisleiva)! - Use latest RenderMap type from renderers-core
+
 ## 1.2.7
 
 ### Patch Changes
