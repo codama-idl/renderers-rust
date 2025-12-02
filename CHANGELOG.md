@@ -1,5 +1,11 @@
 # @codama/renderers-rust
 
+## 1.2.9
+
+### Patch Changes
+
+- [#72](https://github.com/codama-idl/renderers-rust/pull/72) [`08d6409`](https://github.com/codama-idl/renderers-rust/commit/08d6409508d6e3b32f927e08f0b5641a1d6f1a8d) Thanks [@lorisleiva](https://github.com/lorisleiva)! - Enable Rollup treeshaking pass
+
 ## 1.2.8
 
 ### Patch Changes
