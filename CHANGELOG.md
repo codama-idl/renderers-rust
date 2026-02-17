@@ -1,5 +1,39 @@
 # @codama/renderers-rust
 
+## 2.0.0
+
+### Major Changes
+
+- [#85](https://github.com/codama-idl/renderers-rust/pull/85) [`44dacca`](https://github.com/codama-idl/renderers-rust/commit/44dacca3f714915bce69598fb437a0d74e39306d) Thanks [@lorisleiva](https://github.com/lorisleiva)! - Refactor `renderVisitor` to use `crateFolder` as its primary argument instead of the generated output path. The generated folder is now derived internally using a new `generatedFolder` option (defaults to `'src/generated'`). Remove the `crateFolder` option as it is no longer needed.
+
+    **BREAKING CHANGES**
+
+    **First argument of `renderVisitor` changed from output path to crate folder.** The function now takes the crate folder (where `Cargo.toml` lives) and derives the generated output path internally.
+
+    ```diff
+    - const visitor = renderVisitor('clients/rust/src/generated', {
+    -     crateFolder: 'clients/rust',
+    - });
+    + const visitor = renderVisitor('clients/rust');
+    ```
+
+    **`crateFolder` option removed.** It is replaced by the first argument of `renderVisitor`.
+
+    **New `generatedFolder` option.** Defaults to `'src/generated'` and can be customized to change the output path relative to the crate folder.
+
+    ```diff
+    - const visitor = renderVisitor('clients/rust/my/custom/path', {
+    -     crateFolder: 'clients/rust',
+    - });
+    + const visitor = renderVisitor('clients/rust', {
+    +     generatedFolder: 'my/custom/path',
+    + });
+    ```
+
+### Patch Changes
+
+- [#70](https://github.com/codama-idl/renderers-rust/pull/70) [`f0fbbb0`](https://github.com/codama-idl/renderers-rust/commit/f0fbbb01f677e512e70ce53f25e808336ab67bf4) Thanks [@lorisleiva](https://github.com/lorisleiva)! - Add `syncCargoToml` and `dependencyVersions` options in order to create or update the Cargo.toml of the Rust crate when generating its code.
+
 ## 1.2.9
 
 ### Patch Changes
