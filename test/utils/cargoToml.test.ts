@@ -8,6 +8,7 @@ import {
     DEFAULT_DEPENDENCY_VERSIONS,
     Fragment,
     getUsedDependencyVersions,
+    PEER_DEPENDENCIES,
     shouldUpdateRange,
     updateExistingCargoToml,
 } from '../../src/utils';
@@ -280,5 +281,76 @@ describe('shouldUpdateRange', () => {
     test('it handles equal versions like locked versions', () => {
         expect(shouldUpdateRange('module', '=1.0.0', '=1.1.0')).toBe(true);
         expect(shouldUpdateRange('module', '=1.1.0', '=1.0.0')).toBe(false);
+    });
+});
+
+describe('peer dependencies', () => {
+    test('it includes num-traits when num-derive is used via derive attribute', () => {
+        // Simulates generated code containing `#[derive(num_derive::FromPrimitive)]`.
+        // The content scanner detects `num_derive` but `num_traits` never appears
+        // in the rendered source — it's only referenced by the proc-macro expansion.
+        const renderMap = createRenderMap({
+            'my_enum.rs': fragment(
+                '#[derive(num_derive::FromPrimitive)]\npub enum MyEnum { A, B, C }',
+            ),
+        });
+
+        const result = getUsedDependencyVersions(renderMap, {}, {});
+        expect(result).toHaveProperty('num-derive', DEFAULT_DEPENDENCY_VERSIONS['num-derive']);
+        expect(result).toHaveProperty('num-traits', DEFAULT_DEPENDENCY_VERSIONS['num-traits']);
+    });
+
+    test('it includes num-traits when num-derive is used via ImportMap', () => {
+        // Simulates the trait renderer adding `num_derive::FromPrimitive` to
+        // the ImportMap (when useFullyQualifiedName is false).
+        const renderMap = createRenderMap({
+            'my_enum.rs': use('num_derive::FromPrimitive'),
+        });
+
+        const result = getUsedDependencyVersions(renderMap, {}, {});
+        expect(result).toHaveProperty('num-derive', DEFAULT_DEPENDENCY_VERSIONS['num-derive']);
+        expect(result).toHaveProperty('num-traits', DEFAULT_DEPENDENCY_VERSIONS['num-traits']);
+    });
+
+    test('it does not duplicate num-traits if already explicitly used', () => {
+        const renderMap = createRenderMap({
+            'my_enum.rs': {
+                content: '#[derive(num_derive::FromPrimitive)]\npub enum MyEnum { A }',
+                imports: new ImportMap().add('num_traits::FromPrimitive'),
+            },
+        });
+
+        const result = getUsedDependencyVersions(renderMap, {}, {});
+        expect(result).toHaveProperty('num-derive');
+        expect(result).toHaveProperty('num-traits');
+        // Ensure no duplicate keys — Object.keys is sufficient since keys are unique.
+        const numTraitsEntries = Object.keys(result).filter(k => k === 'num-traits');
+        expect(numTraitsEntries).toHaveLength(1);
+    });
+
+    test('it respects user-provided dependencyVersions for peer dependencies', () => {
+        const renderMap = createRenderMap({
+            'my_enum.rs': fragment('#[derive(num_derive::FromPrimitive)]\npub enum MyEnum { A }'),
+        });
+        const customVersions = { 'num-traits': '^0.3' };
+
+        const result = getUsedDependencyVersions(renderMap, {}, customVersions);
+        expect(result['num-traits']).toBe('^0.3');
+    });
+
+    test('it does not include peer dependencies when the parent is not used', () => {
+        const renderMap = createRenderMap({
+            'my_struct.rs': use('borsh::BorshSerialize'),
+        });
+
+        const result = getUsedDependencyVersions(renderMap, {}, {});
+        expect(result).toHaveProperty('borsh');
+        expect(result).not.toHaveProperty('num-derive');
+        expect(result).not.toHaveProperty('num-traits');
+    });
+
+    test('PEER_DEPENDENCIES maps num-derive to num-traits', () => {
+        expect(PEER_DEPENDENCIES).toHaveProperty('num-derive');
+        expect(PEER_DEPENDENCIES['num-derive']).toContain('num-traits');
     });
 });
