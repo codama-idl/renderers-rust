@@ -64,14 +64,14 @@ pub fn fetch_all_nonce(
 ) -> Result<Vec<crate::shared::DecodedAccount<Nonce>>, std::io::Error> {
     let accounts = rpc
         .get_multiple_accounts(addresses)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        .map_err(|e| std::io::Error::other(e.to_string()))?;
     let mut decoded_accounts: Vec<crate::shared::DecodedAccount<Nonce>> = Vec::new();
     for i in 0..addresses.len() {
         let address = addresses[i];
-        let account = accounts[i].as_ref().ok_or(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            format!("Account not found: {}", address),
-        ))?;
+        let account = accounts[i].as_ref().ok_or(std::io::Error::other(format!(
+            "Account not found: {}",
+            address
+        )))?;
         let data = Nonce::from_bytes(&account.data)?;
         decoded_accounts.push(crate::shared::DecodedAccount {
             address,
@@ -98,7 +98,7 @@ pub fn fetch_all_maybe_nonce(
 ) -> Result<Vec<crate::shared::MaybeAccount<Nonce>>, std::io::Error> {
     let accounts = rpc
         .get_multiple_accounts(addresses)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        .map_err(|e| std::io::Error::other(e.to_string()))?;
     let mut decoded_accounts: Vec<crate::shared::MaybeAccount<Nonce>> = Vec::new();
     for i in 0..addresses.len() {
         let address = addresses[i];
