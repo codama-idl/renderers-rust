@@ -72,7 +72,7 @@ pub fn fetch_all_guard_v1(
     for i in 0..addresses.len() {
         let address = addresses[i];
         let account = accounts[i].as_ref().ok_or(std::io::Error::other(format!(
-            "Account not found: {}",
+            "Account not found: {address}",
             address
         )))?;
         let data = GuardV1::from_bytes(&account.data)?;

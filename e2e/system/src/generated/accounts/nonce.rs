@@ -69,8 +69,7 @@ pub fn fetch_all_nonce(
     for i in 0..addresses.len() {
         let address = addresses[i];
         let account = accounts[i].as_ref().ok_or(std::io::Error::other(format!(
-            "Account not found: {}",
-            address
+            "Account not found: {address}",
         )))?;
         let data = Nonce::from_bytes(&account.data)?;
         decoded_accounts.push(crate::shared::DecodedAccount {
