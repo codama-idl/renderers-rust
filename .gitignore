@@ -25,3 +25,6 @@ yarn-error.log*
 .solana/
 test-ledger/
 target/
+
+# intellij ide
+.idea

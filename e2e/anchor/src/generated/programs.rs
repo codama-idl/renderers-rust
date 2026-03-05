@@ -5,7 +5,7 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
-use solana_pubkey::{pubkey, Pubkey};
+use solana_address::{address, Address};
 
 /// `wen_transfer_guard` program ID.
-pub const WEN_TRANSFER_GUARD_ID: Pubkey = pubkey!("LockdqYQ9X2kwtWB99ioSbxubAmEi8o9jqYwbXgrrRw");
+pub const WEN_TRANSFER_GUARD_ID: Address = address!("LockdqYQ9X2kwtWB99ioSbxubAmEi8o9jqYwbXgrrRw");

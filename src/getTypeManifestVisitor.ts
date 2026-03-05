@@ -219,13 +219,13 @@ export function getTypeManifestVisitor(options: {
                     parentName = originalParentName;
 
                     let derive = '';
-                    if (parentNode && childManifest.type === '(Pubkey)') {
+                    if (parentNode && childManifest.type === '(Address)') {
                         derive = getSerdeFieldAttribute(
                             'serde_with::As::<serde_with::DisplayFromStr>',
                             parentNode,
                             traitOptions,
                         );
-                    } else if (parentNode && childManifest.type === '(Vec<Pubkey>)') {
+                    } else if (parentNode && childManifest.type === '(Vec<Address>)') {
                         derive = getSerdeFieldAttribute(
                             'serde_with::As::<Vec<serde_with::DisplayFromStr>>',
                             parentNode,
@@ -312,9 +312,9 @@ export function getTypeManifestVisitor(options: {
 
                 visitPublicKeyType() {
                     return {
-                        imports: new ImportMap().add('solana_pubkey::Pubkey'),
+                        imports: new ImportMap().add('solana_address::Address'),
                         nestedStructs: [],
-                        type: 'Pubkey',
+                        type: 'Address',
                     };
                 },
 
@@ -407,13 +407,13 @@ export function getTypeManifestVisitor(options: {
 
                     let derive = '';
                     if (parentNode) {
-                        if (fieldManifest.type === 'Pubkey') {
+                        if (fieldManifest.type === 'Address') {
                             derive = getSerdeFieldAttribute(
                                 'serde_with::As::<serde_with::DisplayFromStr>',
                                 parentNode,
                                 traitOptions,
                             );
-                        } else if (fieldManifest.type === 'Vec<Pubkey>') {
+                        } else if (fieldManifest.type === 'Vec<Address>') {
                             derive = getSerdeFieldAttribute(
                                 'serde_with::As::<Vec<serde_with::DisplayFromStr>>',
                                 parentNode,

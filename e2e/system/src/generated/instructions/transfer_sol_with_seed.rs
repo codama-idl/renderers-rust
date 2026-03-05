@@ -7,18 +7,18 @@
 
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use solana_pubkey::Pubkey;
+use solana_address::Address;
 
 pub const TRANSFER_SOL_WITH_SEED_DISCRIMINATOR: u32 = 11;
 
 /// Accounts.
 #[derive(Debug)]
 pub struct TransferSolWithSeed {
-    pub source: solana_pubkey::Pubkey,
+    pub source: solana_address::Address,
 
-    pub base_account: solana_pubkey::Pubkey,
+    pub base_account: solana_address::Address,
 
-    pub destination: solana_pubkey::Pubkey,
+    pub destination: solana_address::Address,
 }
 
 impl TransferSolWithSeed {
@@ -87,7 +87,7 @@ impl Default for TransferSolWithSeedInstructionData {
 pub struct TransferSolWithSeedInstructionArgs {
     pub amount: u64,
     pub from_seed: String,
-    pub from_owner: Pubkey,
+    pub from_owner: Address,
 }
 
 impl TransferSolWithSeedInstructionArgs {
@@ -105,12 +105,12 @@ impl TransferSolWithSeedInstructionArgs {
 ///   2. `[writable]` destination
 #[derive(Clone, Debug, Default)]
 pub struct TransferSolWithSeedBuilder {
-    source: Option<solana_pubkey::Pubkey>,
-    base_account: Option<solana_pubkey::Pubkey>,
-    destination: Option<solana_pubkey::Pubkey>,
+    source: Option<solana_address::Address>,
+    base_account: Option<solana_address::Address>,
+    destination: Option<solana_address::Address>,
     amount: Option<u64>,
     from_seed: Option<String>,
-    from_owner: Option<Pubkey>,
+    from_owner: Option<Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
@@ -119,17 +119,17 @@ impl TransferSolWithSeedBuilder {
         Self::default()
     }
     #[inline(always)]
-    pub fn source(&mut self, source: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn source(&mut self, source: solana_address::Address) -> &mut Self {
         self.source = Some(source);
         self
     }
     #[inline(always)]
-    pub fn base_account(&mut self, base_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn base_account(&mut self, base_account: solana_address::Address) -> &mut Self {
         self.base_account = Some(base_account);
         self
     }
     #[inline(always)]
-    pub fn destination(&mut self, destination: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn destination(&mut self, destination: solana_address::Address) -> &mut Self {
         self.destination = Some(destination);
         self
     }
@@ -144,7 +144,7 @@ impl TransferSolWithSeedBuilder {
         self
     }
     #[inline(always)]
-    pub fn from_owner(&mut self, from_owner: Pubkey) -> &mut Self {
+    pub fn from_owner(&mut self, from_owner: Address) -> &mut Self {
         self.from_owner = Some(from_owner);
         self
     }
@@ -346,7 +346,7 @@ impl<'a, 'b> TransferSolWithSeedCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn from_owner(&mut self, from_owner: Pubkey) -> &mut Self {
+    pub fn from_owner(&mut self, from_owner: Address) -> &mut Self {
         self.instruction.from_owner = Some(from_owner);
         self
     }
@@ -428,7 +428,7 @@ struct TransferSolWithSeedCpiBuilderInstruction<'a, 'b> {
     destination: Option<&'b solana_account_info::AccountInfo<'a>>,
     amount: Option<u64>,
     from_seed: Option<String>,
-    from_owner: Option<Pubkey>,
+    from_owner: Option<Address>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

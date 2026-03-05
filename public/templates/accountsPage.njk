@@ -60,8 +60,8 @@ impl {{ account.name | pascalCase }} {
           {% endfor %}
       {% endif %}
       bump: u8,
-    ) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
-      solana_pubkey::Pubkey::create_program_address(
+    ) -> Result<solana_address::Address, solana_address::error::AddressError> {
+      solana_address::Address::create_program_address(
         &[
           {% for seed in seeds %}
             {% if seed.kind === 'constantPdaSeedNode' and seed.value.kind === 'programIdValueNode' %}
@@ -92,8 +92,8 @@ impl {{ account.name | pascalCase }} {
           {% endif %}
         {% endfor %}
     {% endif %}
-    ) -> (solana_pubkey::Pubkey, u8) {
-      solana_pubkey::Pubkey::find_program_address(
+    ) -> (solana_address::Address, u8) {
+      solana_address::Address::find_program_address(
         &[
           {% for seed in seeds %}
             {% if seed.kind === 'constantPdaSeedNode' and seed.value.kind === 'programIdValueNode' %}
@@ -133,7 +133,7 @@ impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for {{ account.name | pa
 #[cfg(feature = "fetch")]
 pub fn fetch_{{ account.name | snakeCase }}(
   rpc: &solana_client::rpc_client::RpcClient,
-  address: &solana_pubkey::Pubkey,
+  address: &solana_address::Address,
 ) -> Result<crate::shared::DecodedAccount<{{ account.name | pascalCase }}>, std::io::Error> {
   let accounts = fetch_all_{{ account.name | snakeCase }}(rpc, &[*address])?;
   Ok(accounts[0].clone())
@@ -142,7 +142,7 @@ pub fn fetch_{{ account.name | snakeCase }}(
 #[cfg(feature = "fetch")]
 pub fn fetch_all_{{ account.name | snakeCase }}(
   rpc: &solana_client::rpc_client::RpcClient,
-  addresses: &[solana_pubkey::Pubkey],
+  addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::DecodedAccount<{{ account.name | pascalCase }}>>, std::io::Error> {
     let accounts = rpc.get_multiple_accounts(addresses)
       .map_err(|e| std::io::Error::other(e.to_string()))?;
@@ -160,7 +160,7 @@ pub fn fetch_all_{{ account.name | snakeCase }}(
 #[cfg(feature = "fetch")]
 pub fn fetch_maybe_{{ account.name | snakeCase }}(
   rpc: &solana_client::rpc_client::RpcClient,
-  address: &solana_pubkey::Pubkey,
+  address: &solana_address::Address,
 ) -> Result<crate::shared::MaybeAccount<{{ account.name | pascalCase }}>, std::io::Error> {
     let accounts = fetch_all_maybe_{{ account.name | snakeCase }}(rpc, &[*address])?;
     Ok(accounts[0].clone())
@@ -169,7 +169,7 @@ pub fn fetch_maybe_{{ account.name | snakeCase }}(
 #[cfg(feature = "fetch")]
 pub fn fetch_all_maybe_{{ account.name | snakeCase }}(
   rpc: &solana_client::rpc_client::RpcClient,
-  addresses: &[solana_pubkey::Pubkey],
+  addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::MaybeAccount<{{ account.name | pascalCase }}>>, std::io::Error> {
     let accounts = rpc.get_multiple_accounts(addresses)
       .map_err(|e| std::io::Error::other(e.to_string()))?;
@@ -199,8 +199,10 @@ pub fn fetch_all_maybe_{{ account.name | snakeCase }}(
 
   #[cfg(feature = "anchor")]
   impl anchor_lang::Owner for {{ account.name | pascalCase }} {
-      fn owner() -> Pubkey {
-        crate::{{ program.name | snakeCase | upper }}_ID
+      fn owner() -> anchor_lang::solana_program::pubkey::Pubkey {
+        anchor_lang::solana_program::pubkey::Pubkey::from(
+          crate::{{ program.name | snakeCase | upper }}_ID.to_bytes()
+        )
       }
   }
 

@@ -7,16 +7,16 @@
 
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use solana_pubkey::Pubkey;
+use solana_address::Address;
 
 pub const ASSIGN_WITH_SEED_DISCRIMINATOR: u32 = 10;
 
 /// Accounts.
 #[derive(Debug)]
 pub struct AssignWithSeed {
-    pub account: solana_pubkey::Pubkey,
+    pub account: solana_address::Address,
 
-    pub base_account: solana_pubkey::Pubkey,
+    pub base_account: solana_address::Address,
 }
 
 impl AssignWithSeed {
@@ -77,9 +77,9 @@ impl Default for AssignWithSeedInstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct AssignWithSeedInstructionArgs {
-    pub base: Pubkey,
+    pub base: Address,
     pub seed: String,
-    pub program_address: Pubkey,
+    pub program_address: Address,
 }
 
 impl AssignWithSeedInstructionArgs {
@@ -96,11 +96,11 @@ impl AssignWithSeedInstructionArgs {
 ///   1. `[signer]` base_account
 #[derive(Clone, Debug, Default)]
 pub struct AssignWithSeedBuilder {
-    account: Option<solana_pubkey::Pubkey>,
-    base_account: Option<solana_pubkey::Pubkey>,
-    base: Option<Pubkey>,
+    account: Option<solana_address::Address>,
+    base_account: Option<solana_address::Address>,
+    base: Option<Address>,
     seed: Option<String>,
-    program_address: Option<Pubkey>,
+    program_address: Option<Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
@@ -109,17 +109,17 @@ impl AssignWithSeedBuilder {
         Self::default()
     }
     #[inline(always)]
-    pub fn account(&mut self, account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn account(&mut self, account: solana_address::Address) -> &mut Self {
         self.account = Some(account);
         self
     }
     #[inline(always)]
-    pub fn base_account(&mut self, base_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn base_account(&mut self, base_account: solana_address::Address) -> &mut Self {
         self.base_account = Some(base_account);
         self
     }
     #[inline(always)]
-    pub fn base(&mut self, base: Pubkey) -> &mut Self {
+    pub fn base(&mut self, base: Address) -> &mut Self {
         self.base = Some(base);
         self
     }
@@ -129,7 +129,7 @@ impl AssignWithSeedBuilder {
         self
     }
     #[inline(always)]
-    pub fn program_address(&mut self, program_address: Pubkey) -> &mut Self {
+    pub fn program_address(&mut self, program_address: Address) -> &mut Self {
         self.program_address = Some(program_address);
         self
     }
@@ -301,7 +301,7 @@ impl<'a, 'b> AssignWithSeedCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn base(&mut self, base: Pubkey) -> &mut Self {
+    pub fn base(&mut self, base: Address) -> &mut Self {
         self.instruction.base = Some(base);
         self
     }
@@ -311,7 +311,7 @@ impl<'a, 'b> AssignWithSeedCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn program_address(&mut self, program_address: Pubkey) -> &mut Self {
+    pub fn program_address(&mut self, program_address: Address) -> &mut Self {
         self.instruction.program_address = Some(program_address);
         self
     }
@@ -381,9 +381,9 @@ struct AssignWithSeedCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
     account: Option<&'b solana_account_info::AccountInfo<'a>>,
     base_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    base: Option<Pubkey>,
+    base: Option<Address>,
     seed: Option<String>,
-    program_address: Option<Pubkey>,
+    program_address: Option<Address>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

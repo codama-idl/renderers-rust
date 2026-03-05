@@ -7,18 +7,18 @@
 
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use solana_pubkey::Pubkey;
+use solana_address::Address;
 
 pub const CREATE_ACCOUNT_WITH_SEED_DISCRIMINATOR: u32 = 3;
 
 /// Accounts.
 #[derive(Debug)]
 pub struct CreateAccountWithSeed {
-    pub payer: solana_pubkey::Pubkey,
+    pub payer: solana_address::Address,
 
-    pub new_account: solana_pubkey::Pubkey,
+    pub new_account: solana_address::Address,
 
-    pub base_account: solana_pubkey::Pubkey,
+    pub base_account: solana_address::Address,
 }
 
 impl CreateAccountWithSeed {
@@ -85,11 +85,11 @@ impl Default for CreateAccountWithSeedInstructionData {
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CreateAccountWithSeedInstructionArgs {
-    pub base: Pubkey,
+    pub base: Address,
     pub seed: String,
     pub amount: u64,
     pub space: u64,
-    pub program_address: Pubkey,
+    pub program_address: Address,
 }
 
 impl CreateAccountWithSeedInstructionArgs {
@@ -107,14 +107,14 @@ impl CreateAccountWithSeedInstructionArgs {
 ///   2. `[signer]` base_account
 #[derive(Clone, Debug, Default)]
 pub struct CreateAccountWithSeedBuilder {
-    payer: Option<solana_pubkey::Pubkey>,
-    new_account: Option<solana_pubkey::Pubkey>,
-    base_account: Option<solana_pubkey::Pubkey>,
-    base: Option<Pubkey>,
+    payer: Option<solana_address::Address>,
+    new_account: Option<solana_address::Address>,
+    base_account: Option<solana_address::Address>,
+    base: Option<Address>,
     seed: Option<String>,
     amount: Option<u64>,
     space: Option<u64>,
-    program_address: Option<Pubkey>,
+    program_address: Option<Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
@@ -123,22 +123,22 @@ impl CreateAccountWithSeedBuilder {
         Self::default()
     }
     #[inline(always)]
-    pub fn payer(&mut self, payer: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
         self.payer = Some(payer);
         self
     }
     #[inline(always)]
-    pub fn new_account(&mut self, new_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn new_account(&mut self, new_account: solana_address::Address) -> &mut Self {
         self.new_account = Some(new_account);
         self
     }
     #[inline(always)]
-    pub fn base_account(&mut self, base_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn base_account(&mut self, base_account: solana_address::Address) -> &mut Self {
         self.base_account = Some(base_account);
         self
     }
     #[inline(always)]
-    pub fn base(&mut self, base: Pubkey) -> &mut Self {
+    pub fn base(&mut self, base: Address) -> &mut Self {
         self.base = Some(base);
         self
     }
@@ -158,7 +158,7 @@ impl CreateAccountWithSeedBuilder {
         self
     }
     #[inline(always)]
-    pub fn program_address(&mut self, program_address: Pubkey) -> &mut Self {
+    pub fn program_address(&mut self, program_address: Address) -> &mut Self {
         self.program_address = Some(program_address);
         self
     }
@@ -354,7 +354,7 @@ impl<'a, 'b> CreateAccountWithSeedCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn base(&mut self, base: Pubkey) -> &mut Self {
+    pub fn base(&mut self, base: Address) -> &mut Self {
         self.instruction.base = Some(base);
         self
     }
@@ -374,7 +374,7 @@ impl<'a, 'b> CreateAccountWithSeedCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn program_address(&mut self, program_address: Pubkey) -> &mut Self {
+    pub fn program_address(&mut self, program_address: Address) -> &mut Self {
         self.instruction.program_address = Some(program_address);
         self
     }
@@ -452,11 +452,11 @@ struct CreateAccountWithSeedCpiBuilderInstruction<'a, 'b> {
     payer: Option<&'b solana_account_info::AccountInfo<'a>>,
     new_account: Option<&'b solana_account_info::AccountInfo<'a>>,
     base_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    base: Option<Pubkey>,
+    base: Option<Address>,
     seed: Option<String>,
     amount: Option<u64>,
     space: Option<u64>,
-    program_address: Option<Pubkey>,
+    program_address: Option<Address>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

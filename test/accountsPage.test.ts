@@ -101,7 +101,7 @@ test('it renders constant PDA seeds as prefix consts', () => {
     // Then we expect the following const helpers for constant seeds.
     codeContains(getFromRenderMap(renderMap, 'accounts/test_account.rs').content, [
         '///   0. `TestAccount::PREFIX.0`',
-        '///   1. my_account (`Pubkey`)',
+        '///   1. my_account (`Address`)',
         '///   2. `TestAccount::PREFIX.1`',
         /pub const PREFIX: \(\s*&'static \[u8\],\s*&'static \[u8\],\s*\) = \(\s*"myPrefix"\.as_bytes\(\),\s*42\.as_bytes\(\),\s*\)/,
     ]);

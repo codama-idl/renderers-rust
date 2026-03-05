@@ -5,7 +5,7 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
-use solana_pubkey::{pubkey, Pubkey};
+use solana_address::{address, Address};
 
 /// `dummy` program ID.
-pub const DUMMY_ID: Pubkey = pubkey!("Dummy11111111111111111111111111111111111111");
+pub const DUMMY_ID: Address = address!("Dummy11111111111111111111111111111111111111");

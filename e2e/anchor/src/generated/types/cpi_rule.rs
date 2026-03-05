@@ -7,7 +7,7 @@
 
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use solana_pubkey::Pubkey;
+use solana_address::Address;
 
 /// Controls which protocols can interact with the token by
 /// enforcing Allow and Deny lists.
@@ -18,10 +18,10 @@ pub enum CpiRule {
         feature = "serde",
         serde(with = "serde_with::As::<Vec<serde_with::DisplayFromStr>>")
     )]
-    Allow(Vec<Pubkey>),
+    Allow(Vec<Address>),
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<Vec<serde_with::DisplayFromStr>>")
     )]
-    Deny(Vec<Pubkey>),
+    Deny(Vec<Address>),
 }

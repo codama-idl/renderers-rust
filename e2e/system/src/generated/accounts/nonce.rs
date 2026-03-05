@@ -9,7 +9,7 @@ use crate::generated::types::NonceState;
 use crate::generated::types::NonceVersion;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use solana_pubkey::Pubkey;
+use solana_address::Address;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -20,12 +20,12 @@ pub struct Nonce {
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
-    pub authority: Pubkey,
+    pub authority: Address,
     #[cfg_attr(
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
-    pub blockhash: Pubkey,
+    pub blockhash: Address,
     pub lamports_per_signature: u64,
 }
 
@@ -51,7 +51,7 @@ impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for Nonce {
 #[cfg(feature = "fetch")]
 pub fn fetch_nonce(
     rpc: &solana_client::rpc_client::RpcClient,
-    address: &solana_pubkey::Pubkey,
+    address: &solana_address::Address,
 ) -> Result<crate::shared::DecodedAccount<Nonce>, std::io::Error> {
     let accounts = fetch_all_nonce(rpc, &[*address])?;
     Ok(accounts[0].clone())
@@ -60,7 +60,7 @@ pub fn fetch_nonce(
 #[cfg(feature = "fetch")]
 pub fn fetch_all_nonce(
     rpc: &solana_client::rpc_client::RpcClient,
-    addresses: &[solana_pubkey::Pubkey],
+    addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::DecodedAccount<Nonce>>, std::io::Error> {
     let accounts = rpc
         .get_multiple_accounts(addresses)
@@ -84,7 +84,7 @@ pub fn fetch_all_nonce(
 #[cfg(feature = "fetch")]
 pub fn fetch_maybe_nonce(
     rpc: &solana_client::rpc_client::RpcClient,
-    address: &solana_pubkey::Pubkey,
+    address: &solana_address::Address,
 ) -> Result<crate::shared::MaybeAccount<Nonce>, std::io::Error> {
     let accounts = fetch_all_maybe_nonce(rpc, &[*address])?;
     Ok(accounts[0].clone())
@@ -93,7 +93,7 @@ pub fn fetch_maybe_nonce(
 #[cfg(feature = "fetch")]
 pub fn fetch_all_maybe_nonce(
     rpc: &solana_client::rpc_client::RpcClient,
-    addresses: &[solana_pubkey::Pubkey],
+    addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::MaybeAccount<Nonce>>, std::io::Error> {
     let accounts = rpc
         .get_multiple_accounts(addresses)
@@ -129,8 +129,8 @@ impl anchor_lang::AccountSerialize for Nonce {}
 
 #[cfg(feature = "anchor")]
 impl anchor_lang::Owner for Nonce {
-    fn owner() -> Pubkey {
-        crate::SYSTEM_ID
+    fn owner() -> anchor_lang::solana_program::pubkey::Pubkey {
+        anchor_lang::solana_program::pubkey::Pubkey::from(crate::SYSTEM_ID.to_bytes())
     }
 }
 

@@ -56,13 +56,13 @@ describe('getUsedDependencyVersions', () => {
 
     test('it automatically includes solana SDK dependencies', () => {
         const renderMap = createRenderMap({
-            'mint.rs': use('solana_pubkey::Pubkey'),
+            'mint.rs': use('solana_address::Address'),
             'token.rs': use('solana_instruction::AccountMeta'),
         });
 
         expect(getUsedDependencyVersions(renderMap, {}, {})).toEqual({
             'solana-instruction': DEFAULT_DEPENDENCY_VERSIONS['solana-instruction'],
-            'solana-pubkey': DEFAULT_DEPENDENCY_VERSIONS['solana-pubkey'],
+            'solana-address': DEFAULT_DEPENDENCY_VERSIONS['solana-address'],
         });
     });
 
@@ -79,13 +79,13 @@ describe('getUsedDependencyVersions', () => {
 
     test('it identifies used dependencies from the content itself', () => {
         const renderMap = createRenderMap({
-            'mint.rs': fragment('pub Struct Mint(solana_pubkey::Pubkey);'),
+            'mint.rs': fragment('pub Struct Mint(solana_address::Address);'),
             'token.rs': fragment('pub Struct Token(solana_instruction::AccountMeta);'),
         });
 
         expect(getUsedDependencyVersions(renderMap, {}, {})).toEqual({
             'solana-instruction': DEFAULT_DEPENDENCY_VERSIONS['solana-instruction'],
-            'solana-pubkey': DEFAULT_DEPENDENCY_VERSIONS['solana-pubkey'],
+            'solana-address': DEFAULT_DEPENDENCY_VERSIONS['solana-address'],
         });
     });
 });

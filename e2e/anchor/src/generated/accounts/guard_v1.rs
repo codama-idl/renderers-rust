@@ -10,7 +10,7 @@ use crate::generated::types::MetadataAdditionalFieldRule;
 use crate::generated::types::TransferAmountRule;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use solana_pubkey::Pubkey;
+use solana_address::Address;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -21,7 +21,7 @@ pub struct GuardV1 {
         feature = "serde",
         serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
     )]
-    pub mint: Pubkey,
+    pub mint: Address,
     /// Bump seed for the guard account.
     pub bump: u8,
     /// CPI ruleset for the guard.
@@ -54,7 +54,7 @@ impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for GuardV1 {
 #[cfg(feature = "fetch")]
 pub fn fetch_guard_v1(
     rpc: &solana_client::rpc_client::RpcClient,
-    address: &solana_pubkey::Pubkey,
+    address: &solana_address::Address,
 ) -> Result<crate::shared::DecodedAccount<GuardV1>, std::io::Error> {
     let accounts = fetch_all_guard_v1(rpc, &[*address])?;
     Ok(accounts[0].clone())
@@ -63,7 +63,7 @@ pub fn fetch_guard_v1(
 #[cfg(feature = "fetch")]
 pub fn fetch_all_guard_v1(
     rpc: &solana_client::rpc_client::RpcClient,
-    addresses: &[solana_pubkey::Pubkey],
+    addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::DecodedAccount<GuardV1>>, std::io::Error> {
     let accounts = rpc
         .get_multiple_accounts(addresses)
@@ -87,7 +87,7 @@ pub fn fetch_all_guard_v1(
 #[cfg(feature = "fetch")]
 pub fn fetch_maybe_guard_v1(
     rpc: &solana_client::rpc_client::RpcClient,
-    address: &solana_pubkey::Pubkey,
+    address: &solana_address::Address,
 ) -> Result<crate::shared::MaybeAccount<GuardV1>, std::io::Error> {
     let accounts = fetch_all_maybe_guard_v1(rpc, &[*address])?;
     Ok(accounts[0].clone())
@@ -96,7 +96,7 @@ pub fn fetch_maybe_guard_v1(
 #[cfg(feature = "fetch")]
 pub fn fetch_all_maybe_guard_v1(
     rpc: &solana_client::rpc_client::RpcClient,
-    addresses: &[solana_pubkey::Pubkey],
+    addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::MaybeAccount<GuardV1>>, std::io::Error> {
     let accounts = rpc
         .get_multiple_accounts(addresses)
@@ -132,8 +132,8 @@ impl anchor_lang::AccountSerialize for GuardV1 {}
 
 #[cfg(feature = "anchor")]
 impl anchor_lang::Owner for GuardV1 {
-    fn owner() -> Pubkey {
-        crate::WEN_TRANSFER_GUARD_ID
+    fn owner() -> anchor_lang::solana_program::pubkey::Pubkey {
+        anchor_lang::solana_program::pubkey::Pubkey::from(crate::WEN_TRANSFER_GUARD_ID.to_bytes())
     }
 }
 

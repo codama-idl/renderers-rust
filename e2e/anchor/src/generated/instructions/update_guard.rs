@@ -16,17 +16,17 @@ pub const UPDATE_GUARD_DISCRIMINATOR: [u8; 8] = [51, 38, 175, 180, 25, 249, 39, 
 /// Accounts.
 #[derive(Debug)]
 pub struct UpdateGuard {
-    pub guard: solana_pubkey::Pubkey,
+    pub guard: solana_address::Address,
 
-    pub mint: solana_pubkey::Pubkey,
+    pub mint: solana_address::Address,
 
-    pub token_account: solana_pubkey::Pubkey,
+    pub token_account: solana_address::Address,
 
-    pub guard_authority: solana_pubkey::Pubkey,
+    pub guard_authority: solana_address::Address,
 
-    pub token_program: solana_pubkey::Pubkey,
+    pub token_program: solana_address::Address,
 
-    pub system_program: solana_pubkey::Pubkey,
+    pub system_program: solana_address::Address,
 }
 
 impl UpdateGuard {
@@ -124,12 +124,12 @@ impl UpdateGuardInstructionArgs {
 ///   5. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct UpdateGuardBuilder {
-    guard: Option<solana_pubkey::Pubkey>,
-    mint: Option<solana_pubkey::Pubkey>,
-    token_account: Option<solana_pubkey::Pubkey>,
-    guard_authority: Option<solana_pubkey::Pubkey>,
-    token_program: Option<solana_pubkey::Pubkey>,
-    system_program: Option<solana_pubkey::Pubkey>,
+    guard: Option<solana_address::Address>,
+    mint: Option<solana_address::Address>,
+    token_account: Option<solana_address::Address>,
+    guard_authority: Option<solana_address::Address>,
+    token_program: Option<solana_address::Address>,
+    system_program: Option<solana_address::Address>,
     cpi_rule: Option<CpiRule>,
     transfer_amount_rule: Option<TransferAmountRule>,
     additional_fields_rule: Option<Vec<MetadataAdditionalFieldRule>>,
@@ -141,34 +141,34 @@ impl UpdateGuardBuilder {
         Self::default()
     }
     #[inline(always)]
-    pub fn guard(&mut self, guard: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn guard(&mut self, guard: solana_address::Address) -> &mut Self {
         self.guard = Some(guard);
         self
     }
     #[inline(always)]
-    pub fn mint(&mut self, mint: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn mint(&mut self, mint: solana_address::Address) -> &mut Self {
         self.mint = Some(mint);
         self
     }
     #[inline(always)]
-    pub fn token_account(&mut self, token_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn token_account(&mut self, token_account: solana_address::Address) -> &mut Self {
         self.token_account = Some(token_account);
         self
     }
     #[inline(always)]
-    pub fn guard_authority(&mut self, guard_authority: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn guard_authority(&mut self, guard_authority: solana_address::Address) -> &mut Self {
         self.guard_authority = Some(guard_authority);
         self
     }
     /// `[optional account, default to 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb']`
     #[inline(always)]
-    pub fn token_program(&mut self, token_program: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn token_program(&mut self, token_program: solana_address::Address) -> &mut Self {
         self.token_program = Some(token_program);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
-    pub fn system_program(&mut self, system_program: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn system_program(&mut self, system_program: solana_address::Address) -> &mut Self {
         self.system_program = Some(system_program);
         self
     }
@@ -214,12 +214,12 @@ impl UpdateGuardBuilder {
             mint: self.mint.expect("mint is not set"),
             token_account: self.token_account.expect("token_account is not set"),
             guard_authority: self.guard_authority.expect("guard_authority is not set"),
-            token_program: self.token_program.unwrap_or(solana_pubkey::pubkey!(
+            token_program: self.token_program.unwrap_or(solana_address::address!(
                 "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
             )),
             system_program: self
                 .system_program
-                .unwrap_or(solana_pubkey::pubkey!("11111111111111111111111111111111")),
+                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
         };
         let args = UpdateGuardInstructionArgs {
             cpi_rule: self.cpi_rule.clone(),

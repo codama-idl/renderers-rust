@@ -13,17 +13,17 @@ pub const INITIALIZE_DISCRIMINATOR: [u8; 8] = [43, 34, 13, 49, 167, 88, 235, 235
 /// Accounts.
 #[derive(Debug)]
 pub struct Initialize {
-    pub extra_metas_account: solana_pubkey::Pubkey,
+    pub extra_metas_account: solana_address::Address,
 
-    pub guard: solana_pubkey::Pubkey,
+    pub guard: solana_address::Address,
 
-    pub mint: solana_pubkey::Pubkey,
+    pub mint: solana_address::Address,
 
-    pub transfer_hook_authority: solana_pubkey::Pubkey,
+    pub transfer_hook_authority: solana_address::Address,
 
-    pub system_program: solana_pubkey::Pubkey,
+    pub system_program: solana_address::Address,
 
-    pub payer: solana_pubkey::Pubkey,
+    pub payer: solana_address::Address,
 }
 
 impl Initialize {
@@ -103,12 +103,12 @@ impl Default for InitializeInstructionData {
 ///   5. `[writable, signer]` payer
 #[derive(Clone, Debug, Default)]
 pub struct InitializeBuilder {
-    extra_metas_account: Option<solana_pubkey::Pubkey>,
-    guard: Option<solana_pubkey::Pubkey>,
-    mint: Option<solana_pubkey::Pubkey>,
-    transfer_hook_authority: Option<solana_pubkey::Pubkey>,
-    system_program: Option<solana_pubkey::Pubkey>,
-    payer: Option<solana_pubkey::Pubkey>,
+    extra_metas_account: Option<solana_address::Address>,
+    guard: Option<solana_address::Address>,
+    mint: Option<solana_address::Address>,
+    transfer_hook_authority: Option<solana_address::Address>,
+    system_program: Option<solana_address::Address>,
+    payer: Option<solana_address::Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
@@ -117,36 +117,39 @@ impl InitializeBuilder {
         Self::default()
     }
     #[inline(always)]
-    pub fn extra_metas_account(&mut self, extra_metas_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn extra_metas_account(
+        &mut self,
+        extra_metas_account: solana_address::Address,
+    ) -> &mut Self {
         self.extra_metas_account = Some(extra_metas_account);
         self
     }
     #[inline(always)]
-    pub fn guard(&mut self, guard: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn guard(&mut self, guard: solana_address::Address) -> &mut Self {
         self.guard = Some(guard);
         self
     }
     #[inline(always)]
-    pub fn mint(&mut self, mint: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn mint(&mut self, mint: solana_address::Address) -> &mut Self {
         self.mint = Some(mint);
         self
     }
     #[inline(always)]
     pub fn transfer_hook_authority(
         &mut self,
-        transfer_hook_authority: solana_pubkey::Pubkey,
+        transfer_hook_authority: solana_address::Address,
     ) -> &mut Self {
         self.transfer_hook_authority = Some(transfer_hook_authority);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
-    pub fn system_program(&mut self, system_program: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn system_program(&mut self, system_program: solana_address::Address) -> &mut Self {
         self.system_program = Some(system_program);
         self
     }
     #[inline(always)]
-    pub fn payer(&mut self, payer: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
         self.payer = Some(payer);
         self
     }
@@ -178,7 +181,7 @@ impl InitializeBuilder {
                 .expect("transfer_hook_authority is not set"),
             system_program: self
                 .system_program
-                .unwrap_or(solana_pubkey::pubkey!("11111111111111111111111111111111")),
+                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
             payer: self.payer.expect("payer is not set"),
         };
 

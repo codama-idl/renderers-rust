@@ -26,8 +26,8 @@ test('it exports short vecs', () => {
 
     // Then we expect a short vec to be exported.
     codeContains(getFromRenderMap(renderMap, 'types/my_short_vec.rs').content, [
-        /pub type MyShortVec = ShortVec<Pubkey>;/,
-        /use solana_pubkey::Pubkey/,
+        /pub type MyShortVec = ShortVec<Address>;/,
+        /use solana_address::Address/,
         /use solana_short_vec::ShortVec/,
     ]);
     codeDoesNotContains(getFromRenderMap(renderMap, 'types/my_short_vec.rs').content, [
@@ -53,8 +53,8 @@ test('it exports short vecs as struct fields', () => {
 
     // Then we expect a short vec to be exported as a struct field.
     codeContains(getFromRenderMap(renderMap, 'types/my_short_vec.rs').content, [
-        /pub value: ShortVec<Pubkey>,/,
-        /use solana_pubkey::Pubkey/,
+        /pub value: ShortVec<Address>,/,
+        /use solana_address::Address/,
         /use solana_short_vec::ShortVec/,
     ]);
 });
