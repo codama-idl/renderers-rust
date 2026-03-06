@@ -2106,8 +2106,9 @@ dependencies = [
 
 [[package]]
 name = "kaigan"
-version = "0.4.0"
-source = "git+https://github.com/grod220/kaigan.git?branch=borsh-v1#3527e432f308005bb2acd0a681d9f45e3a6eb6e1"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "358444e00cb7d2efdbe986f90c05466f222e0554c38834d03d994b0705621ab0"
 dependencies = [
  "borsh 0.10.4",
  "borsh 1.5.7",

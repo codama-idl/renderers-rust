@@ -5,8 +5,7 @@ resolver = "2"
 [workspace.dependencies]
 anchor-lang = "~0.31"
 borsh = "^1.0"
-# TODO: Temporary until https://github.com/metaplex-foundation/kaigan/pull/10
-kaigan = { git = "https://github.com/grod220/kaigan.git", branch = "borsh-v1" }
+kaigan = "0.5.0"
 num-derive = "^0.4"
 num-traits = "^0.2"
 serde = "^1.0"
