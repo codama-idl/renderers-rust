@@ -61,8 +61,8 @@ describe('getUsedDependencyVersions', () => {
         });
 
         expect(getUsedDependencyVersions(renderMap, {}, {})).toEqual({
-            'solana-instruction': DEFAULT_DEPENDENCY_VERSIONS['solana-instruction'],
             'solana-address': DEFAULT_DEPENDENCY_VERSIONS['solana-address'],
+            'solana-instruction': DEFAULT_DEPENDENCY_VERSIONS['solana-instruction'],
         });
     });
 
@@ -84,8 +84,8 @@ describe('getUsedDependencyVersions', () => {
         });
 
         expect(getUsedDependencyVersions(renderMap, {}, {})).toEqual({
-            'solana-instruction': DEFAULT_DEPENDENCY_VERSIONS['solana-instruction'],
             'solana-address': DEFAULT_DEPENDENCY_VERSIONS['solana-address'],
+            'solana-instruction': DEFAULT_DEPENDENCY_VERSIONS['solana-instruction'],
         });
     });
 });
