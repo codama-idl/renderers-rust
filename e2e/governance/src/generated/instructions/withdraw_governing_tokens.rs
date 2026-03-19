@@ -13,19 +13,19 @@ pub const WITHDRAW_GOVERNING_TOKENS_DISCRIMINATOR: u8 = 2;
 /// Accounts.
 #[derive(Debug)]
 pub struct WithdrawGoverningTokens {
-    pub realm_account: solana_pubkey::Pubkey,
+    pub realm_account: solana_address::Address,
     /// seeds=['governance', realm, governing_token_mint]
-    pub governing_token_holding_account: solana_pubkey::Pubkey,
+    pub governing_token_holding_account: solana_address::Address,
     /// All tokens will be transferred to this account
-    pub governing_token_destination_account: solana_pubkey::Pubkey,
+    pub governing_token_destination_account: solana_address::Address,
 
-    pub governing_token_owner_account: solana_pubkey::Pubkey,
+    pub governing_token_owner_account: solana_address::Address,
     /// seeds=['governance',realm, governing_token_mint, governing_token_owner]
-    pub token_owner_record: solana_pubkey::Pubkey,
+    pub token_owner_record: solana_address::Address,
 
-    pub token_program: solana_pubkey::Pubkey,
+    pub token_program: solana_address::Address,
     /// seeds=['realm-config', realm]
-    pub realm_config_account: solana_pubkey::Pubkey,
+    pub realm_config_account: solana_address::Address,
 }
 
 impl WithdrawGoverningTokens {
@@ -81,7 +81,6 @@ impl WithdrawGoverningTokens {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct WithdrawGoverningTokensInstructionData {
     discriminator: u8,
 }
@@ -115,13 +114,13 @@ impl Default for WithdrawGoverningTokensInstructionData {
 ///   6. `[]` realm_config_account
 #[derive(Clone, Debug, Default)]
 pub struct WithdrawGoverningTokensBuilder {
-    realm_account: Option<solana_pubkey::Pubkey>,
-    governing_token_holding_account: Option<solana_pubkey::Pubkey>,
-    governing_token_destination_account: Option<solana_pubkey::Pubkey>,
-    governing_token_owner_account: Option<solana_pubkey::Pubkey>,
-    token_owner_record: Option<solana_pubkey::Pubkey>,
-    token_program: Option<solana_pubkey::Pubkey>,
-    realm_config_account: Option<solana_pubkey::Pubkey>,
+    realm_account: Option<solana_address::Address>,
+    governing_token_holding_account: Option<solana_address::Address>,
+    governing_token_destination_account: Option<solana_address::Address>,
+    governing_token_owner_account: Option<solana_address::Address>,
+    token_owner_record: Option<solana_address::Address>,
+    token_program: Option<solana_address::Address>,
+    realm_config_account: Option<solana_address::Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
@@ -130,7 +129,7 @@ impl WithdrawGoverningTokensBuilder {
         Self::default()
     }
     #[inline(always)]
-    pub fn realm_account(&mut self, realm_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn realm_account(&mut self, realm_account: solana_address::Address) -> &mut Self {
         self.realm_account = Some(realm_account);
         self
     }
@@ -138,7 +137,7 @@ impl WithdrawGoverningTokensBuilder {
     #[inline(always)]
     pub fn governing_token_holding_account(
         &mut self,
-        governing_token_holding_account: solana_pubkey::Pubkey,
+        governing_token_holding_account: solana_address::Address,
     ) -> &mut Self {
         self.governing_token_holding_account = Some(governing_token_holding_account);
         self
@@ -147,7 +146,7 @@ impl WithdrawGoverningTokensBuilder {
     #[inline(always)]
     pub fn governing_token_destination_account(
         &mut self,
-        governing_token_destination_account: solana_pubkey::Pubkey,
+        governing_token_destination_account: solana_address::Address,
     ) -> &mut Self {
         self.governing_token_destination_account = Some(governing_token_destination_account);
         self
@@ -155,20 +154,20 @@ impl WithdrawGoverningTokensBuilder {
     #[inline(always)]
     pub fn governing_token_owner_account(
         &mut self,
-        governing_token_owner_account: solana_pubkey::Pubkey,
+        governing_token_owner_account: solana_address::Address,
     ) -> &mut Self {
         self.governing_token_owner_account = Some(governing_token_owner_account);
         self
     }
     /// seeds=['governance',realm, governing_token_mint, governing_token_owner]
     #[inline(always)]
-    pub fn token_owner_record(&mut self, token_owner_record: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn token_owner_record(&mut self, token_owner_record: solana_address::Address) -> &mut Self {
         self.token_owner_record = Some(token_owner_record);
         self
     }
     /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
     #[inline(always)]
-    pub fn token_program(&mut self, token_program: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn token_program(&mut self, token_program: solana_address::Address) -> &mut Self {
         self.token_program = Some(token_program);
         self
     }
@@ -176,7 +175,7 @@ impl WithdrawGoverningTokensBuilder {
     #[inline(always)]
     pub fn realm_config_account(
         &mut self,
-        realm_config_account: solana_pubkey::Pubkey,
+        realm_config_account: solana_address::Address,
     ) -> &mut Self {
         self.realm_config_account = Some(realm_config_account);
         self
@@ -212,7 +211,7 @@ impl WithdrawGoverningTokensBuilder {
             token_owner_record: self
                 .token_owner_record
                 .expect("token_owner_record is not set"),
-            token_program: self.token_program.unwrap_or(solana_pubkey::pubkey!(
+            token_program: self.token_program.unwrap_or(solana_address::address!(
                 "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
             )),
             realm_config_account: self

@@ -11,17 +11,12 @@ use crate::generated::types::TransactionExecutionStatus;
 use crate::generated::types::UnixTimestamp;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use solana_pubkey::Pubkey;
+use solana_address::Address;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ProposalTransactionV2 {
     pub account_type: GovernanceAccountType,
-    #[cfg_attr(
-        feature = "serde",
-        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
-    )]
-    pub proposal: Pubkey,
+    pub proposal: Address,
     pub option_index: u8,
     pub transaction_index: u16,
     pub hold_up_time: u32,
@@ -37,18 +32,18 @@ impl ProposalTransactionV2 {
     /// Values are positional and appear in the following order:
     ///
     ///   0. `ProposalTransactionV2::PREFIX`
-    ///   1. proposal (`Pubkey`)
+    ///   1. proposal (`Address`)
     ///   2. option_index (`u8`)
     ///   3. index (`u16`)
     pub const PREFIX: &'static [u8] = "governance".as_bytes();
 
     pub fn create_pda(
-        proposal: Pubkey,
+        proposal: Address,
         option_index: u8,
         index: u16,
         bump: u8,
-    ) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
-        solana_pubkey::Pubkey::create_program_address(
+    ) -> Result<solana_address::Address, solana_address::error::AddressError> {
+        solana_address::Address::create_program_address(
             &[
                 "governance".as_bytes(),
                 proposal.as_ref(),
@@ -61,11 +56,11 @@ impl ProposalTransactionV2 {
     }
 
     pub fn find_pda(
-        proposal: &Pubkey,
+        proposal: &Address,
         option_index: u8,
         index: u16,
-    ) -> (solana_pubkey::Pubkey, u8) {
-        solana_pubkey::Pubkey::find_program_address(
+    ) -> (solana_address::Address, u8) {
+        solana_address::Address::find_program_address(
             &[
                 "governance".as_bytes(),
                 proposal.as_ref(),
@@ -95,7 +90,7 @@ impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for ProposalTransactionV
 #[cfg(feature = "fetch")]
 pub fn fetch_proposal_transaction_v2(
     rpc: &solana_client::rpc_client::RpcClient,
-    address: &solana_pubkey::Pubkey,
+    address: &solana_address::Address,
 ) -> Result<crate::shared::DecodedAccount<ProposalTransactionV2>, std::io::Error> {
     let accounts = fetch_all_proposal_transaction_v2(rpc, &[*address])?;
     Ok(accounts[0].clone())
@@ -104,19 +99,18 @@ pub fn fetch_proposal_transaction_v2(
 #[cfg(feature = "fetch")]
 pub fn fetch_all_proposal_transaction_v2(
     rpc: &solana_client::rpc_client::RpcClient,
-    addresses: &[solana_pubkey::Pubkey],
+    addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::DecodedAccount<ProposalTransactionV2>>, std::io::Error> {
     let accounts = rpc
         .get_multiple_accounts(addresses)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        .map_err(|e| std::io::Error::other(e.to_string()))?;
     let mut decoded_accounts: Vec<crate::shared::DecodedAccount<ProposalTransactionV2>> =
         Vec::new();
     for i in 0..addresses.len() {
         let address = addresses[i];
-        let account = accounts[i].as_ref().ok_or(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            format!("Account not found: {}", address),
-        ))?;
+        let account = accounts[i].as_ref().ok_or(std::io::Error::other(format!(
+            "Account not found: {address}"
+        )))?;
         let data = ProposalTransactionV2::from_bytes(&account.data)?;
         decoded_accounts.push(crate::shared::DecodedAccount {
             address,
@@ -130,7 +124,7 @@ pub fn fetch_all_proposal_transaction_v2(
 #[cfg(feature = "fetch")]
 pub fn fetch_maybe_proposal_transaction_v2(
     rpc: &solana_client::rpc_client::RpcClient,
-    address: &solana_pubkey::Pubkey,
+    address: &solana_address::Address,
 ) -> Result<crate::shared::MaybeAccount<ProposalTransactionV2>, std::io::Error> {
     let accounts = fetch_all_maybe_proposal_transaction_v2(rpc, &[*address])?;
     Ok(accounts[0].clone())
@@ -139,11 +133,11 @@ pub fn fetch_maybe_proposal_transaction_v2(
 #[cfg(feature = "fetch")]
 pub fn fetch_all_maybe_proposal_transaction_v2(
     rpc: &solana_client::rpc_client::RpcClient,
-    addresses: &[solana_pubkey::Pubkey],
+    addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::MaybeAccount<ProposalTransactionV2>>, std::io::Error> {
     let accounts = rpc
         .get_multiple_accounts(addresses)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        .map_err(|e| std::io::Error::other(e.to_string()))?;
     let mut decoded_accounts: Vec<crate::shared::MaybeAccount<ProposalTransactionV2>> = Vec::new();
     for i in 0..addresses.len() {
         let address = addresses[i];
@@ -175,8 +169,8 @@ impl anchor_lang::AccountSerialize for ProposalTransactionV2 {}
 
 #[cfg(feature = "anchor")]
 impl anchor_lang::Owner for ProposalTransactionV2 {
-    fn owner() -> Pubkey {
-        crate::SPL_GOVERNANCE_ID
+    fn owner() -> anchor_lang::solana_program::pubkey::Pubkey {
+        anchor_lang::solana_program::pubkey::Pubkey::from(crate::SPL_GOVERNANCE_ID.to_bytes())
     }
 }
 

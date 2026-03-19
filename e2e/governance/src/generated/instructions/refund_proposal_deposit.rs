@@ -13,11 +13,11 @@ pub const REFUND_PROPOSAL_DEPOSIT_DISCRIMINATOR: u8 = 27;
 /// Accounts.
 #[derive(Debug)]
 pub struct RefundProposalDeposit {
-    pub proposal_account: solana_pubkey::Pubkey,
+    pub proposal_account: solana_address::Address,
     /// PDA Seeds: ['proposal-deposit', proposal, deposit payer]
-    pub proposal_deposit_account: solana_pubkey::Pubkey,
+    pub proposal_deposit_account: solana_address::Address,
     /// Proposal Deposit Payer (beneficiary) account
-    pub proposal_deposit_payer: solana_pubkey::Pubkey,
+    pub proposal_deposit_payer: solana_address::Address,
 }
 
 impl RefundProposalDeposit {
@@ -57,7 +57,6 @@ impl RefundProposalDeposit {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct RefundProposalDepositInstructionData {
     discriminator: u8,
 }
@@ -87,9 +86,9 @@ impl Default for RefundProposalDepositInstructionData {
 ///   2. `[writable]` proposal_deposit_payer
 #[derive(Clone, Debug, Default)]
 pub struct RefundProposalDepositBuilder {
-    proposal_account: Option<solana_pubkey::Pubkey>,
-    proposal_deposit_account: Option<solana_pubkey::Pubkey>,
-    proposal_deposit_payer: Option<solana_pubkey::Pubkey>,
+    proposal_account: Option<solana_address::Address>,
+    proposal_deposit_account: Option<solana_address::Address>,
+    proposal_deposit_payer: Option<solana_address::Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
@@ -98,7 +97,7 @@ impl RefundProposalDepositBuilder {
         Self::default()
     }
     #[inline(always)]
-    pub fn proposal_account(&mut self, proposal_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn proposal_account(&mut self, proposal_account: solana_address::Address) -> &mut Self {
         self.proposal_account = Some(proposal_account);
         self
     }
@@ -106,7 +105,7 @@ impl RefundProposalDepositBuilder {
     #[inline(always)]
     pub fn proposal_deposit_account(
         &mut self,
-        proposal_deposit_account: solana_pubkey::Pubkey,
+        proposal_deposit_account: solana_address::Address,
     ) -> &mut Self {
         self.proposal_deposit_account = Some(proposal_deposit_account);
         self
@@ -115,7 +114,7 @@ impl RefundProposalDepositBuilder {
     #[inline(always)]
     pub fn proposal_deposit_payer(
         &mut self,
-        proposal_deposit_payer: solana_pubkey::Pubkey,
+        proposal_deposit_payer: solana_address::Address,
     ) -> &mut Self {
         self.proposal_deposit_payer = Some(proposal_deposit_payer);
         self

@@ -8,34 +8,20 @@
 use crate::generated::types::GovernanceAccountType;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use solana_pubkey::Pubkey;
+use solana_address::Address;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct LegacyTokenOwnerRecord {
     pub account_type: GovernanceAccountType,
-    #[cfg_attr(
-        feature = "serde",
-        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
-    )]
-    pub realm: Pubkey,
-    #[cfg_attr(
-        feature = "serde",
-        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
-    )]
-    pub governing_token_mint: Pubkey,
-    #[cfg_attr(
-        feature = "serde",
-        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
-    )]
-    pub governing_token_owner: Pubkey,
+    pub realm: Address,
+    pub governing_token_mint: Address,
+    pub governing_token_owner: Address,
     pub governing_token_deposit_amount: u64,
     pub unrelinquished_votes_count: u32,
     pub total_votes_count: u32,
     pub outstanding_proposal_count: u8,
     pub reserved: [u8; 7],
-    pub governance_delegate: Option<Pubkey>,
-    #[cfg_attr(feature = "serde", serde(with = "serde_big_array::BigArray"))]
+    pub governance_delegate: Option<Address>,
     pub reserved_v2: [u8; 128],
 }
 
@@ -45,18 +31,18 @@ impl LegacyTokenOwnerRecord {
     /// Values are positional and appear in the following order:
     ///
     ///   0. `LegacyTokenOwnerRecord::PREFIX`
-    ///   1. realm (`Pubkey`)
-    ///   2. governing_token_mint (`Pubkey`)
-    ///   3. governing_token_owner (`Pubkey`)
+    ///   1. realm (`Address`)
+    ///   2. governing_token_mint (`Address`)
+    ///   3. governing_token_owner (`Address`)
     pub const PREFIX: &'static [u8] = "governance".as_bytes();
 
     pub fn create_pda(
-        realm: Pubkey,
-        governing_token_mint: Pubkey,
-        governing_token_owner: Pubkey,
+        realm: Address,
+        governing_token_mint: Address,
+        governing_token_owner: Address,
         bump: u8,
-    ) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
-        solana_pubkey::Pubkey::create_program_address(
+    ) -> Result<solana_address::Address, solana_address::error::AddressError> {
+        solana_address::Address::create_program_address(
             &[
                 "governance".as_bytes(),
                 realm.as_ref(),
@@ -69,11 +55,11 @@ impl LegacyTokenOwnerRecord {
     }
 
     pub fn find_pda(
-        realm: &Pubkey,
-        governing_token_mint: &Pubkey,
-        governing_token_owner: &Pubkey,
-    ) -> (solana_pubkey::Pubkey, u8) {
-        solana_pubkey::Pubkey::find_program_address(
+        realm: &Address,
+        governing_token_mint: &Address,
+        governing_token_owner: &Address,
+    ) -> (solana_address::Address, u8) {
+        solana_address::Address::find_program_address(
             &[
                 "governance".as_bytes(),
                 realm.as_ref(),
@@ -103,7 +89,7 @@ impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for LegacyTokenOwnerReco
 #[cfg(feature = "fetch")]
 pub fn fetch_legacy_token_owner_record(
     rpc: &solana_client::rpc_client::RpcClient,
-    address: &solana_pubkey::Pubkey,
+    address: &solana_address::Address,
 ) -> Result<crate::shared::DecodedAccount<LegacyTokenOwnerRecord>, std::io::Error> {
     let accounts = fetch_all_legacy_token_owner_record(rpc, &[*address])?;
     Ok(accounts[0].clone())
@@ -112,19 +98,18 @@ pub fn fetch_legacy_token_owner_record(
 #[cfg(feature = "fetch")]
 pub fn fetch_all_legacy_token_owner_record(
     rpc: &solana_client::rpc_client::RpcClient,
-    addresses: &[solana_pubkey::Pubkey],
+    addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::DecodedAccount<LegacyTokenOwnerRecord>>, std::io::Error> {
     let accounts = rpc
         .get_multiple_accounts(addresses)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        .map_err(|e| std::io::Error::other(e.to_string()))?;
     let mut decoded_accounts: Vec<crate::shared::DecodedAccount<LegacyTokenOwnerRecord>> =
         Vec::new();
     for i in 0..addresses.len() {
         let address = addresses[i];
-        let account = accounts[i].as_ref().ok_or(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            format!("Account not found: {}", address),
-        ))?;
+        let account = accounts[i].as_ref().ok_or(std::io::Error::other(format!(
+            "Account not found: {address}"
+        )))?;
         let data = LegacyTokenOwnerRecord::from_bytes(&account.data)?;
         decoded_accounts.push(crate::shared::DecodedAccount {
             address,
@@ -138,7 +123,7 @@ pub fn fetch_all_legacy_token_owner_record(
 #[cfg(feature = "fetch")]
 pub fn fetch_maybe_legacy_token_owner_record(
     rpc: &solana_client::rpc_client::RpcClient,
-    address: &solana_pubkey::Pubkey,
+    address: &solana_address::Address,
 ) -> Result<crate::shared::MaybeAccount<LegacyTokenOwnerRecord>, std::io::Error> {
     let accounts = fetch_all_maybe_legacy_token_owner_record(rpc, &[*address])?;
     Ok(accounts[0].clone())
@@ -147,11 +132,11 @@ pub fn fetch_maybe_legacy_token_owner_record(
 #[cfg(feature = "fetch")]
 pub fn fetch_all_maybe_legacy_token_owner_record(
     rpc: &solana_client::rpc_client::RpcClient,
-    addresses: &[solana_pubkey::Pubkey],
+    addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::MaybeAccount<LegacyTokenOwnerRecord>>, std::io::Error> {
     let accounts = rpc
         .get_multiple_accounts(addresses)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        .map_err(|e| std::io::Error::other(e.to_string()))?;
     let mut decoded_accounts: Vec<crate::shared::MaybeAccount<LegacyTokenOwnerRecord>> = Vec::new();
     for i in 0..addresses.len() {
         let address = addresses[i];
@@ -183,8 +168,8 @@ impl anchor_lang::AccountSerialize for LegacyTokenOwnerRecord {}
 
 #[cfg(feature = "anchor")]
 impl anchor_lang::Owner for LegacyTokenOwnerRecord {
-    fn owner() -> Pubkey {
-        crate::SPL_GOVERNANCE_ID
+    fn owner() -> anchor_lang::solana_program::pubkey::Pubkey {
+        anchor_lang::solana_program::pubkey::Pubkey::from(crate::SPL_GOVERNANCE_ID.to_bytes())
     }
 }
 

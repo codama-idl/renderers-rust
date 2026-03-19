@@ -8,16 +8,11 @@
 use crate::generated::types::AccountMetaData;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use solana_pubkey::Pubkey;
+use solana_address::Address;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct InstructionData {
-    #[cfg_attr(
-        feature = "serde",
-        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
-    )]
-    pub program_id: Pubkey,
+    pub program_id: Address,
     pub accounts: Vec<AccountMetaData>,
     pub data: Vec<u8>,
 }

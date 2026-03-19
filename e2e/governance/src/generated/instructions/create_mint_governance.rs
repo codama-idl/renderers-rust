@@ -15,27 +15,27 @@ pub const CREATE_MINT_GOVERNANCE_DISCRIMINATOR: u8 = 17;
 #[derive(Debug)]
 pub struct CreateMintGovernance {
     /// Realm account the created Governance belongs to
-    pub realm_account: solana_pubkey::Pubkey,
+    pub realm_account: solana_address::Address,
     /// Mint Governance account. seeds=['mint-governance', realm, governed_mint]
-    pub mint_governance_account: solana_pubkey::Pubkey,
+    pub mint_governance_account: solana_address::Address,
     /// Mint governed by this Governance account
-    pub governed_mint: solana_pubkey::Pubkey,
+    pub governed_mint: solana_address::Address,
     /// Current Mint authority (MintTokens and optionally FreezeAccount)
-    pub mint_authority: solana_pubkey::Pubkey,
+    pub mint_authority: solana_address::Address,
     /// Governing TokenOwnerRecord account (Used only if not signed by RealmAuthority)
-    pub governing_token_owner_record: solana_pubkey::Pubkey,
+    pub governing_token_owner_record: solana_address::Address,
 
-    pub payer: solana_pubkey::Pubkey,
+    pub payer: solana_address::Address,
 
-    pub token_program: solana_pubkey::Pubkey,
+    pub token_program: solana_address::Address,
 
-    pub system_program: solana_pubkey::Pubkey,
+    pub system_program: solana_address::Address,
 
-    pub governance_authority: solana_pubkey::Pubkey,
+    pub governance_authority: solana_address::Address,
     /// RealmConfig account. seeds=['realm-config', realm]
-    pub realm_config: solana_pubkey::Pubkey,
+    pub realm_config: solana_address::Address,
     /// Optional Voter Weight Record
-    pub voter_weight_record: Option<solana_pubkey::Pubkey>,
+    pub voter_weight_record: Option<solana_address::Address>,
 }
 
 impl CreateMintGovernance {
@@ -119,7 +119,6 @@ impl CreateMintGovernance {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CreateMintGovernanceInstructionData {
     discriminator: u8,
 }
@@ -141,7 +140,6 @@ impl Default for CreateMintGovernanceInstructionData {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CreateMintGovernanceInstructionArgs {
     pub config: GovernanceConfig,
     pub transfer_mint_authorities: bool,
@@ -170,17 +168,17 @@ impl CreateMintGovernanceInstructionArgs {
 ///   10. `[optional]` voter_weight_record
 #[derive(Clone, Debug, Default)]
 pub struct CreateMintGovernanceBuilder {
-    realm_account: Option<solana_pubkey::Pubkey>,
-    mint_governance_account: Option<solana_pubkey::Pubkey>,
-    governed_mint: Option<solana_pubkey::Pubkey>,
-    mint_authority: Option<solana_pubkey::Pubkey>,
-    governing_token_owner_record: Option<solana_pubkey::Pubkey>,
-    payer: Option<solana_pubkey::Pubkey>,
-    token_program: Option<solana_pubkey::Pubkey>,
-    system_program: Option<solana_pubkey::Pubkey>,
-    governance_authority: Option<solana_pubkey::Pubkey>,
-    realm_config: Option<solana_pubkey::Pubkey>,
-    voter_weight_record: Option<solana_pubkey::Pubkey>,
+    realm_account: Option<solana_address::Address>,
+    mint_governance_account: Option<solana_address::Address>,
+    governed_mint: Option<solana_address::Address>,
+    mint_authority: Option<solana_address::Address>,
+    governing_token_owner_record: Option<solana_address::Address>,
+    payer: Option<solana_address::Address>,
+    token_program: Option<solana_address::Address>,
+    system_program: Option<solana_address::Address>,
+    governance_authority: Option<solana_address::Address>,
+    realm_config: Option<solana_address::Address>,
+    voter_weight_record: Option<solana_address::Address>,
     config: Option<GovernanceConfig>,
     transfer_mint_authorities: Option<bool>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
@@ -192,7 +190,7 @@ impl CreateMintGovernanceBuilder {
     }
     /// Realm account the created Governance belongs to
     #[inline(always)]
-    pub fn realm_account(&mut self, realm_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn realm_account(&mut self, realm_account: solana_address::Address) -> &mut Self {
         self.realm_account = Some(realm_account);
         self
     }
@@ -200,20 +198,20 @@ impl CreateMintGovernanceBuilder {
     #[inline(always)]
     pub fn mint_governance_account(
         &mut self,
-        mint_governance_account: solana_pubkey::Pubkey,
+        mint_governance_account: solana_address::Address,
     ) -> &mut Self {
         self.mint_governance_account = Some(mint_governance_account);
         self
     }
     /// Mint governed by this Governance account
     #[inline(always)]
-    pub fn governed_mint(&mut self, governed_mint: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn governed_mint(&mut self, governed_mint: solana_address::Address) -> &mut Self {
         self.governed_mint = Some(governed_mint);
         self
     }
     /// Current Mint authority (MintTokens and optionally FreezeAccount)
     #[inline(always)]
-    pub fn mint_authority(&mut self, mint_authority: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn mint_authority(&mut self, mint_authority: solana_address::Address) -> &mut Self {
         self.mint_authority = Some(mint_authority);
         self
     }
@@ -221,39 +219,39 @@ impl CreateMintGovernanceBuilder {
     #[inline(always)]
     pub fn governing_token_owner_record(
         &mut self,
-        governing_token_owner_record: solana_pubkey::Pubkey,
+        governing_token_owner_record: solana_address::Address,
     ) -> &mut Self {
         self.governing_token_owner_record = Some(governing_token_owner_record);
         self
     }
     #[inline(always)]
-    pub fn payer(&mut self, payer: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
         self.payer = Some(payer);
         self
     }
     /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
     #[inline(always)]
-    pub fn token_program(&mut self, token_program: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn token_program(&mut self, token_program: solana_address::Address) -> &mut Self {
         self.token_program = Some(token_program);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
-    pub fn system_program(&mut self, system_program: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn system_program(&mut self, system_program: solana_address::Address) -> &mut Self {
         self.system_program = Some(system_program);
         self
     }
     #[inline(always)]
     pub fn governance_authority(
         &mut self,
-        governance_authority: solana_pubkey::Pubkey,
+        governance_authority: solana_address::Address,
     ) -> &mut Self {
         self.governance_authority = Some(governance_authority);
         self
     }
     /// RealmConfig account. seeds=['realm-config', realm]
     #[inline(always)]
-    pub fn realm_config(&mut self, realm_config: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn realm_config(&mut self, realm_config: solana_address::Address) -> &mut Self {
         self.realm_config = Some(realm_config);
         self
     }
@@ -262,7 +260,7 @@ impl CreateMintGovernanceBuilder {
     #[inline(always)]
     pub fn voter_weight_record(
         &mut self,
-        voter_weight_record: Option<solana_pubkey::Pubkey>,
+        voter_weight_record: Option<solana_address::Address>,
     ) -> &mut Self {
         self.voter_weight_record = voter_weight_record;
         self
@@ -305,12 +303,12 @@ impl CreateMintGovernanceBuilder {
                 .governing_token_owner_record
                 .expect("governing_token_owner_record is not set"),
             payer: self.payer.expect("payer is not set"),
-            token_program: self.token_program.unwrap_or(solana_pubkey::pubkey!(
+            token_program: self.token_program.unwrap_or(solana_address::address!(
                 "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
             )),
             system_program: self
                 .system_program
-                .unwrap_or(solana_pubkey::pubkey!("11111111111111111111111111111111")),
+                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
             governance_authority: self
                 .governance_authority
                 .expect("governance_authority is not set"),

@@ -7,7 +7,7 @@
 
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use solana_pubkey::Pubkey;
+use solana_address::Address;
 
 pub const ADD_SIGNATORY_DISCRIMINATOR: u8 = 7;
 
@@ -15,17 +15,17 @@ pub const ADD_SIGNATORY_DISCRIMINATOR: u8 = 7;
 #[derive(Debug)]
 pub struct AddSignatory {
     /// Proposal Account associated with the governance
-    pub proposal_account: solana_pubkey::Pubkey,
+    pub proposal_account: solana_address::Address,
     /// TokenOwnerRecord account of the Proposal owner
-    pub token_owner_record: solana_pubkey::Pubkey,
+    pub token_owner_record: solana_address::Address,
     /// Governance Authority (Token Owner or Governance Delegate)
-    pub governance_authority: solana_pubkey::Pubkey,
+    pub governance_authority: solana_address::Address,
     /// Signatory Record Account
-    pub signatory_record_account: solana_pubkey::Pubkey,
+    pub signatory_record_account: solana_address::Address,
 
-    pub payer: solana_pubkey::Pubkey,
+    pub payer: solana_address::Address,
 
-    pub system_program: solana_pubkey::Pubkey,
+    pub system_program: solana_address::Address,
 }
 
 impl AddSignatory {
@@ -80,7 +80,6 @@ impl AddSignatory {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct AddSignatoryInstructionData {
     discriminator: u8,
 }
@@ -102,9 +101,8 @@ impl Default for AddSignatoryInstructionData {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct AddSignatoryInstructionArgs {
-    pub signatory: Pubkey,
+    pub signatory: Address,
 }
 
 impl AddSignatoryInstructionArgs {
@@ -125,13 +123,13 @@ impl AddSignatoryInstructionArgs {
 ///   5. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct AddSignatoryBuilder {
-    proposal_account: Option<solana_pubkey::Pubkey>,
-    token_owner_record: Option<solana_pubkey::Pubkey>,
-    governance_authority: Option<solana_pubkey::Pubkey>,
-    signatory_record_account: Option<solana_pubkey::Pubkey>,
-    payer: Option<solana_pubkey::Pubkey>,
-    system_program: Option<solana_pubkey::Pubkey>,
-    signatory: Option<Pubkey>,
+    proposal_account: Option<solana_address::Address>,
+    token_owner_record: Option<solana_address::Address>,
+    governance_authority: Option<solana_address::Address>,
+    signatory_record_account: Option<solana_address::Address>,
+    payer: Option<solana_address::Address>,
+    system_program: Option<solana_address::Address>,
+    signatory: Option<Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
@@ -141,13 +139,13 @@ impl AddSignatoryBuilder {
     }
     /// Proposal Account associated with the governance
     #[inline(always)]
-    pub fn proposal_account(&mut self, proposal_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn proposal_account(&mut self, proposal_account: solana_address::Address) -> &mut Self {
         self.proposal_account = Some(proposal_account);
         self
     }
     /// TokenOwnerRecord account of the Proposal owner
     #[inline(always)]
-    pub fn token_owner_record(&mut self, token_owner_record: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn token_owner_record(&mut self, token_owner_record: solana_address::Address) -> &mut Self {
         self.token_owner_record = Some(token_owner_record);
         self
     }
@@ -155,7 +153,7 @@ impl AddSignatoryBuilder {
     #[inline(always)]
     pub fn governance_authority(
         &mut self,
-        governance_authority: solana_pubkey::Pubkey,
+        governance_authority: solana_address::Address,
     ) -> &mut Self {
         self.governance_authority = Some(governance_authority);
         self
@@ -164,24 +162,24 @@ impl AddSignatoryBuilder {
     #[inline(always)]
     pub fn signatory_record_account(
         &mut self,
-        signatory_record_account: solana_pubkey::Pubkey,
+        signatory_record_account: solana_address::Address,
     ) -> &mut Self {
         self.signatory_record_account = Some(signatory_record_account);
         self
     }
     #[inline(always)]
-    pub fn payer(&mut self, payer: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
         self.payer = Some(payer);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
-    pub fn system_program(&mut self, system_program: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn system_program(&mut self, system_program: solana_address::Address) -> &mut Self {
         self.system_program = Some(system_program);
         self
     }
     #[inline(always)]
-    pub fn signatory(&mut self, signatory: Pubkey) -> &mut Self {
+    pub fn signatory(&mut self, signatory: Address) -> &mut Self {
         self.signatory = Some(signatory);
         self
     }
@@ -216,7 +214,7 @@ impl AddSignatoryBuilder {
             payer: self.payer.expect("payer is not set"),
             system_program: self
                 .system_program
-                .unwrap_or(solana_pubkey::pubkey!("11111111111111111111111111111111")),
+                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
         };
         let args = AddSignatoryInstructionArgs {
             signatory: self.signatory.clone().expect("signatory is not set"),
@@ -443,7 +441,7 @@ impl<'a, 'b> AddSignatoryCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn signatory(&mut self, signatory: Pubkey) -> &mut Self {
+    pub fn signatory(&mut self, signatory: Address) -> &mut Self {
         self.instruction.signatory = Some(signatory);
         self
     }
@@ -535,7 +533,7 @@ struct AddSignatoryCpiBuilderInstruction<'a, 'b> {
     signatory_record_account: Option<&'b solana_account_info::AccountInfo<'a>>,
     payer: Option<&'b solana_account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    signatory: Option<Pubkey>,
+    signatory: Option<Address>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

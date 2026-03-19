@@ -13,19 +13,19 @@ pub const REVOKE_GOVERNING_TOKENS_DISCRIMINATOR: u8 = 26;
 /// Accounts.
 #[derive(Debug)]
 pub struct RevokeGoverningTokens {
-    pub realm_account: solana_pubkey::Pubkey,
+    pub realm_account: solana_address::Address,
     /// seeds=['governance', realm, governing_token_mint]
-    pub governing_token_holding_account: solana_pubkey::Pubkey,
+    pub governing_token_holding_account: solana_address::Address,
     /// seeds=['governance', realm, governing_token_mint, governing_token_owner]
-    pub token_owner_record: solana_pubkey::Pubkey,
+    pub token_owner_record: solana_address::Address,
 
-    pub governing_token_mint: solana_pubkey::Pubkey,
+    pub governing_token_mint: solana_address::Address,
     /// GoverningTokenMint mint_authority
-    pub governing_token_mint_authority_or_token_owner: solana_pubkey::Pubkey,
+    pub governing_token_mint_authority_or_token_owner: solana_address::Address,
     /// seeds=['realm-config', realm]
-    pub realm_config_account: solana_pubkey::Pubkey,
+    pub realm_config_account: solana_address::Address,
 
-    pub token_program: solana_pubkey::Pubkey,
+    pub token_program: solana_address::Address,
 }
 
 impl RevokeGoverningTokens {
@@ -87,7 +87,6 @@ impl RevokeGoverningTokens {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct RevokeGoverningTokensInstructionData {
     discriminator: u8,
 }
@@ -109,7 +108,6 @@ impl Default for RevokeGoverningTokensInstructionData {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct RevokeGoverningTokensInstructionArgs {
     pub amount: u64,
 }
@@ -133,13 +131,13 @@ impl RevokeGoverningTokensInstructionArgs {
 ///   6. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 #[derive(Clone, Debug, Default)]
 pub struct RevokeGoverningTokensBuilder {
-    realm_account: Option<solana_pubkey::Pubkey>,
-    governing_token_holding_account: Option<solana_pubkey::Pubkey>,
-    token_owner_record: Option<solana_pubkey::Pubkey>,
-    governing_token_mint: Option<solana_pubkey::Pubkey>,
-    governing_token_mint_authority_or_token_owner: Option<solana_pubkey::Pubkey>,
-    realm_config_account: Option<solana_pubkey::Pubkey>,
-    token_program: Option<solana_pubkey::Pubkey>,
+    realm_account: Option<solana_address::Address>,
+    governing_token_holding_account: Option<solana_address::Address>,
+    token_owner_record: Option<solana_address::Address>,
+    governing_token_mint: Option<solana_address::Address>,
+    governing_token_mint_authority_or_token_owner: Option<solana_address::Address>,
+    realm_config_account: Option<solana_address::Address>,
+    token_program: Option<solana_address::Address>,
     amount: Option<u64>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
@@ -149,7 +147,7 @@ impl RevokeGoverningTokensBuilder {
         Self::default()
     }
     #[inline(always)]
-    pub fn realm_account(&mut self, realm_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn realm_account(&mut self, realm_account: solana_address::Address) -> &mut Self {
         self.realm_account = Some(realm_account);
         self
     }
@@ -157,21 +155,21 @@ impl RevokeGoverningTokensBuilder {
     #[inline(always)]
     pub fn governing_token_holding_account(
         &mut self,
-        governing_token_holding_account: solana_pubkey::Pubkey,
+        governing_token_holding_account: solana_address::Address,
     ) -> &mut Self {
         self.governing_token_holding_account = Some(governing_token_holding_account);
         self
     }
     /// seeds=['governance', realm, governing_token_mint, governing_token_owner]
     #[inline(always)]
-    pub fn token_owner_record(&mut self, token_owner_record: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn token_owner_record(&mut self, token_owner_record: solana_address::Address) -> &mut Self {
         self.token_owner_record = Some(token_owner_record);
         self
     }
     #[inline(always)]
     pub fn governing_token_mint(
         &mut self,
-        governing_token_mint: solana_pubkey::Pubkey,
+        governing_token_mint: solana_address::Address,
     ) -> &mut Self {
         self.governing_token_mint = Some(governing_token_mint);
         self
@@ -180,7 +178,7 @@ impl RevokeGoverningTokensBuilder {
     #[inline(always)]
     pub fn governing_token_mint_authority_or_token_owner(
         &mut self,
-        governing_token_mint_authority_or_token_owner: solana_pubkey::Pubkey,
+        governing_token_mint_authority_or_token_owner: solana_address::Address,
     ) -> &mut Self {
         self.governing_token_mint_authority_or_token_owner =
             Some(governing_token_mint_authority_or_token_owner);
@@ -190,14 +188,14 @@ impl RevokeGoverningTokensBuilder {
     #[inline(always)]
     pub fn realm_config_account(
         &mut self,
-        realm_config_account: solana_pubkey::Pubkey,
+        realm_config_account: solana_address::Address,
     ) -> &mut Self {
         self.realm_config_account = Some(realm_config_account);
         self
     }
     /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
     #[inline(always)]
-    pub fn token_program(&mut self, token_program: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn token_program(&mut self, token_program: solana_address::Address) -> &mut Self {
         self.token_program = Some(token_program);
         self
     }
@@ -240,7 +238,7 @@ impl RevokeGoverningTokensBuilder {
             realm_config_account: self
                 .realm_config_account
                 .expect("realm_config_account is not set"),
-            token_program: self.token_program.unwrap_or(solana_pubkey::pubkey!(
+            token_program: self.token_program.unwrap_or(solana_address::address!(
                 "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
             )),
         };

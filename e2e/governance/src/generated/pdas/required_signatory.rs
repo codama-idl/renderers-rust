@@ -5,16 +5,18 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
+use solana_address::Address;
+
 use crate::SPL_GOVERNANCE_ID;
 
 pub const REQUIRED_SIGNATORY_SEED: &'static [u8] = b"required-signatory";
 /// Required signatory on a governance
 pub fn create_required_signatory_pda(
-    governance: solana_pubkey::Pubkey,
-    signatory: solana_pubkey::Pubkey,
+    governance: Address,
+    signatory: Address,
     bump: u8,
-) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
-    solana_pubkey::Pubkey::create_program_address(
+) -> Result<solana_address::Address, solana_address::error::AddressError> {
+    solana_address::Address::create_program_address(
         &[
             REQUIRED_SIGNATORY_SEED,
             governance.as_ref(),
@@ -26,10 +28,10 @@ pub fn create_required_signatory_pda(
 }
 /// Required signatory on a governance
 pub fn find_required_signatory_pda(
-    governance: &solana_pubkey::Pubkey,
-    signatory: &solana_pubkey::Pubkey,
-) -> (solana_pubkey::Pubkey, u8) {
-    solana_pubkey::Pubkey::find_program_address(
+    governance: &Address,
+    signatory: &Address,
+) -> (solana_address::Address, u8) {
+    solana_address::Address::find_program_address(
         &[
             REQUIRED_SIGNATORY_SEED,
             governance.as_ref(),

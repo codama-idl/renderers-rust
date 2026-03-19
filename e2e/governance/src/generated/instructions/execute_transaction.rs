@@ -13,11 +13,11 @@ pub const EXECUTE_TRANSACTION_DISCRIMINATOR: u8 = 16;
 /// Accounts.
 #[derive(Debug)]
 pub struct ExecuteTransaction {
-    pub governance_account: solana_pubkey::Pubkey,
+    pub governance_account: solana_address::Address,
 
-    pub proposal_account: solana_pubkey::Pubkey,
+    pub proposal_account: solana_address::Address,
 
-    pub proposal_transaction_account: solana_pubkey::Pubkey,
+    pub proposal_transaction_account: solana_address::Address,
 }
 
 impl ExecuteTransaction {
@@ -57,7 +57,6 @@ impl ExecuteTransaction {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ExecuteTransactionInstructionData {
     discriminator: u8,
 }
@@ -87,9 +86,9 @@ impl Default for ExecuteTransactionInstructionData {
 ///   2. `[writable]` proposal_transaction_account
 #[derive(Clone, Debug, Default)]
 pub struct ExecuteTransactionBuilder {
-    governance_account: Option<solana_pubkey::Pubkey>,
-    proposal_account: Option<solana_pubkey::Pubkey>,
-    proposal_transaction_account: Option<solana_pubkey::Pubkey>,
+    governance_account: Option<solana_address::Address>,
+    proposal_account: Option<solana_address::Address>,
+    proposal_transaction_account: Option<solana_address::Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
@@ -98,19 +97,19 @@ impl ExecuteTransactionBuilder {
         Self::default()
     }
     #[inline(always)]
-    pub fn governance_account(&mut self, governance_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn governance_account(&mut self, governance_account: solana_address::Address) -> &mut Self {
         self.governance_account = Some(governance_account);
         self
     }
     #[inline(always)]
-    pub fn proposal_account(&mut self, proposal_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn proposal_account(&mut self, proposal_account: solana_address::Address) -> &mut Self {
         self.proposal_account = Some(proposal_account);
         self
     }
     #[inline(always)]
     pub fn proposal_transaction_account(
         &mut self,
-        proposal_transaction_account: solana_pubkey::Pubkey,
+        proposal_transaction_account: solana_address::Address,
     ) -> &mut Self {
         self.proposal_transaction_account = Some(proposal_transaction_account);
         self

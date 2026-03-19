@@ -13,15 +13,15 @@ pub const REMOVE_TRANSACTION_DISCRIMINATOR: u8 = 10;
 /// Accounts.
 #[derive(Debug)]
 pub struct RemoveTransaction {
-    pub proposal_account: solana_pubkey::Pubkey,
+    pub proposal_account: solana_address::Address,
     /// TokenOwnerRecord account of the Proposal owner
-    pub token_owner_record: solana_pubkey::Pubkey,
+    pub token_owner_record: solana_address::Address,
     /// Governance Authority (Token Owner or Governance Delegate)
-    pub governance_authority: solana_pubkey::Pubkey,
+    pub governance_authority: solana_address::Address,
 
-    pub proposal_transaction_account: solana_pubkey::Pubkey,
+    pub proposal_transaction_account: solana_address::Address,
     /// Beneficiary Account which would receive lamports from the disposed ProposalTransaction account
-    pub beneficiary_account: solana_pubkey::Pubkey,
+    pub beneficiary_account: solana_address::Address,
 }
 
 impl RemoveTransaction {
@@ -69,7 +69,6 @@ impl RemoveTransaction {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct RemoveTransactionInstructionData {
     discriminator: u8,
 }
@@ -101,11 +100,11 @@ impl Default for RemoveTransactionInstructionData {
 ///   4. `[writable]` beneficiary_account
 #[derive(Clone, Debug, Default)]
 pub struct RemoveTransactionBuilder {
-    proposal_account: Option<solana_pubkey::Pubkey>,
-    token_owner_record: Option<solana_pubkey::Pubkey>,
-    governance_authority: Option<solana_pubkey::Pubkey>,
-    proposal_transaction_account: Option<solana_pubkey::Pubkey>,
-    beneficiary_account: Option<solana_pubkey::Pubkey>,
+    proposal_account: Option<solana_address::Address>,
+    token_owner_record: Option<solana_address::Address>,
+    governance_authority: Option<solana_address::Address>,
+    proposal_transaction_account: Option<solana_address::Address>,
+    beneficiary_account: Option<solana_address::Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
@@ -114,13 +113,13 @@ impl RemoveTransactionBuilder {
         Self::default()
     }
     #[inline(always)]
-    pub fn proposal_account(&mut self, proposal_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn proposal_account(&mut self, proposal_account: solana_address::Address) -> &mut Self {
         self.proposal_account = Some(proposal_account);
         self
     }
     /// TokenOwnerRecord account of the Proposal owner
     #[inline(always)]
-    pub fn token_owner_record(&mut self, token_owner_record: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn token_owner_record(&mut self, token_owner_record: solana_address::Address) -> &mut Self {
         self.token_owner_record = Some(token_owner_record);
         self
     }
@@ -128,7 +127,7 @@ impl RemoveTransactionBuilder {
     #[inline(always)]
     pub fn governance_authority(
         &mut self,
-        governance_authority: solana_pubkey::Pubkey,
+        governance_authority: solana_address::Address,
     ) -> &mut Self {
         self.governance_authority = Some(governance_authority);
         self
@@ -136,14 +135,17 @@ impl RemoveTransactionBuilder {
     #[inline(always)]
     pub fn proposal_transaction_account(
         &mut self,
-        proposal_transaction_account: solana_pubkey::Pubkey,
+        proposal_transaction_account: solana_address::Address,
     ) -> &mut Self {
         self.proposal_transaction_account = Some(proposal_transaction_account);
         self
     }
     /// Beneficiary Account which would receive lamports from the disposed ProposalTransaction account
     #[inline(always)]
-    pub fn beneficiary_account(&mut self, beneficiary_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn beneficiary_account(
+        &mut self,
+        beneficiary_account: solana_address::Address,
+    ) -> &mut Self {
         self.beneficiary_account = Some(beneficiary_account);
         self
     }

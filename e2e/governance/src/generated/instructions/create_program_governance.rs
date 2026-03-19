@@ -15,29 +15,29 @@ pub const CREATE_PROGRAM_GOVERNANCE_DISCRIMINATOR: u8 = 5;
 #[derive(Debug)]
 pub struct CreateProgramGovernance {
     /// Realm account the created Governance belongs to
-    pub realm_account: solana_pubkey::Pubkey,
+    pub realm_account: solana_address::Address,
     /// Program Governance account. seeds: ['program-governance', realm, governed_program]
-    pub program_governance_account: solana_pubkey::Pubkey,
+    pub program_governance_account: solana_address::Address,
     /// Program governed by this Governance account
-    pub governed_program: solana_pubkey::Pubkey,
+    pub governed_program: solana_address::Address,
     /// Program Data account of the Program governed by this Governance account
-    pub program_data: solana_pubkey::Pubkey,
+    pub program_data: solana_address::Address,
     /// Current Upgrade Authority account of the Program governed by this Governance account
-    pub current_upgrade_authority: solana_pubkey::Pubkey,
+    pub current_upgrade_authority: solana_address::Address,
     /// Governing TokenOwnerRecord account (Used only if not signed by RealmAuthority)
-    pub governing_token_owner_record: solana_pubkey::Pubkey,
+    pub governing_token_owner_record: solana_address::Address,
 
-    pub payer: solana_pubkey::Pubkey,
+    pub payer: solana_address::Address,
     /// bpf_upgradeable_loader_program program
-    pub bpf_upgradeable_loader_program: solana_pubkey::Pubkey,
+    pub bpf_upgradeable_loader_program: solana_address::Address,
 
-    pub system_program: solana_pubkey::Pubkey,
+    pub system_program: solana_address::Address,
 
-    pub governance_authority: solana_pubkey::Pubkey,
+    pub governance_authority: solana_address::Address,
     /// RealmConfig account. seeds=['realm-config', realm]
-    pub realm_config: solana_pubkey::Pubkey,
+    pub realm_config: solana_address::Address,
     /// Optional Voter Weight Record
-    pub voter_weight_record: Option<solana_pubkey::Pubkey>,
+    pub voter_weight_record: Option<solana_address::Address>,
 }
 
 impl CreateProgramGovernance {
@@ -125,7 +125,6 @@ impl CreateProgramGovernance {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CreateProgramGovernanceInstructionData {
     discriminator: u8,
 }
@@ -147,7 +146,6 @@ impl Default for CreateProgramGovernanceInstructionData {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CreateProgramGovernanceInstructionArgs {
     pub config: GovernanceConfig,
     pub transfer_upgrade_authority: bool,
@@ -177,18 +175,18 @@ impl CreateProgramGovernanceInstructionArgs {
 ///   11. `[optional]` voter_weight_record
 #[derive(Clone, Debug, Default)]
 pub struct CreateProgramGovernanceBuilder {
-    realm_account: Option<solana_pubkey::Pubkey>,
-    program_governance_account: Option<solana_pubkey::Pubkey>,
-    governed_program: Option<solana_pubkey::Pubkey>,
-    program_data: Option<solana_pubkey::Pubkey>,
-    current_upgrade_authority: Option<solana_pubkey::Pubkey>,
-    governing_token_owner_record: Option<solana_pubkey::Pubkey>,
-    payer: Option<solana_pubkey::Pubkey>,
-    bpf_upgradeable_loader_program: Option<solana_pubkey::Pubkey>,
-    system_program: Option<solana_pubkey::Pubkey>,
-    governance_authority: Option<solana_pubkey::Pubkey>,
-    realm_config: Option<solana_pubkey::Pubkey>,
-    voter_weight_record: Option<solana_pubkey::Pubkey>,
+    realm_account: Option<solana_address::Address>,
+    program_governance_account: Option<solana_address::Address>,
+    governed_program: Option<solana_address::Address>,
+    program_data: Option<solana_address::Address>,
+    current_upgrade_authority: Option<solana_address::Address>,
+    governing_token_owner_record: Option<solana_address::Address>,
+    payer: Option<solana_address::Address>,
+    bpf_upgradeable_loader_program: Option<solana_address::Address>,
+    system_program: Option<solana_address::Address>,
+    governance_authority: Option<solana_address::Address>,
+    realm_config: Option<solana_address::Address>,
+    voter_weight_record: Option<solana_address::Address>,
     config: Option<GovernanceConfig>,
     transfer_upgrade_authority: Option<bool>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
@@ -200,7 +198,7 @@ impl CreateProgramGovernanceBuilder {
     }
     /// Realm account the created Governance belongs to
     #[inline(always)]
-    pub fn realm_account(&mut self, realm_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn realm_account(&mut self, realm_account: solana_address::Address) -> &mut Self {
         self.realm_account = Some(realm_account);
         self
     }
@@ -208,20 +206,20 @@ impl CreateProgramGovernanceBuilder {
     #[inline(always)]
     pub fn program_governance_account(
         &mut self,
-        program_governance_account: solana_pubkey::Pubkey,
+        program_governance_account: solana_address::Address,
     ) -> &mut Self {
         self.program_governance_account = Some(program_governance_account);
         self
     }
     /// Program governed by this Governance account
     #[inline(always)]
-    pub fn governed_program(&mut self, governed_program: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn governed_program(&mut self, governed_program: solana_address::Address) -> &mut Self {
         self.governed_program = Some(governed_program);
         self
     }
     /// Program Data account of the Program governed by this Governance account
     #[inline(always)]
-    pub fn program_data(&mut self, program_data: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn program_data(&mut self, program_data: solana_address::Address) -> &mut Self {
         self.program_data = Some(program_data);
         self
     }
@@ -229,7 +227,7 @@ impl CreateProgramGovernanceBuilder {
     #[inline(always)]
     pub fn current_upgrade_authority(
         &mut self,
-        current_upgrade_authority: solana_pubkey::Pubkey,
+        current_upgrade_authority: solana_address::Address,
     ) -> &mut Self {
         self.current_upgrade_authority = Some(current_upgrade_authority);
         self
@@ -238,13 +236,13 @@ impl CreateProgramGovernanceBuilder {
     #[inline(always)]
     pub fn governing_token_owner_record(
         &mut self,
-        governing_token_owner_record: solana_pubkey::Pubkey,
+        governing_token_owner_record: solana_address::Address,
     ) -> &mut Self {
         self.governing_token_owner_record = Some(governing_token_owner_record);
         self
     }
     #[inline(always)]
-    pub fn payer(&mut self, payer: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
         self.payer = Some(payer);
         self
     }
@@ -252,28 +250,28 @@ impl CreateProgramGovernanceBuilder {
     #[inline(always)]
     pub fn bpf_upgradeable_loader_program(
         &mut self,
-        bpf_upgradeable_loader_program: solana_pubkey::Pubkey,
+        bpf_upgradeable_loader_program: solana_address::Address,
     ) -> &mut Self {
         self.bpf_upgradeable_loader_program = Some(bpf_upgradeable_loader_program);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
-    pub fn system_program(&mut self, system_program: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn system_program(&mut self, system_program: solana_address::Address) -> &mut Self {
         self.system_program = Some(system_program);
         self
     }
     #[inline(always)]
     pub fn governance_authority(
         &mut self,
-        governance_authority: solana_pubkey::Pubkey,
+        governance_authority: solana_address::Address,
     ) -> &mut Self {
         self.governance_authority = Some(governance_authority);
         self
     }
     /// RealmConfig account. seeds=['realm-config', realm]
     #[inline(always)]
-    pub fn realm_config(&mut self, realm_config: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn realm_config(&mut self, realm_config: solana_address::Address) -> &mut Self {
         self.realm_config = Some(realm_config);
         self
     }
@@ -282,7 +280,7 @@ impl CreateProgramGovernanceBuilder {
     #[inline(always)]
     pub fn voter_weight_record(
         &mut self,
-        voter_weight_record: Option<solana_pubkey::Pubkey>,
+        voter_weight_record: Option<solana_address::Address>,
     ) -> &mut Self {
         self.voter_weight_record = voter_weight_record;
         self
@@ -333,7 +331,7 @@ impl CreateProgramGovernanceBuilder {
                 .expect("bpf_upgradeable_loader_program is not set"),
             system_program: self
                 .system_program
-                .unwrap_or(solana_pubkey::pubkey!("11111111111111111111111111111111")),
+                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
             governance_authority: self
                 .governance_authority
                 .expect("governance_authority is not set"),

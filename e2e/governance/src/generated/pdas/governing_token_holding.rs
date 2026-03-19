@@ -5,16 +5,18 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
+use solana_address::Address;
+
 use crate::SPL_GOVERNANCE_ID;
 
 pub const GOVERNING_TOKEN_HOLDING_SEED: &'static [u8] = b"governance";
 /// Governing token holding account
 pub fn create_governing_token_holding_pda(
-    realm: solana_pubkey::Pubkey,
-    governing_token_mint: solana_pubkey::Pubkey,
+    realm: Address,
+    governing_token_mint: Address,
     bump: u8,
-) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
-    solana_pubkey::Pubkey::create_program_address(
+) -> Result<solana_address::Address, solana_address::error::AddressError> {
+    solana_address::Address::create_program_address(
         &[
             GOVERNING_TOKEN_HOLDING_SEED,
             realm.as_ref(),
@@ -26,10 +28,10 @@ pub fn create_governing_token_holding_pda(
 }
 /// Governing token holding account
 pub fn find_governing_token_holding_pda(
-    realm: &solana_pubkey::Pubkey,
-    governing_token_mint: &solana_pubkey::Pubkey,
-) -> (solana_pubkey::Pubkey, u8) {
-    solana_pubkey::Pubkey::find_program_address(
+    realm: &Address,
+    governing_token_mint: &Address,
+) -> (solana_address::Address, u8) {
+    solana_address::Address::find_program_address(
         &[
             GOVERNING_TOKEN_HOLDING_SEED,
             realm.as_ref(),

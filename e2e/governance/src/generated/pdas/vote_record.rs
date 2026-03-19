@@ -5,16 +5,18 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
+use solana_address::Address;
+
 use crate::SPL_GOVERNANCE_ID;
 
 pub const VOTE_RECORD_SEED: &'static [u8] = b"governance";
 /// Vote record on a proposal
 pub fn create_vote_record_pda(
-    proposal: solana_pubkey::Pubkey,
-    token_owner_record: solana_pubkey::Pubkey,
+    proposal: Address,
+    token_owner_record: Address,
     bump: u8,
-) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
-    solana_pubkey::Pubkey::create_program_address(
+) -> Result<solana_address::Address, solana_address::error::AddressError> {
+    solana_address::Address::create_program_address(
         &[
             VOTE_RECORD_SEED,
             proposal.as_ref(),
@@ -26,10 +28,10 @@ pub fn create_vote_record_pda(
 }
 /// Vote record on a proposal
 pub fn find_vote_record_pda(
-    proposal: &solana_pubkey::Pubkey,
-    token_owner_record: &solana_pubkey::Pubkey,
-) -> (solana_pubkey::Pubkey, u8) {
-    solana_pubkey::Pubkey::find_program_address(
+    proposal: &Address,
+    token_owner_record: &Address,
+) -> (solana_address::Address, u8) {
+    solana_address::Address::find_program_address(
         &[
             VOTE_RECORD_SEED,
             proposal.as_ref(),

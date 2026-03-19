@@ -15,7 +15,7 @@ pub const SET_GOVERNANCE_CONFIG_DISCRIMINATOR: u8 = 19;
 #[derive(Debug)]
 pub struct SetGovernanceConfig {
     /// The governance account the config is for
-    pub governance_account: solana_pubkey::Pubkey,
+    pub governance_account: solana_address::Address,
 }
 
 impl SetGovernanceConfig {
@@ -53,7 +53,6 @@ impl SetGovernanceConfig {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SetGovernanceConfigInstructionData {
     discriminator: u8,
 }
@@ -75,7 +74,6 @@ impl Default for SetGovernanceConfigInstructionData {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SetGovernanceConfigInstructionArgs {
     pub config: GovernanceConfig,
 }
@@ -93,7 +91,7 @@ impl SetGovernanceConfigInstructionArgs {
 ///   0. `[writable, signer]` governance_account
 #[derive(Clone, Debug, Default)]
 pub struct SetGovernanceConfigBuilder {
-    governance_account: Option<solana_pubkey::Pubkey>,
+    governance_account: Option<solana_address::Address>,
     config: Option<GovernanceConfig>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
@@ -104,7 +102,7 @@ impl SetGovernanceConfigBuilder {
     }
     /// The governance account the config is for
     #[inline(always)]
-    pub fn governance_account(&mut self, governance_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn governance_account(&mut self, governance_account: solana_address::Address) -> &mut Self {
         self.governance_account = Some(governance_account);
         self
     }

@@ -8,15 +8,14 @@
 use crate::generated::types::MintMaxVoterWeightSource;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use solana_pubkey::Pubkey;
+use solana_address::Address;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct RealmConfig {
     pub legacy1: u8,
     pub legacy2: u8,
     pub reserved: [u8; 6],
     pub min_community_weight_to_create_governance: u64,
     pub community_mint_max_voter_weight_source: MintMaxVoterWeightSource,
-    pub council_mint: Option<Pubkey>,
+    pub council_mint: Option<Address>,
 }

@@ -14,13 +14,13 @@ pub const CREATE_NATIVE_TREASURY_DISCRIMINATOR: u8 = 25;
 #[derive(Debug)]
 pub struct CreateNativeTreasury {
     /// Governance account the treasury account is for
-    pub governance_account: solana_pubkey::Pubkey,
+    pub governance_account: solana_address::Address,
     /// seeds=['native-treasury', governance]
-    pub native_treasury_account: solana_pubkey::Pubkey,
+    pub native_treasury_account: solana_address::Address,
 
-    pub payer: solana_pubkey::Pubkey,
+    pub payer: solana_address::Address,
 
-    pub system_program: solana_pubkey::Pubkey,
+    pub system_program: solana_address::Address,
 }
 
 impl CreateNativeTreasury {
@@ -63,7 +63,6 @@ impl CreateNativeTreasury {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CreateNativeTreasuryInstructionData {
     discriminator: u8,
 }
@@ -94,10 +93,10 @@ impl Default for CreateNativeTreasuryInstructionData {
 ///   3. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct CreateNativeTreasuryBuilder {
-    governance_account: Option<solana_pubkey::Pubkey>,
-    native_treasury_account: Option<solana_pubkey::Pubkey>,
-    payer: Option<solana_pubkey::Pubkey>,
-    system_program: Option<solana_pubkey::Pubkey>,
+    governance_account: Option<solana_address::Address>,
+    native_treasury_account: Option<solana_address::Address>,
+    payer: Option<solana_address::Address>,
+    system_program: Option<solana_address::Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
@@ -107,7 +106,7 @@ impl CreateNativeTreasuryBuilder {
     }
     /// Governance account the treasury account is for
     #[inline(always)]
-    pub fn governance_account(&mut self, governance_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn governance_account(&mut self, governance_account: solana_address::Address) -> &mut Self {
         self.governance_account = Some(governance_account);
         self
     }
@@ -115,19 +114,19 @@ impl CreateNativeTreasuryBuilder {
     #[inline(always)]
     pub fn native_treasury_account(
         &mut self,
-        native_treasury_account: solana_pubkey::Pubkey,
+        native_treasury_account: solana_address::Address,
     ) -> &mut Self {
         self.native_treasury_account = Some(native_treasury_account);
         self
     }
     #[inline(always)]
-    pub fn payer(&mut self, payer: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
         self.payer = Some(payer);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
-    pub fn system_program(&mut self, system_program: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn system_program(&mut self, system_program: solana_address::Address) -> &mut Self {
         self.system_program = Some(system_program);
         self
     }
@@ -158,7 +157,7 @@ impl CreateNativeTreasuryBuilder {
             payer: self.payer.expect("payer is not set"),
             system_program: self
                 .system_program
-                .unwrap_or(solana_pubkey::pubkey!("11111111111111111111111111111111")),
+                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)

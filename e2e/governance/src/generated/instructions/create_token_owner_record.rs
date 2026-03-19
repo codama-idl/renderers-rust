@@ -13,17 +13,17 @@ pub const CREATE_TOKEN_OWNER_RECORD_DISCRIMINATOR: u8 = 23;
 /// Accounts.
 #[derive(Debug)]
 pub struct CreateTokenOwnerRecord {
-    pub realm_account: solana_pubkey::Pubkey,
+    pub realm_account: solana_address::Address,
 
-    pub governing_token_owner_account: solana_pubkey::Pubkey,
+    pub governing_token_owner_account: solana_address::Address,
     /// seeds=['governance', realm, governing_token_mint, governing_token_owner]
-    pub token_owner_record: solana_pubkey::Pubkey,
+    pub token_owner_record: solana_address::Address,
 
-    pub governing_token_mint: solana_pubkey::Pubkey,
+    pub governing_token_mint: solana_address::Address,
 
-    pub payer: solana_pubkey::Pubkey,
+    pub payer: solana_address::Address,
 
-    pub system_program: solana_pubkey::Pubkey,
+    pub system_program: solana_address::Address,
 }
 
 impl CreateTokenOwnerRecord {
@@ -74,7 +74,6 @@ impl CreateTokenOwnerRecord {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CreateTokenOwnerRecordInstructionData {
     discriminator: u8,
 }
@@ -107,12 +106,12 @@ impl Default for CreateTokenOwnerRecordInstructionData {
 ///   5. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct CreateTokenOwnerRecordBuilder {
-    realm_account: Option<solana_pubkey::Pubkey>,
-    governing_token_owner_account: Option<solana_pubkey::Pubkey>,
-    token_owner_record: Option<solana_pubkey::Pubkey>,
-    governing_token_mint: Option<solana_pubkey::Pubkey>,
-    payer: Option<solana_pubkey::Pubkey>,
-    system_program: Option<solana_pubkey::Pubkey>,
+    realm_account: Option<solana_address::Address>,
+    governing_token_owner_account: Option<solana_address::Address>,
+    token_owner_record: Option<solana_address::Address>,
+    governing_token_mint: Option<solana_address::Address>,
+    payer: Option<solana_address::Address>,
+    system_program: Option<solana_address::Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
@@ -121,40 +120,40 @@ impl CreateTokenOwnerRecordBuilder {
         Self::default()
     }
     #[inline(always)]
-    pub fn realm_account(&mut self, realm_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn realm_account(&mut self, realm_account: solana_address::Address) -> &mut Self {
         self.realm_account = Some(realm_account);
         self
     }
     #[inline(always)]
     pub fn governing_token_owner_account(
         &mut self,
-        governing_token_owner_account: solana_pubkey::Pubkey,
+        governing_token_owner_account: solana_address::Address,
     ) -> &mut Self {
         self.governing_token_owner_account = Some(governing_token_owner_account);
         self
     }
     /// seeds=['governance', realm, governing_token_mint, governing_token_owner]
     #[inline(always)]
-    pub fn token_owner_record(&mut self, token_owner_record: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn token_owner_record(&mut self, token_owner_record: solana_address::Address) -> &mut Self {
         self.token_owner_record = Some(token_owner_record);
         self
     }
     #[inline(always)]
     pub fn governing_token_mint(
         &mut self,
-        governing_token_mint: solana_pubkey::Pubkey,
+        governing_token_mint: solana_address::Address,
     ) -> &mut Self {
         self.governing_token_mint = Some(governing_token_mint);
         self
     }
     #[inline(always)]
-    pub fn payer(&mut self, payer: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
         self.payer = Some(payer);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
-    pub fn system_program(&mut self, system_program: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn system_program(&mut self, system_program: solana_address::Address) -> &mut Self {
         self.system_program = Some(system_program);
         self
     }
@@ -189,7 +188,7 @@ impl CreateTokenOwnerRecordBuilder {
             payer: self.payer.expect("payer is not set"),
             system_program: self
                 .system_program
-                .unwrap_or(solana_pubkey::pubkey!("11111111111111111111111111111111")),
+                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)

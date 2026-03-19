@@ -3,6 +3,8 @@
 
 {% block main %}
 
+{{ imports }}
+
 {% if program %}
 use crate::{{ program.name | snakeCase | upper }}_ID;
 {% endif %}
@@ -21,17 +23,13 @@ pub fn create_{{ pda.name | snakeCase }}_pda(
   {% if hasVariableSeeds %}
     {% for seed in seeds %}
       {% if seed.kind === 'variablePdaSeedNode' %}
-        {% if seed.resolvedType.kind == 'publicKeyTypeNode' %}
-    {{ seed.name | snakeCase }}: solana_pubkey::Pubkey,
-        {% else %}
     {{ seed.name | snakeCase }}: {{ seed.typeManifest.type }},
-        {% endif %}
       {% endif %}
     {% endfor %}
   {% endif %}
     bump: u8,
-) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
-    solana_pubkey::Pubkey::create_program_address(
+) -> Result<solana_address::Address, solana_address::error::AddressError> {
+    solana_address::Address::create_program_address(
         &[
         {% set constantUsageIndex = 0 %}
         {% for seed in seeds %}
@@ -64,17 +62,15 @@ pub fn create_{{ pda.name | snakeCase }}_pda(
 pub fn find_{{ pda.name | snakeCase }}_pda(
 {% if hasVariableSeeds %}
   {% for seed in seeds %}
-    {% if seed.kind == 'variablePdaSeedNode' %}
-      {% if seed.resolvedType.kind == 'publicKeyTypeNode' %}
-    {{ seed.name | snakeCase }}: &solana_pubkey::Pubkey,
-      {% else %}
+    {% if seed.kind == 'variablePdaSeedNode' and seed.resolvedType.kind == 'publicKeyTypeNode' %}
+    {{ seed.name | snakeCase }}: &{{ seed.typeManifest.type }},
+    {% elif seed.kind === 'variablePdaSeedNode' %}
     {{ seed.name | snakeCase }}: {{ seed.typeManifest.type }},
-      {% endif %}
     {% endif %}
   {% endfor %}
 {% endif %}
-) -> (solana_pubkey::Pubkey, u8) {
-    solana_pubkey::Pubkey::find_program_address(
+) -> (solana_address::Address, u8) {
+    solana_address::Address::find_program_address(
         &[
         {% set constantUsageIndex2 = 0 %}
         {% for seed in seeds %}

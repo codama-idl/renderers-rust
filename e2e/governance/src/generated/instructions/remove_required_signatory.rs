@@ -13,11 +13,11 @@ pub const REMOVE_REQUIRED_SIGNATORY_DISCRIMINATOR: u8 = 30;
 /// Accounts.
 #[derive(Debug)]
 pub struct RemoveRequiredSignatory {
-    pub governance_account: solana_pubkey::Pubkey,
+    pub governance_account: solana_address::Address,
 
-    pub required_signatory_account: solana_pubkey::Pubkey,
+    pub required_signatory_account: solana_address::Address,
     /// Beneficiary Account which would receive lamports from the disposed RequiredSignatory Account
-    pub beneficiary_account: solana_pubkey::Pubkey,
+    pub beneficiary_account: solana_address::Address,
 }
 
 impl RemoveRequiredSignatory {
@@ -57,7 +57,6 @@ impl RemoveRequiredSignatory {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct RemoveRequiredSignatoryInstructionData {
     discriminator: u8,
 }
@@ -87,9 +86,9 @@ impl Default for RemoveRequiredSignatoryInstructionData {
 ///   2. `[writable]` beneficiary_account
 #[derive(Clone, Debug, Default)]
 pub struct RemoveRequiredSignatoryBuilder {
-    governance_account: Option<solana_pubkey::Pubkey>,
-    required_signatory_account: Option<solana_pubkey::Pubkey>,
-    beneficiary_account: Option<solana_pubkey::Pubkey>,
+    governance_account: Option<solana_address::Address>,
+    required_signatory_account: Option<solana_address::Address>,
+    beneficiary_account: Option<solana_address::Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
@@ -98,21 +97,24 @@ impl RemoveRequiredSignatoryBuilder {
         Self::default()
     }
     #[inline(always)]
-    pub fn governance_account(&mut self, governance_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn governance_account(&mut self, governance_account: solana_address::Address) -> &mut Self {
         self.governance_account = Some(governance_account);
         self
     }
     #[inline(always)]
     pub fn required_signatory_account(
         &mut self,
-        required_signatory_account: solana_pubkey::Pubkey,
+        required_signatory_account: solana_address::Address,
     ) -> &mut Self {
         self.required_signatory_account = Some(required_signatory_account);
         self
     }
     /// Beneficiary Account which would receive lamports from the disposed RequiredSignatory Account
     #[inline(always)]
-    pub fn beneficiary_account(&mut self, beneficiary_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn beneficiary_account(
+        &mut self,
+        beneficiary_account: solana_address::Address,
+    ) -> &mut Self {
         self.beneficiary_account = Some(beneficiary_account);
         self
     }

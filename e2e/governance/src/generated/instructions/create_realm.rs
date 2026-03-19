@@ -15,38 +15,38 @@ pub const CREATE_REALM_DISCRIMINATOR: u8 = 0;
 #[derive(Debug)]
 pub struct CreateRealm {
     /// Governance Realm account
-    pub realm_account: solana_pubkey::Pubkey,
+    pub realm_account: solana_address::Address,
     /// The authority of the Realm
-    pub realm_authority: solana_pubkey::Pubkey,
+    pub realm_authority: solana_address::Address,
     /// The mint address of the token to be used as the community mint
-    pub community_token_mint: solana_pubkey::Pubkey,
+    pub community_token_mint: solana_address::Address,
     /// The account to hold the community tokens.
     ///     PDA seeds=['governance', realm, community_mint]
-    pub community_token_holding_account: solana_pubkey::Pubkey,
+    pub community_token_holding_account: solana_address::Address,
     /// the payer of this transaction
-    pub payer: solana_pubkey::Pubkey,
+    pub payer: solana_address::Address,
     /// System Program
-    pub system_program: solana_pubkey::Pubkey,
+    pub system_program: solana_address::Address,
     /// SPL Token Program
-    pub token_program: solana_pubkey::Pubkey,
+    pub token_program: solana_address::Address,
     /// SysVar Rent
-    pub rent: solana_pubkey::Pubkey,
+    pub rent: solana_address::Address,
     /// The mint address of the token to be used as the council mint
-    pub council_token_mint: Option<solana_pubkey::Pubkey>,
+    pub council_token_mint: Option<solana_address::Address>,
     /// The account to hold the council tokens.
     ///     PDA seeds: ['governance',realm,council_mint]
     ///     
-    pub council_token_holding_account: Option<solana_pubkey::Pubkey>,
+    pub council_token_holding_account: Option<solana_address::Address>,
     /// Realm Config account
-    pub realm_config: solana_pubkey::Pubkey,
+    pub realm_config: solana_address::Address,
     /// Optional Community Voter Weight Addin Program Id
-    pub community_voter_weight_addin: Option<solana_pubkey::Pubkey>,
+    pub community_voter_weight_addin: Option<solana_address::Address>,
     /// Optional Max Community Voter Weight Addin Program Id
-    pub max_community_voter_weight_addin: Option<solana_pubkey::Pubkey>,
+    pub max_community_voter_weight_addin: Option<solana_address::Address>,
     /// Optional Council Voter Weight Addin Program Id
-    pub council_voter_weight_addin: Option<solana_pubkey::Pubkey>,
+    pub council_voter_weight_addin: Option<solana_address::Address>,
     /// Optional Max Council Voter Weight Addin Program Id
-    pub max_council_voter_weight_addin: Option<solana_pubkey::Pubkey>,
+    pub max_council_voter_weight_addin: Option<solana_address::Address>,
 }
 
 impl CreateRealm {
@@ -173,7 +173,6 @@ impl CreateRealm {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CreateRealmInstructionData {
     discriminator: u8,
 }
@@ -195,7 +194,6 @@ impl Default for CreateRealmInstructionData {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CreateRealmInstructionArgs {
     pub name: String,
     pub config_args: RealmConfigParams,
@@ -228,21 +226,21 @@ impl CreateRealmInstructionArgs {
 ///   14. `[optional]` max_council_voter_weight_addin
 #[derive(Clone, Debug, Default)]
 pub struct CreateRealmBuilder {
-    realm_account: Option<solana_pubkey::Pubkey>,
-    realm_authority: Option<solana_pubkey::Pubkey>,
-    community_token_mint: Option<solana_pubkey::Pubkey>,
-    community_token_holding_account: Option<solana_pubkey::Pubkey>,
-    payer: Option<solana_pubkey::Pubkey>,
-    system_program: Option<solana_pubkey::Pubkey>,
-    token_program: Option<solana_pubkey::Pubkey>,
-    rent: Option<solana_pubkey::Pubkey>,
-    council_token_mint: Option<solana_pubkey::Pubkey>,
-    council_token_holding_account: Option<solana_pubkey::Pubkey>,
-    realm_config: Option<solana_pubkey::Pubkey>,
-    community_voter_weight_addin: Option<solana_pubkey::Pubkey>,
-    max_community_voter_weight_addin: Option<solana_pubkey::Pubkey>,
-    council_voter_weight_addin: Option<solana_pubkey::Pubkey>,
-    max_council_voter_weight_addin: Option<solana_pubkey::Pubkey>,
+    realm_account: Option<solana_address::Address>,
+    realm_authority: Option<solana_address::Address>,
+    community_token_mint: Option<solana_address::Address>,
+    community_token_holding_account: Option<solana_address::Address>,
+    payer: Option<solana_address::Address>,
+    system_program: Option<solana_address::Address>,
+    token_program: Option<solana_address::Address>,
+    rent: Option<solana_address::Address>,
+    council_token_mint: Option<solana_address::Address>,
+    council_token_holding_account: Option<solana_address::Address>,
+    realm_config: Option<solana_address::Address>,
+    community_voter_weight_addin: Option<solana_address::Address>,
+    max_community_voter_weight_addin: Option<solana_address::Address>,
+    council_voter_weight_addin: Option<solana_address::Address>,
+    max_council_voter_weight_addin: Option<solana_address::Address>,
     name: Option<String>,
     config_args: Option<RealmConfigParams>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
@@ -254,13 +252,13 @@ impl CreateRealmBuilder {
     }
     /// Governance Realm account
     #[inline(always)]
-    pub fn realm_account(&mut self, realm_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn realm_account(&mut self, realm_account: solana_address::Address) -> &mut Self {
         self.realm_account = Some(realm_account);
         self
     }
     /// The authority of the Realm
     #[inline(always)]
-    pub fn realm_authority(&mut self, realm_authority: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn realm_authority(&mut self, realm_authority: solana_address::Address) -> &mut Self {
         self.realm_authority = Some(realm_authority);
         self
     }
@@ -268,7 +266,7 @@ impl CreateRealmBuilder {
     #[inline(always)]
     pub fn community_token_mint(
         &mut self,
-        community_token_mint: solana_pubkey::Pubkey,
+        community_token_mint: solana_address::Address,
     ) -> &mut Self {
         self.community_token_mint = Some(community_token_mint);
         self
@@ -278,35 +276,35 @@ impl CreateRealmBuilder {
     #[inline(always)]
     pub fn community_token_holding_account(
         &mut self,
-        community_token_holding_account: solana_pubkey::Pubkey,
+        community_token_holding_account: solana_address::Address,
     ) -> &mut Self {
         self.community_token_holding_account = Some(community_token_holding_account);
         self
     }
     /// the payer of this transaction
     #[inline(always)]
-    pub fn payer(&mut self, payer: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
         self.payer = Some(payer);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
     /// System Program
     #[inline(always)]
-    pub fn system_program(&mut self, system_program: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn system_program(&mut self, system_program: solana_address::Address) -> &mut Self {
         self.system_program = Some(system_program);
         self
     }
     /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
     /// SPL Token Program
     #[inline(always)]
-    pub fn token_program(&mut self, token_program: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn token_program(&mut self, token_program: solana_address::Address) -> &mut Self {
         self.token_program = Some(token_program);
         self
     }
     /// `[optional account, default to 'SysvarRent111111111111111111111111111111111']`
     /// SysVar Rent
     #[inline(always)]
-    pub fn rent(&mut self, rent: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn rent(&mut self, rent: solana_address::Address) -> &mut Self {
         self.rent = Some(rent);
         self
     }
@@ -315,7 +313,7 @@ impl CreateRealmBuilder {
     #[inline(always)]
     pub fn council_token_mint(
         &mut self,
-        council_token_mint: Option<solana_pubkey::Pubkey>,
+        council_token_mint: Option<solana_address::Address>,
     ) -> &mut Self {
         self.council_token_mint = council_token_mint;
         self
@@ -327,14 +325,14 @@ impl CreateRealmBuilder {
     #[inline(always)]
     pub fn council_token_holding_account(
         &mut self,
-        council_token_holding_account: Option<solana_pubkey::Pubkey>,
+        council_token_holding_account: Option<solana_address::Address>,
     ) -> &mut Self {
         self.council_token_holding_account = council_token_holding_account;
         self
     }
     /// Realm Config account
     #[inline(always)]
-    pub fn realm_config(&mut self, realm_config: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn realm_config(&mut self, realm_config: solana_address::Address) -> &mut Self {
         self.realm_config = Some(realm_config);
         self
     }
@@ -343,7 +341,7 @@ impl CreateRealmBuilder {
     #[inline(always)]
     pub fn community_voter_weight_addin(
         &mut self,
-        community_voter_weight_addin: Option<solana_pubkey::Pubkey>,
+        community_voter_weight_addin: Option<solana_address::Address>,
     ) -> &mut Self {
         self.community_voter_weight_addin = community_voter_weight_addin;
         self
@@ -353,7 +351,7 @@ impl CreateRealmBuilder {
     #[inline(always)]
     pub fn max_community_voter_weight_addin(
         &mut self,
-        max_community_voter_weight_addin: Option<solana_pubkey::Pubkey>,
+        max_community_voter_weight_addin: Option<solana_address::Address>,
     ) -> &mut Self {
         self.max_community_voter_weight_addin = max_community_voter_weight_addin;
         self
@@ -363,7 +361,7 @@ impl CreateRealmBuilder {
     #[inline(always)]
     pub fn council_voter_weight_addin(
         &mut self,
-        council_voter_weight_addin: Option<solana_pubkey::Pubkey>,
+        council_voter_weight_addin: Option<solana_address::Address>,
     ) -> &mut Self {
         self.council_voter_weight_addin = council_voter_weight_addin;
         self
@@ -373,7 +371,7 @@ impl CreateRealmBuilder {
     #[inline(always)]
     pub fn max_council_voter_weight_addin(
         &mut self,
-        max_council_voter_weight_addin: Option<solana_pubkey::Pubkey>,
+        max_council_voter_weight_addin: Option<solana_address::Address>,
     ) -> &mut Self {
         self.max_council_voter_weight_addin = max_council_voter_weight_addin;
         self
@@ -417,11 +415,11 @@ impl CreateRealmBuilder {
             payer: self.payer.expect("payer is not set"),
             system_program: self
                 .system_program
-                .unwrap_or(solana_pubkey::pubkey!("11111111111111111111111111111111")),
-            token_program: self.token_program.unwrap_or(solana_pubkey::pubkey!(
+                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
+            token_program: self.token_program.unwrap_or(solana_address::address!(
                 "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
             )),
-            rent: self.rent.unwrap_or(solana_pubkey::pubkey!(
+            rent: self.rent.unwrap_or(solana_address::address!(
                 "SysvarRent111111111111111111111111111111111"
             )),
             council_token_mint: self.council_token_mint,

@@ -349,6 +349,7 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                         programsToExport.length > 0 ||
                         accountsToExport.length > 0 ||
                         instructionsToExport.length > 0 ||
+                        pdasToExport.length > 0 ||
                         definedTypesToExport.length > 0;
 
                     const ctx = {

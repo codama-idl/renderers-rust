@@ -13,19 +13,19 @@ pub const FINALIZE_VOTE_DISCRIMINATOR: u8 = 14;
 /// Accounts.
 #[derive(Debug)]
 pub struct FinalizeVote {
-    pub realm_account: solana_pubkey::Pubkey,
+    pub realm_account: solana_address::Address,
 
-    pub governance_account: solana_pubkey::Pubkey,
+    pub governance_account: solana_address::Address,
 
-    pub proposal_account: solana_pubkey::Pubkey,
+    pub proposal_account: solana_address::Address,
     /// TokenOwnerRecord of the Proposal owner
-    pub token_owner_record: solana_pubkey::Pubkey,
+    pub token_owner_record: solana_address::Address,
 
-    pub governing_token_mint: solana_pubkey::Pubkey,
+    pub governing_token_mint: solana_address::Address,
     /// RealmConfig account. PDA seeds: ['realm-config', realm]
-    pub realm_config: solana_pubkey::Pubkey,
+    pub realm_config: solana_address::Address,
     /// Optional Max Voter Weight Record
-    pub max_voter_weight_record: Option<solana_pubkey::Pubkey>,
+    pub max_voter_weight_record: Option<solana_address::Address>,
 }
 
 impl FinalizeVote {
@@ -86,7 +86,6 @@ impl FinalizeVote {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct FinalizeVoteInstructionData {
     discriminator: u8,
 }
@@ -120,13 +119,13 @@ impl Default for FinalizeVoteInstructionData {
 ///   6. `[optional]` max_voter_weight_record
 #[derive(Clone, Debug, Default)]
 pub struct FinalizeVoteBuilder {
-    realm_account: Option<solana_pubkey::Pubkey>,
-    governance_account: Option<solana_pubkey::Pubkey>,
-    proposal_account: Option<solana_pubkey::Pubkey>,
-    token_owner_record: Option<solana_pubkey::Pubkey>,
-    governing_token_mint: Option<solana_pubkey::Pubkey>,
-    realm_config: Option<solana_pubkey::Pubkey>,
-    max_voter_weight_record: Option<solana_pubkey::Pubkey>,
+    realm_account: Option<solana_address::Address>,
+    governance_account: Option<solana_address::Address>,
+    proposal_account: Option<solana_address::Address>,
+    token_owner_record: Option<solana_address::Address>,
+    governing_token_mint: Option<solana_address::Address>,
+    realm_config: Option<solana_address::Address>,
+    max_voter_weight_record: Option<solana_address::Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
@@ -135,37 +134,37 @@ impl FinalizeVoteBuilder {
         Self::default()
     }
     #[inline(always)]
-    pub fn realm_account(&mut self, realm_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn realm_account(&mut self, realm_account: solana_address::Address) -> &mut Self {
         self.realm_account = Some(realm_account);
         self
     }
     #[inline(always)]
-    pub fn governance_account(&mut self, governance_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn governance_account(&mut self, governance_account: solana_address::Address) -> &mut Self {
         self.governance_account = Some(governance_account);
         self
     }
     #[inline(always)]
-    pub fn proposal_account(&mut self, proposal_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn proposal_account(&mut self, proposal_account: solana_address::Address) -> &mut Self {
         self.proposal_account = Some(proposal_account);
         self
     }
     /// TokenOwnerRecord of the Proposal owner
     #[inline(always)]
-    pub fn token_owner_record(&mut self, token_owner_record: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn token_owner_record(&mut self, token_owner_record: solana_address::Address) -> &mut Self {
         self.token_owner_record = Some(token_owner_record);
         self
     }
     #[inline(always)]
     pub fn governing_token_mint(
         &mut self,
-        governing_token_mint: solana_pubkey::Pubkey,
+        governing_token_mint: solana_address::Address,
     ) -> &mut Self {
         self.governing_token_mint = Some(governing_token_mint);
         self
     }
     /// RealmConfig account. PDA seeds: ['realm-config', realm]
     #[inline(always)]
-    pub fn realm_config(&mut self, realm_config: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn realm_config(&mut self, realm_config: solana_address::Address) -> &mut Self {
         self.realm_config = Some(realm_config);
         self
     }
@@ -174,7 +173,7 @@ impl FinalizeVoteBuilder {
     #[inline(always)]
     pub fn max_voter_weight_record(
         &mut self,
-        max_voter_weight_record: Option<solana_pubkey::Pubkey>,
+        max_voter_weight_record: Option<solana_address::Address>,
     ) -> &mut Self {
         self.max_voter_weight_record = max_voter_weight_record;
         self

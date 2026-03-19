@@ -5,17 +5,19 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
+use solana_address::Address;
+
 use crate::SPL_GOVERNANCE_ID;
 
 pub const PROPOSAL_SEED: &'static [u8] = b"governance";
 /// Governance proposal
 pub fn create_proposal_pda(
-    governance: solana_pubkey::Pubkey,
-    governing_token_mint: solana_pubkey::Pubkey,
-    proposal_seed: solana_pubkey::Pubkey,
+    governance: Address,
+    governing_token_mint: Address,
+    proposal_seed: Address,
     bump: u8,
-) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
-    solana_pubkey::Pubkey::create_program_address(
+) -> Result<solana_address::Address, solana_address::error::AddressError> {
+    solana_address::Address::create_program_address(
         &[
             PROPOSAL_SEED,
             governance.as_ref(),
@@ -28,11 +30,11 @@ pub fn create_proposal_pda(
 }
 /// Governance proposal
 pub fn find_proposal_pda(
-    governance: &solana_pubkey::Pubkey,
-    governing_token_mint: &solana_pubkey::Pubkey,
-    proposal_seed: &solana_pubkey::Pubkey,
-) -> (solana_pubkey::Pubkey, u8) {
-    solana_pubkey::Pubkey::find_program_address(
+    governance: &Address,
+    governing_token_mint: &Address,
+    proposal_seed: &Address,
+) -> (solana_address::Address, u8) {
+    solana_address::Address::find_program_address(
         &[
             PROPOSAL_SEED,
             governance.as_ref(),

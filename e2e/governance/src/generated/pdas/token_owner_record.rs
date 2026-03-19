@@ -5,17 +5,19 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
+use solana_address::Address;
+
 use crate::SPL_GOVERNANCE_ID;
 
 pub const TOKEN_OWNER_RECORD_SEED: &'static [u8] = b"governance";
 /// Token owner's record within a realm
 pub fn create_token_owner_record_pda(
-    realm: solana_pubkey::Pubkey,
-    governing_token_mint: solana_pubkey::Pubkey,
-    governing_token_owner: solana_pubkey::Pubkey,
+    realm: Address,
+    governing_token_mint: Address,
+    governing_token_owner: Address,
     bump: u8,
-) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
-    solana_pubkey::Pubkey::create_program_address(
+) -> Result<solana_address::Address, solana_address::error::AddressError> {
+    solana_address::Address::create_program_address(
         &[
             TOKEN_OWNER_RECORD_SEED,
             realm.as_ref(),
@@ -28,11 +30,11 @@ pub fn create_token_owner_record_pda(
 }
 /// Token owner's record within a realm
 pub fn find_token_owner_record_pda(
-    realm: &solana_pubkey::Pubkey,
-    governing_token_mint: &solana_pubkey::Pubkey,
-    governing_token_owner: &solana_pubkey::Pubkey,
-) -> (solana_pubkey::Pubkey, u8) {
-    solana_pubkey::Pubkey::find_program_address(
+    realm: &Address,
+    governing_token_mint: &Address,
+    governing_token_owner: &Address,
+) -> (solana_address::Address, u8) {
+    solana_address::Address::find_program_address(
         &[
             TOKEN_OWNER_RECORD_SEED,
             realm.as_ref(),

@@ -25,9 +25,6 @@ solana-cpi = { workspace = true }
 solana-decode-error = { workspace = true }
 solana-instruction = { workspace = true }
 solana-program-error = { workspace = true }
-solana-pubkey = { workspace = true, features = ["curve25519", "borsh"] }
+solana-address = { workspace = true, features = ["borsh", "copy", "curve25519", "decode"] }
+spl-collections = { workspace = true }
 thiserror = { workspace = true }
-
-[dev-dependencies]
-assert_matches = { workspace = true }
-solana-sdk = { workspace = true }

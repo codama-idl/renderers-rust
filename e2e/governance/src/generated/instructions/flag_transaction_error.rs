@@ -13,13 +13,13 @@ pub const FLAG_TRANSACTION_ERROR_DISCRIMINATOR: u8 = 20;
 /// Accounts.
 #[derive(Debug)]
 pub struct FlagTransactionError {
-    pub proposal_account: solana_pubkey::Pubkey,
+    pub proposal_account: solana_address::Address,
     /// TokenOwnerRecord account of the Proposal owner
-    pub token_owner_record: solana_pubkey::Pubkey,
+    pub token_owner_record: solana_address::Address,
     /// Governance Authority (Token Owner or Governance Delegate)
-    pub governance_authority: solana_pubkey::Pubkey,
+    pub governance_authority: solana_address::Address,
     /// ProposalTransaction account to flag
-    pub proposal_transaction_account: solana_pubkey::Pubkey,
+    pub proposal_transaction_account: solana_address::Address,
 }
 
 impl FlagTransactionError {
@@ -63,7 +63,6 @@ impl FlagTransactionError {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct FlagTransactionErrorInstructionData {
     discriminator: u8,
 }
@@ -94,10 +93,10 @@ impl Default for FlagTransactionErrorInstructionData {
 ///   3. `[writable]` proposal_transaction_account
 #[derive(Clone, Debug, Default)]
 pub struct FlagTransactionErrorBuilder {
-    proposal_account: Option<solana_pubkey::Pubkey>,
-    token_owner_record: Option<solana_pubkey::Pubkey>,
-    governance_authority: Option<solana_pubkey::Pubkey>,
-    proposal_transaction_account: Option<solana_pubkey::Pubkey>,
+    proposal_account: Option<solana_address::Address>,
+    token_owner_record: Option<solana_address::Address>,
+    governance_authority: Option<solana_address::Address>,
+    proposal_transaction_account: Option<solana_address::Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
@@ -106,13 +105,13 @@ impl FlagTransactionErrorBuilder {
         Self::default()
     }
     #[inline(always)]
-    pub fn proposal_account(&mut self, proposal_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn proposal_account(&mut self, proposal_account: solana_address::Address) -> &mut Self {
         self.proposal_account = Some(proposal_account);
         self
     }
     /// TokenOwnerRecord account of the Proposal owner
     #[inline(always)]
-    pub fn token_owner_record(&mut self, token_owner_record: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn token_owner_record(&mut self, token_owner_record: solana_address::Address) -> &mut Self {
         self.token_owner_record = Some(token_owner_record);
         self
     }
@@ -120,7 +119,7 @@ impl FlagTransactionErrorBuilder {
     #[inline(always)]
     pub fn governance_authority(
         &mut self,
-        governance_authority: solana_pubkey::Pubkey,
+        governance_authority: solana_address::Address,
     ) -> &mut Self {
         self.governance_authority = Some(governance_authority);
         self
@@ -129,7 +128,7 @@ impl FlagTransactionErrorBuilder {
     #[inline(always)]
     pub fn proposal_transaction_account(
         &mut self,
-        proposal_transaction_account: solana_pubkey::Pubkey,
+        proposal_transaction_account: solana_address::Address,
     ) -> &mut Self {
         self.proposal_transaction_account = Some(proposal_transaction_account);
         self

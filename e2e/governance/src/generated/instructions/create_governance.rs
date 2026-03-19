@@ -15,24 +15,24 @@ pub const CREATE_GOVERNANCE_DISCRIMINATOR: u8 = 4;
 #[derive(Debug)]
 pub struct CreateGovernance {
     /// Realm account the created governance belongs to
-    pub realm_account: solana_pubkey::Pubkey,
+    pub realm_account: solana_address::Address,
     /// seeds=['account-governance', realm, governed_account]
-    pub governance_account: solana_pubkey::Pubkey,
+    pub governance_account: solana_address::Address,
     /// Account governed by this Governance (governing_account).
     ///         Note: the account doesn't have to exist and can be used only as a unique identified for the Governance account
-    pub governed_account: solana_pubkey::Pubkey,
+    pub governed_account: solana_address::Address,
     /// Used only if not signed by RealmAuthority
-    pub governing_token_owner_record: solana_pubkey::Pubkey,
+    pub governing_token_owner_record: solana_address::Address,
 
-    pub payer: solana_pubkey::Pubkey,
+    pub payer: solana_address::Address,
 
-    pub system_program: solana_pubkey::Pubkey,
+    pub system_program: solana_address::Address,
 
-    pub governance_authority: solana_pubkey::Pubkey,
+    pub governance_authority: solana_address::Address,
     /// seeds=['realm-config', realm]
-    pub realm_config_account: solana_pubkey::Pubkey,
+    pub realm_config_account: solana_address::Address,
     /// Optional Voter Weight Record
-    pub voter_weight_record: Option<solana_pubkey::Pubkey>,
+    pub voter_weight_record: Option<solana_address::Address>,
 }
 
 impl CreateGovernance {
@@ -106,7 +106,6 @@ impl CreateGovernance {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CreateGovernanceInstructionData {
     discriminator: u8,
 }
@@ -128,7 +127,6 @@ impl Default for CreateGovernanceInstructionData {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CreateGovernanceInstructionArgs {
     pub config: GovernanceConfig,
 }
@@ -154,15 +152,15 @@ impl CreateGovernanceInstructionArgs {
 ///   8. `[optional]` voter_weight_record
 #[derive(Clone, Debug, Default)]
 pub struct CreateGovernanceBuilder {
-    realm_account: Option<solana_pubkey::Pubkey>,
-    governance_account: Option<solana_pubkey::Pubkey>,
-    governed_account: Option<solana_pubkey::Pubkey>,
-    governing_token_owner_record: Option<solana_pubkey::Pubkey>,
-    payer: Option<solana_pubkey::Pubkey>,
-    system_program: Option<solana_pubkey::Pubkey>,
-    governance_authority: Option<solana_pubkey::Pubkey>,
-    realm_config_account: Option<solana_pubkey::Pubkey>,
-    voter_weight_record: Option<solana_pubkey::Pubkey>,
+    realm_account: Option<solana_address::Address>,
+    governance_account: Option<solana_address::Address>,
+    governed_account: Option<solana_address::Address>,
+    governing_token_owner_record: Option<solana_address::Address>,
+    payer: Option<solana_address::Address>,
+    system_program: Option<solana_address::Address>,
+    governance_authority: Option<solana_address::Address>,
+    realm_config_account: Option<solana_address::Address>,
+    voter_weight_record: Option<solana_address::Address>,
     config: Option<GovernanceConfig>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
@@ -173,20 +171,20 @@ impl CreateGovernanceBuilder {
     }
     /// Realm account the created governance belongs to
     #[inline(always)]
-    pub fn realm_account(&mut self, realm_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn realm_account(&mut self, realm_account: solana_address::Address) -> &mut Self {
         self.realm_account = Some(realm_account);
         self
     }
     /// seeds=['account-governance', realm, governed_account]
     #[inline(always)]
-    pub fn governance_account(&mut self, governance_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn governance_account(&mut self, governance_account: solana_address::Address) -> &mut Self {
         self.governance_account = Some(governance_account);
         self
     }
     /// Account governed by this Governance (governing_account).
     ///         Note: the account doesn't have to exist and can be used only as a unique identified for the Governance account
     #[inline(always)]
-    pub fn governed_account(&mut self, governed_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn governed_account(&mut self, governed_account: solana_address::Address) -> &mut Self {
         self.governed_account = Some(governed_account);
         self
     }
@@ -194,26 +192,26 @@ impl CreateGovernanceBuilder {
     #[inline(always)]
     pub fn governing_token_owner_record(
         &mut self,
-        governing_token_owner_record: solana_pubkey::Pubkey,
+        governing_token_owner_record: solana_address::Address,
     ) -> &mut Self {
         self.governing_token_owner_record = Some(governing_token_owner_record);
         self
     }
     #[inline(always)]
-    pub fn payer(&mut self, payer: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
         self.payer = Some(payer);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
-    pub fn system_program(&mut self, system_program: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn system_program(&mut self, system_program: solana_address::Address) -> &mut Self {
         self.system_program = Some(system_program);
         self
     }
     #[inline(always)]
     pub fn governance_authority(
         &mut self,
-        governance_authority: solana_pubkey::Pubkey,
+        governance_authority: solana_address::Address,
     ) -> &mut Self {
         self.governance_authority = Some(governance_authority);
         self
@@ -222,7 +220,7 @@ impl CreateGovernanceBuilder {
     #[inline(always)]
     pub fn realm_config_account(
         &mut self,
-        realm_config_account: solana_pubkey::Pubkey,
+        realm_config_account: solana_address::Address,
     ) -> &mut Self {
         self.realm_config_account = Some(realm_config_account);
         self
@@ -232,7 +230,7 @@ impl CreateGovernanceBuilder {
     #[inline(always)]
     pub fn voter_weight_record(
         &mut self,
-        voter_weight_record: Option<solana_pubkey::Pubkey>,
+        voter_weight_record: Option<solana_address::Address>,
     ) -> &mut Self {
         self.voter_weight_record = voter_weight_record;
         self
@@ -271,7 +269,7 @@ impl CreateGovernanceBuilder {
             payer: self.payer.expect("payer is not set"),
             system_program: self
                 .system_program
-                .unwrap_or(solana_pubkey::pubkey!("11111111111111111111111111111111")),
+                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
             governance_authority: self
                 .governance_authority
                 .expect("governance_authority is not set"),

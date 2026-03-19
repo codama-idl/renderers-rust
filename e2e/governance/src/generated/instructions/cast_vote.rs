@@ -14,35 +14,35 @@ pub const CAST_VOTE_DISCRIMINATOR: u8 = 13;
 /// Accounts.
 #[derive(Debug)]
 pub struct CastVote {
-    pub realm_account: solana_pubkey::Pubkey,
+    pub realm_account: solana_address::Address,
 
-    pub governance_account: solana_pubkey::Pubkey,
+    pub governance_account: solana_address::Address,
 
-    pub proposal_account: solana_pubkey::Pubkey,
+    pub proposal_account: solana_address::Address,
     /// TokenOwnerRecord of the Proposal owner
-    pub proposal_token_owner_record: solana_pubkey::Pubkey,
+    pub proposal_token_owner_record: solana_address::Address,
     /// TokenOwnerRecord of the voter. PDA seeds: ['governance',realm, vote_governing_token_mint, governing_token_owner]
-    pub voter_token_owner_record: solana_pubkey::Pubkey,
+    pub voter_token_owner_record: solana_address::Address,
     /// Governance Authority (Token Owner or Governance Delegate)
-    pub governance_authority: solana_pubkey::Pubkey,
+    pub governance_authority: solana_address::Address,
     /// Proposal VoteRecord account. PDA seeds: ['governance',proposal,token_owner_record]
-    pub proposal_vote_record: solana_pubkey::Pubkey,
+    pub proposal_vote_record: solana_address::Address,
     /// The Governing Token Mint which is used to cast the vote (vote_governing_token_mint).
     ///     The voting token mint is the governing_token_mint of the Proposal for Approve, Deny and Abstain votes.
     ///     For Veto vote the voting token mint is the mint of the opposite voting population.
     ///     Council mint to veto Community proposals and Community mint to veto Council proposals
     ///     Note: In the current version only Council veto is supported
-    pub governing_token_mint: solana_pubkey::Pubkey,
+    pub governing_token_mint: solana_address::Address,
 
-    pub payer: solana_pubkey::Pubkey,
+    pub payer: solana_address::Address,
 
-    pub system_program: solana_pubkey::Pubkey,
+    pub system_program: solana_address::Address,
     /// RealmConfig account. PDA seeds: ['realm-config', realm]
-    pub realm_config_account: solana_pubkey::Pubkey,
+    pub realm_config_account: solana_address::Address,
     /// Optional Voter Weight Record
-    pub voter_weight_record: Option<solana_pubkey::Pubkey>,
+    pub voter_weight_record: Option<solana_address::Address>,
     /// Optional Max Voter Weight Record
-    pub max_voter_weight_record: Option<solana_pubkey::Pubkey>,
+    pub max_voter_weight_record: Option<solana_address::Address>,
 }
 
 impl CastVote {
@@ -136,7 +136,6 @@ impl CastVote {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CastVoteInstructionData {
     discriminator: u8,
 }
@@ -158,7 +157,6 @@ impl Default for CastVoteInstructionData {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CastVoteInstructionArgs {
     pub vote: Vote,
 }
@@ -188,19 +186,19 @@ impl CastVoteInstructionArgs {
 ///   12. `[optional]` max_voter_weight_record
 #[derive(Clone, Debug, Default)]
 pub struct CastVoteBuilder {
-    realm_account: Option<solana_pubkey::Pubkey>,
-    governance_account: Option<solana_pubkey::Pubkey>,
-    proposal_account: Option<solana_pubkey::Pubkey>,
-    proposal_token_owner_record: Option<solana_pubkey::Pubkey>,
-    voter_token_owner_record: Option<solana_pubkey::Pubkey>,
-    governance_authority: Option<solana_pubkey::Pubkey>,
-    proposal_vote_record: Option<solana_pubkey::Pubkey>,
-    governing_token_mint: Option<solana_pubkey::Pubkey>,
-    payer: Option<solana_pubkey::Pubkey>,
-    system_program: Option<solana_pubkey::Pubkey>,
-    realm_config_account: Option<solana_pubkey::Pubkey>,
-    voter_weight_record: Option<solana_pubkey::Pubkey>,
-    max_voter_weight_record: Option<solana_pubkey::Pubkey>,
+    realm_account: Option<solana_address::Address>,
+    governance_account: Option<solana_address::Address>,
+    proposal_account: Option<solana_address::Address>,
+    proposal_token_owner_record: Option<solana_address::Address>,
+    voter_token_owner_record: Option<solana_address::Address>,
+    governance_authority: Option<solana_address::Address>,
+    proposal_vote_record: Option<solana_address::Address>,
+    governing_token_mint: Option<solana_address::Address>,
+    payer: Option<solana_address::Address>,
+    system_program: Option<solana_address::Address>,
+    realm_config_account: Option<solana_address::Address>,
+    voter_weight_record: Option<solana_address::Address>,
+    max_voter_weight_record: Option<solana_address::Address>,
     vote: Option<Vote>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
@@ -210,17 +208,17 @@ impl CastVoteBuilder {
         Self::default()
     }
     #[inline(always)]
-    pub fn realm_account(&mut self, realm_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn realm_account(&mut self, realm_account: solana_address::Address) -> &mut Self {
         self.realm_account = Some(realm_account);
         self
     }
     #[inline(always)]
-    pub fn governance_account(&mut self, governance_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn governance_account(&mut self, governance_account: solana_address::Address) -> &mut Self {
         self.governance_account = Some(governance_account);
         self
     }
     #[inline(always)]
-    pub fn proposal_account(&mut self, proposal_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn proposal_account(&mut self, proposal_account: solana_address::Address) -> &mut Self {
         self.proposal_account = Some(proposal_account);
         self
     }
@@ -228,7 +226,7 @@ impl CastVoteBuilder {
     #[inline(always)]
     pub fn proposal_token_owner_record(
         &mut self,
-        proposal_token_owner_record: solana_pubkey::Pubkey,
+        proposal_token_owner_record: solana_address::Address,
     ) -> &mut Self {
         self.proposal_token_owner_record = Some(proposal_token_owner_record);
         self
@@ -237,7 +235,7 @@ impl CastVoteBuilder {
     #[inline(always)]
     pub fn voter_token_owner_record(
         &mut self,
-        voter_token_owner_record: solana_pubkey::Pubkey,
+        voter_token_owner_record: solana_address::Address,
     ) -> &mut Self {
         self.voter_token_owner_record = Some(voter_token_owner_record);
         self
@@ -246,7 +244,7 @@ impl CastVoteBuilder {
     #[inline(always)]
     pub fn governance_authority(
         &mut self,
-        governance_authority: solana_pubkey::Pubkey,
+        governance_authority: solana_address::Address,
     ) -> &mut Self {
         self.governance_authority = Some(governance_authority);
         self
@@ -255,7 +253,7 @@ impl CastVoteBuilder {
     #[inline(always)]
     pub fn proposal_vote_record(
         &mut self,
-        proposal_vote_record: solana_pubkey::Pubkey,
+        proposal_vote_record: solana_address::Address,
     ) -> &mut Self {
         self.proposal_vote_record = Some(proposal_vote_record);
         self
@@ -268,19 +266,19 @@ impl CastVoteBuilder {
     #[inline(always)]
     pub fn governing_token_mint(
         &mut self,
-        governing_token_mint: solana_pubkey::Pubkey,
+        governing_token_mint: solana_address::Address,
     ) -> &mut Self {
         self.governing_token_mint = Some(governing_token_mint);
         self
     }
     #[inline(always)]
-    pub fn payer(&mut self, payer: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
         self.payer = Some(payer);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
-    pub fn system_program(&mut self, system_program: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn system_program(&mut self, system_program: solana_address::Address) -> &mut Self {
         self.system_program = Some(system_program);
         self
     }
@@ -288,7 +286,7 @@ impl CastVoteBuilder {
     #[inline(always)]
     pub fn realm_config_account(
         &mut self,
-        realm_config_account: solana_pubkey::Pubkey,
+        realm_config_account: solana_address::Address,
     ) -> &mut Self {
         self.realm_config_account = Some(realm_config_account);
         self
@@ -298,7 +296,7 @@ impl CastVoteBuilder {
     #[inline(always)]
     pub fn voter_weight_record(
         &mut self,
-        voter_weight_record: Option<solana_pubkey::Pubkey>,
+        voter_weight_record: Option<solana_address::Address>,
     ) -> &mut Self {
         self.voter_weight_record = voter_weight_record;
         self
@@ -308,7 +306,7 @@ impl CastVoteBuilder {
     #[inline(always)]
     pub fn max_voter_weight_record(
         &mut self,
-        max_voter_weight_record: Option<solana_pubkey::Pubkey>,
+        max_voter_weight_record: Option<solana_address::Address>,
     ) -> &mut Self {
         self.max_voter_weight_record = max_voter_weight_record;
         self
@@ -359,7 +357,7 @@ impl CastVoteBuilder {
             payer: self.payer.expect("payer is not set"),
             system_program: self
                 .system_program
-                .unwrap_or(solana_pubkey::pubkey!("11111111111111111111111111111111")),
+                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
             realm_config_account: self
                 .realm_config_account
                 .expect("realm_config_account is not set"),

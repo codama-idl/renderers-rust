@@ -5,22 +5,24 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
+use spl_collections::TrailingStr;
+
 use crate::SPL_GOVERNANCE_ID;
 
 pub const REALM_SEED: &'static [u8] = b"governance";
 /// Realm account identified by its name
 pub fn create_realm_pda(
-    name: RemainderStr,
+    name: TrailingStr,
     bump: u8,
-) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
-    solana_pubkey::Pubkey::create_program_address(
+) -> Result<solana_address::Address, solana_address::error::AddressError> {
+    solana_address::Address::create_program_address(
         &[REALM_SEED, name.to_string().as_ref(), &[bump]],
         &SPL_GOVERNANCE_ID,
     )
 }
 /// Realm account identified by its name
-pub fn find_realm_pda(name: RemainderStr) -> (solana_pubkey::Pubkey, u8) {
-    solana_pubkey::Pubkey::find_program_address(
+pub fn find_realm_pda(name: TrailingStr) -> (solana_address::Address, u8) {
+    solana_address::Address::find_program_address(
         &[REALM_SEED, name.to_string().as_ref()],
         &SPL_GOVERNANCE_ID,
     )

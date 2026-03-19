@@ -9,22 +9,13 @@ use crate::generated::types::GovernanceAccountType;
 use crate::generated::types::GovernanceConfig;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use solana_pubkey::Pubkey;
+use solana_address::Address;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GovernanceV1 {
     pub account_type: GovernanceAccountType,
-    #[cfg_attr(
-        feature = "serde",
-        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
-    )]
-    pub realm: Pubkey,
-    #[cfg_attr(
-        feature = "serde",
-        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
-    )]
-    pub governed_account: Pubkey,
+    pub realm: Address,
+    pub governed_account: Address,
     pub proposals_count: u32,
     pub config: GovernanceConfig,
 }
@@ -35,16 +26,16 @@ impl GovernanceV1 {
     /// Values are positional and appear in the following order:
     ///
     ///   0. `GovernanceV1::PREFIX`
-    ///   1. realm (`Pubkey`)
-    ///   2. seed (`Pubkey`)
+    ///   1. realm (`Address`)
+    ///   2. seed (`Address`)
     pub const PREFIX: &'static [u8] = "account-governance".as_bytes();
 
     pub fn create_pda(
-        realm: Pubkey,
-        seed: Pubkey,
+        realm: Address,
+        seed: Address,
         bump: u8,
-    ) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
-        solana_pubkey::Pubkey::create_program_address(
+    ) -> Result<solana_address::Address, solana_address::error::AddressError> {
+        solana_address::Address::create_program_address(
             &[
                 "account-governance".as_bytes(),
                 realm.as_ref(),
@@ -55,8 +46,8 @@ impl GovernanceV1 {
         )
     }
 
-    pub fn find_pda(realm: &Pubkey, seed: &Pubkey) -> (solana_pubkey::Pubkey, u8) {
-        solana_pubkey::Pubkey::find_program_address(
+    pub fn find_pda(realm: &Address, seed: &Address) -> (solana_address::Address, u8) {
+        solana_address::Address::find_program_address(
             &[
                 "account-governance".as_bytes(),
                 realm.as_ref(),
@@ -85,7 +76,7 @@ impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for GovernanceV1 {
 #[cfg(feature = "fetch")]
 pub fn fetch_governance_v1(
     rpc: &solana_client::rpc_client::RpcClient,
-    address: &solana_pubkey::Pubkey,
+    address: &solana_address::Address,
 ) -> Result<crate::shared::DecodedAccount<GovernanceV1>, std::io::Error> {
     let accounts = fetch_all_governance_v1(rpc, &[*address])?;
     Ok(accounts[0].clone())
@@ -94,18 +85,17 @@ pub fn fetch_governance_v1(
 #[cfg(feature = "fetch")]
 pub fn fetch_all_governance_v1(
     rpc: &solana_client::rpc_client::RpcClient,
-    addresses: &[solana_pubkey::Pubkey],
+    addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::DecodedAccount<GovernanceV1>>, std::io::Error> {
     let accounts = rpc
         .get_multiple_accounts(addresses)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        .map_err(|e| std::io::Error::other(e.to_string()))?;
     let mut decoded_accounts: Vec<crate::shared::DecodedAccount<GovernanceV1>> = Vec::new();
     for i in 0..addresses.len() {
         let address = addresses[i];
-        let account = accounts[i].as_ref().ok_or(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            format!("Account not found: {}", address),
-        ))?;
+        let account = accounts[i].as_ref().ok_or(std::io::Error::other(format!(
+            "Account not found: {address}"
+        )))?;
         let data = GovernanceV1::from_bytes(&account.data)?;
         decoded_accounts.push(crate::shared::DecodedAccount {
             address,
@@ -119,7 +109,7 @@ pub fn fetch_all_governance_v1(
 #[cfg(feature = "fetch")]
 pub fn fetch_maybe_governance_v1(
     rpc: &solana_client::rpc_client::RpcClient,
-    address: &solana_pubkey::Pubkey,
+    address: &solana_address::Address,
 ) -> Result<crate::shared::MaybeAccount<GovernanceV1>, std::io::Error> {
     let accounts = fetch_all_maybe_governance_v1(rpc, &[*address])?;
     Ok(accounts[0].clone())
@@ -128,11 +118,11 @@ pub fn fetch_maybe_governance_v1(
 #[cfg(feature = "fetch")]
 pub fn fetch_all_maybe_governance_v1(
     rpc: &solana_client::rpc_client::RpcClient,
-    addresses: &[solana_pubkey::Pubkey],
+    addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::MaybeAccount<GovernanceV1>>, std::io::Error> {
     let accounts = rpc
         .get_multiple_accounts(addresses)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        .map_err(|e| std::io::Error::other(e.to_string()))?;
     let mut decoded_accounts: Vec<crate::shared::MaybeAccount<GovernanceV1>> = Vec::new();
     for i in 0..addresses.len() {
         let address = addresses[i];
@@ -164,8 +154,8 @@ impl anchor_lang::AccountSerialize for GovernanceV1 {}
 
 #[cfg(feature = "anchor")]
 impl anchor_lang::Owner for GovernanceV1 {
-    fn owner() -> Pubkey {
-        crate::SPL_GOVERNANCE_ID
+    fn owner() -> anchor_lang::solana_program::pubkey::Pubkey {
+        anchor_lang::solana_program::pubkey::Pubkey::from(crate::SPL_GOVERNANCE_ID.to_bytes())
     }
 }
 

@@ -14,11 +14,11 @@ pub const SET_REALM_AUTHORITY_DISCRIMINATOR: u8 = 21;
 /// Accounts.
 #[derive(Debug)]
 pub struct SetRealmAuthority {
-    pub realm_account: solana_pubkey::Pubkey,
+    pub realm_account: solana_address::Address,
 
-    pub realm_authority: solana_pubkey::Pubkey,
+    pub realm_authority: solana_address::Address,
     /// Must be one of the realm governances when set
-    pub new_realm_authority: Option<solana_pubkey::Pubkey>,
+    pub new_realm_authority: Option<solana_address::Address>,
 }
 
 impl SetRealmAuthority {
@@ -71,7 +71,6 @@ impl SetRealmAuthority {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SetRealmAuthorityInstructionData {
     discriminator: u8,
 }
@@ -93,7 +92,6 @@ impl Default for SetRealmAuthorityInstructionData {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SetRealmAuthorityInstructionArgs {
     pub action: SetRealmAuthorityAction,
 }
@@ -113,9 +111,9 @@ impl SetRealmAuthorityInstructionArgs {
 ///   2. `[optional]` new_realm_authority
 #[derive(Clone, Debug, Default)]
 pub struct SetRealmAuthorityBuilder {
-    realm_account: Option<solana_pubkey::Pubkey>,
-    realm_authority: Option<solana_pubkey::Pubkey>,
-    new_realm_authority: Option<solana_pubkey::Pubkey>,
+    realm_account: Option<solana_address::Address>,
+    realm_authority: Option<solana_address::Address>,
+    new_realm_authority: Option<solana_address::Address>,
     action: Option<SetRealmAuthorityAction>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
@@ -125,12 +123,12 @@ impl SetRealmAuthorityBuilder {
         Self::default()
     }
     #[inline(always)]
-    pub fn realm_account(&mut self, realm_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn realm_account(&mut self, realm_account: solana_address::Address) -> &mut Self {
         self.realm_account = Some(realm_account);
         self
     }
     #[inline(always)]
-    pub fn realm_authority(&mut self, realm_authority: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn realm_authority(&mut self, realm_authority: solana_address::Address) -> &mut Self {
         self.realm_authority = Some(realm_authority);
         self
     }
@@ -139,7 +137,7 @@ impl SetRealmAuthorityBuilder {
     #[inline(always)]
     pub fn new_realm_authority(
         &mut self,
-        new_realm_authority: Option<solana_pubkey::Pubkey>,
+        new_realm_authority: Option<solana_address::Address>,
     ) -> &mut Self {
         self.new_realm_authority = new_realm_authority;
         self

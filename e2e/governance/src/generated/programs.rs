@@ -5,7 +5,7 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
-use solana_pubkey::{pubkey, Pubkey};
+use solana_address::{address, Address};
 
 /// `spl_governance` program ID.
-pub const SPL_GOVERNANCE_ID: Pubkey = pubkey!("GovER5Lthms3bLBqWub97yVrMmEogzX7xNjdXpPPCVZw");
+pub const SPL_GOVERNANCE_ID: Address = address!("GovER5Lthms3bLBqWub97yVrMmEogzX7xNjdXpPPCVZw");

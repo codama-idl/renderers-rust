@@ -13,11 +13,11 @@ pub const COMPLETE_PROPOSAL_DISCRIMINATOR: u8 = 28;
 /// Accounts.
 #[derive(Debug)]
 pub struct CompleteProposal {
-    pub proposal_account: solana_pubkey::Pubkey,
+    pub proposal_account: solana_address::Address,
     /// TokenOwnerRecord account of the Proposal owner
-    pub token_owner_record: solana_pubkey::Pubkey,
+    pub token_owner_record: solana_address::Address,
     /// Token Owner or Delegate
-    pub complete_proposal_authority: solana_pubkey::Pubkey,
+    pub complete_proposal_authority: solana_address::Address,
 }
 
 impl CompleteProposal {
@@ -55,7 +55,6 @@ impl CompleteProposal {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CompleteProposalInstructionData {
     discriminator: u8,
 }
@@ -85,9 +84,9 @@ impl Default for CompleteProposalInstructionData {
 ///   2. `[signer]` complete_proposal_authority
 #[derive(Clone, Debug, Default)]
 pub struct CompleteProposalBuilder {
-    proposal_account: Option<solana_pubkey::Pubkey>,
-    token_owner_record: Option<solana_pubkey::Pubkey>,
-    complete_proposal_authority: Option<solana_pubkey::Pubkey>,
+    proposal_account: Option<solana_address::Address>,
+    token_owner_record: Option<solana_address::Address>,
+    complete_proposal_authority: Option<solana_address::Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
@@ -96,13 +95,13 @@ impl CompleteProposalBuilder {
         Self::default()
     }
     #[inline(always)]
-    pub fn proposal_account(&mut self, proposal_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn proposal_account(&mut self, proposal_account: solana_address::Address) -> &mut Self {
         self.proposal_account = Some(proposal_account);
         self
     }
     /// TokenOwnerRecord account of the Proposal owner
     #[inline(always)]
-    pub fn token_owner_record(&mut self, token_owner_record: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn token_owner_record(&mut self, token_owner_record: solana_address::Address) -> &mut Self {
         self.token_owner_record = Some(token_owner_record);
         self
     }
@@ -110,7 +109,7 @@ impl CompleteProposalBuilder {
     #[inline(always)]
     pub fn complete_proposal_authority(
         &mut self,
-        complete_proposal_authority: solana_pubkey::Pubkey,
+        complete_proposal_authority: solana_address::Address,
     ) -> &mut Self {
         self.complete_proposal_authority = Some(complete_proposal_authority);
         self

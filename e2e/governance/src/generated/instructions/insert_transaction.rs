@@ -14,21 +14,21 @@ pub const INSERT_TRANSACTION_DISCRIMINATOR: u8 = 9;
 /// Accounts.
 #[derive(Debug)]
 pub struct InsertTransaction {
-    pub governance_account: solana_pubkey::Pubkey,
+    pub governance_account: solana_address::Address,
 
-    pub proposal_account: solana_pubkey::Pubkey,
+    pub proposal_account: solana_address::Address,
     /// TokenOwnerRecord account of the Proposal owner
-    pub token_owner_record: solana_pubkey::Pubkey,
+    pub token_owner_record: solana_address::Address,
     /// Governance Authority (Token Owner or Governance Delegate)
-    pub governance_authority: solana_pubkey::Pubkey,
+    pub governance_authority: solana_address::Address,
     /// ProposalTransaction, account. PDA seeds: ['governance', proposal, option_index, index]
-    pub proposal_transaction_account: solana_pubkey::Pubkey,
+    pub proposal_transaction_account: solana_address::Address,
 
-    pub payer: solana_pubkey::Pubkey,
+    pub payer: solana_address::Address,
 
-    pub system_program: solana_pubkey::Pubkey,
+    pub system_program: solana_address::Address,
 
-    pub rent: solana_pubkey::Pubkey,
+    pub rent: solana_address::Address,
 }
 
 impl InsertTransaction {
@@ -92,7 +92,6 @@ impl InsertTransaction {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct InsertTransactionInstructionData {
     discriminator: u8,
 }
@@ -114,7 +113,6 @@ impl Default for InsertTransactionInstructionData {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct InsertTransactionInstructionArgs {
     pub option_index: u8,
     pub index: u16,
@@ -142,14 +140,14 @@ impl InsertTransactionInstructionArgs {
 ///   7. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct InsertTransactionBuilder {
-    governance_account: Option<solana_pubkey::Pubkey>,
-    proposal_account: Option<solana_pubkey::Pubkey>,
-    token_owner_record: Option<solana_pubkey::Pubkey>,
-    governance_authority: Option<solana_pubkey::Pubkey>,
-    proposal_transaction_account: Option<solana_pubkey::Pubkey>,
-    payer: Option<solana_pubkey::Pubkey>,
-    system_program: Option<solana_pubkey::Pubkey>,
-    rent: Option<solana_pubkey::Pubkey>,
+    governance_account: Option<solana_address::Address>,
+    proposal_account: Option<solana_address::Address>,
+    token_owner_record: Option<solana_address::Address>,
+    governance_authority: Option<solana_address::Address>,
+    proposal_transaction_account: Option<solana_address::Address>,
+    payer: Option<solana_address::Address>,
+    system_program: Option<solana_address::Address>,
+    rent: Option<solana_address::Address>,
     option_index: Option<u8>,
     index: Option<u16>,
     hold_up_time: Option<u32>,
@@ -162,18 +160,18 @@ impl InsertTransactionBuilder {
         Self::default()
     }
     #[inline(always)]
-    pub fn governance_account(&mut self, governance_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn governance_account(&mut self, governance_account: solana_address::Address) -> &mut Self {
         self.governance_account = Some(governance_account);
         self
     }
     #[inline(always)]
-    pub fn proposal_account(&mut self, proposal_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn proposal_account(&mut self, proposal_account: solana_address::Address) -> &mut Self {
         self.proposal_account = Some(proposal_account);
         self
     }
     /// TokenOwnerRecord account of the Proposal owner
     #[inline(always)]
-    pub fn token_owner_record(&mut self, token_owner_record: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn token_owner_record(&mut self, token_owner_record: solana_address::Address) -> &mut Self {
         self.token_owner_record = Some(token_owner_record);
         self
     }
@@ -181,7 +179,7 @@ impl InsertTransactionBuilder {
     #[inline(always)]
     pub fn governance_authority(
         &mut self,
-        governance_authority: solana_pubkey::Pubkey,
+        governance_authority: solana_address::Address,
     ) -> &mut Self {
         self.governance_authority = Some(governance_authority);
         self
@@ -190,25 +188,25 @@ impl InsertTransactionBuilder {
     #[inline(always)]
     pub fn proposal_transaction_account(
         &mut self,
-        proposal_transaction_account: solana_pubkey::Pubkey,
+        proposal_transaction_account: solana_address::Address,
     ) -> &mut Self {
         self.proposal_transaction_account = Some(proposal_transaction_account);
         self
     }
     #[inline(always)]
-    pub fn payer(&mut self, payer: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
         self.payer = Some(payer);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
-    pub fn system_program(&mut self, system_program: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn system_program(&mut self, system_program: solana_address::Address) -> &mut Self {
         self.system_program = Some(system_program);
         self
     }
     /// `[optional account, default to 'SysvarRent111111111111111111111111111111111']`
     #[inline(always)]
-    pub fn rent(&mut self, rent: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn rent(&mut self, rent: solana_address::Address) -> &mut Self {
         self.rent = Some(rent);
         self
     }
@@ -266,8 +264,8 @@ impl InsertTransactionBuilder {
             payer: self.payer.expect("payer is not set"),
             system_program: self
                 .system_program
-                .unwrap_or(solana_pubkey::pubkey!("11111111111111111111111111111111")),
-            rent: self.rent.unwrap_or(solana_pubkey::pubkey!(
+                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
+            rent: self.rent.unwrap_or(solana_address::address!(
                 "SysvarRent111111111111111111111111111111111"
             )),
         };

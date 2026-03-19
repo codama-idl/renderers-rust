@@ -13,22 +13,22 @@ pub const RELINQUISH_VOTE_DISCRIMINATOR: u8 = 15;
 /// Accounts.
 #[derive(Debug)]
 pub struct RelinquishVote {
-    pub realm_account: solana_pubkey::Pubkey,
+    pub realm_account: solana_address::Address,
 
-    pub governance_account: solana_pubkey::Pubkey,
+    pub governance_account: solana_address::Address,
 
-    pub proposal_account: solana_pubkey::Pubkey,
+    pub proposal_account: solana_address::Address,
     /// TokenOwnerRecord account. PDA seeds: ['governance',realm, vote_governing_token_mint, governing_token_owner]
-    pub token_owner_record: solana_pubkey::Pubkey,
+    pub token_owner_record: solana_address::Address,
     /// Proposal VoteRecord account. PDA seeds: ['governance',proposal, token_owner_record]
-    pub proposal_vote_record: solana_pubkey::Pubkey,
+    pub proposal_vote_record: solana_address::Address,
     /// The Governing Token Mint which was used to cast the vote (vote_governing_token_mint)
-    pub governing_token_mint: solana_pubkey::Pubkey,
+    pub governing_token_mint: solana_address::Address,
 
-    pub governance_authority: Option<solana_pubkey::Pubkey>,
+    pub governance_authority: Option<solana_address::Address>,
     /// Optional Beneficiary account which would receive lamports when VoteRecord Account is disposed.
     ///     It's required only when Proposal is still being voted on
-    pub beneficiary_account: Option<solana_pubkey::Pubkey>,
+    pub beneficiary_account: Option<solana_address::Address>,
 }
 
 impl RelinquishVote {
@@ -100,7 +100,6 @@ impl RelinquishVote {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct RelinquishVoteInstructionData {
     discriminator: u8,
 }
@@ -135,14 +134,14 @@ impl Default for RelinquishVoteInstructionData {
 ///   7. `[writable, optional]` beneficiary_account
 #[derive(Clone, Debug, Default)]
 pub struct RelinquishVoteBuilder {
-    realm_account: Option<solana_pubkey::Pubkey>,
-    governance_account: Option<solana_pubkey::Pubkey>,
-    proposal_account: Option<solana_pubkey::Pubkey>,
-    token_owner_record: Option<solana_pubkey::Pubkey>,
-    proposal_vote_record: Option<solana_pubkey::Pubkey>,
-    governing_token_mint: Option<solana_pubkey::Pubkey>,
-    governance_authority: Option<solana_pubkey::Pubkey>,
-    beneficiary_account: Option<solana_pubkey::Pubkey>,
+    realm_account: Option<solana_address::Address>,
+    governance_account: Option<solana_address::Address>,
+    proposal_account: Option<solana_address::Address>,
+    token_owner_record: Option<solana_address::Address>,
+    proposal_vote_record: Option<solana_address::Address>,
+    governing_token_mint: Option<solana_address::Address>,
+    governance_authority: Option<solana_address::Address>,
+    beneficiary_account: Option<solana_address::Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
@@ -151,23 +150,23 @@ impl RelinquishVoteBuilder {
         Self::default()
     }
     #[inline(always)]
-    pub fn realm_account(&mut self, realm_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn realm_account(&mut self, realm_account: solana_address::Address) -> &mut Self {
         self.realm_account = Some(realm_account);
         self
     }
     #[inline(always)]
-    pub fn governance_account(&mut self, governance_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn governance_account(&mut self, governance_account: solana_address::Address) -> &mut Self {
         self.governance_account = Some(governance_account);
         self
     }
     #[inline(always)]
-    pub fn proposal_account(&mut self, proposal_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn proposal_account(&mut self, proposal_account: solana_address::Address) -> &mut Self {
         self.proposal_account = Some(proposal_account);
         self
     }
     /// TokenOwnerRecord account. PDA seeds: ['governance',realm, vote_governing_token_mint, governing_token_owner]
     #[inline(always)]
-    pub fn token_owner_record(&mut self, token_owner_record: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn token_owner_record(&mut self, token_owner_record: solana_address::Address) -> &mut Self {
         self.token_owner_record = Some(token_owner_record);
         self
     }
@@ -175,7 +174,7 @@ impl RelinquishVoteBuilder {
     #[inline(always)]
     pub fn proposal_vote_record(
         &mut self,
-        proposal_vote_record: solana_pubkey::Pubkey,
+        proposal_vote_record: solana_address::Address,
     ) -> &mut Self {
         self.proposal_vote_record = Some(proposal_vote_record);
         self
@@ -184,7 +183,7 @@ impl RelinquishVoteBuilder {
     #[inline(always)]
     pub fn governing_token_mint(
         &mut self,
-        governing_token_mint: solana_pubkey::Pubkey,
+        governing_token_mint: solana_address::Address,
     ) -> &mut Self {
         self.governing_token_mint = Some(governing_token_mint);
         self
@@ -193,7 +192,7 @@ impl RelinquishVoteBuilder {
     #[inline(always)]
     pub fn governance_authority(
         &mut self,
-        governance_authority: Option<solana_pubkey::Pubkey>,
+        governance_authority: Option<solana_address::Address>,
     ) -> &mut Self {
         self.governance_authority = governance_authority;
         self
@@ -204,7 +203,7 @@ impl RelinquishVoteBuilder {
     #[inline(always)]
     pub fn beneficiary_account(
         &mut self,
-        beneficiary_account: Option<solana_pubkey::Pubkey>,
+        beneficiary_account: Option<solana_address::Address>,
     ) -> &mut Self {
         self.beneficiary_account = beneficiary_account;
         self

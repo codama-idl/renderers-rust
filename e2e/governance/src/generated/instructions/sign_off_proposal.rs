@@ -13,17 +13,17 @@ pub const SIGN_OFF_PROPOSAL_DISCRIMINATOR: u8 = 12;
 /// Accounts.
 #[derive(Debug)]
 pub struct SignOffProposal {
-    pub realm_account: solana_pubkey::Pubkey,
+    pub realm_account: solana_address::Address,
 
-    pub governance_account: solana_pubkey::Pubkey,
+    pub governance_account: solana_address::Address,
 
-    pub proposal_account: solana_pubkey::Pubkey,
+    pub proposal_account: solana_address::Address,
     /// Signatory account signing off the Proposal.
     ///     Or Proposal owner if the owner hasn't appointed any signatories
-    pub signatory_account: solana_pubkey::Pubkey,
+    pub signatory_account: solana_address::Address,
     /// TokenOwnerRecord for the Proposal owner, required when the owner signs off the Proposal.
     ///         Or `[writable]` SignatoryRecord account, required when non owner signs off the Proposal
-    pub token_owner_record: solana_pubkey::Pubkey,
+    pub token_owner_record: solana_address::Address,
 }
 
 impl SignOffProposal {
@@ -69,7 +69,6 @@ impl SignOffProposal {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SignOffProposalInstructionData {
     discriminator: u8,
 }
@@ -101,11 +100,11 @@ impl Default for SignOffProposalInstructionData {
 ///   4. `[writable]` token_owner_record
 #[derive(Clone, Debug, Default)]
 pub struct SignOffProposalBuilder {
-    realm_account: Option<solana_pubkey::Pubkey>,
-    governance_account: Option<solana_pubkey::Pubkey>,
-    proposal_account: Option<solana_pubkey::Pubkey>,
-    signatory_account: Option<solana_pubkey::Pubkey>,
-    token_owner_record: Option<solana_pubkey::Pubkey>,
+    realm_account: Option<solana_address::Address>,
+    governance_account: Option<solana_address::Address>,
+    proposal_account: Option<solana_address::Address>,
+    signatory_account: Option<solana_address::Address>,
+    token_owner_record: Option<solana_address::Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
@@ -114,31 +113,31 @@ impl SignOffProposalBuilder {
         Self::default()
     }
     #[inline(always)]
-    pub fn realm_account(&mut self, realm_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn realm_account(&mut self, realm_account: solana_address::Address) -> &mut Self {
         self.realm_account = Some(realm_account);
         self
     }
     #[inline(always)]
-    pub fn governance_account(&mut self, governance_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn governance_account(&mut self, governance_account: solana_address::Address) -> &mut Self {
         self.governance_account = Some(governance_account);
         self
     }
     #[inline(always)]
-    pub fn proposal_account(&mut self, proposal_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn proposal_account(&mut self, proposal_account: solana_address::Address) -> &mut Self {
         self.proposal_account = Some(proposal_account);
         self
     }
     /// Signatory account signing off the Proposal.
     ///     Or Proposal owner if the owner hasn't appointed any signatories
     #[inline(always)]
-    pub fn signatory_account(&mut self, signatory_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn signatory_account(&mut self, signatory_account: solana_address::Address) -> &mut Self {
         self.signatory_account = Some(signatory_account);
         self
     }
     /// TokenOwnerRecord for the Proposal owner, required when the owner signs off the Proposal.
     ///         Or `[writable]` SignatoryRecord account, required when non owner signs off the Proposal
     #[inline(always)]
-    pub fn token_owner_record(&mut self, token_owner_record: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn token_owner_record(&mut self, token_owner_record: solana_address::Address) -> &mut Self {
         self.token_owner_record = Some(token_owner_record);
         self
     }

@@ -7,7 +7,7 @@
 
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use solana_pubkey::Pubkey;
+use solana_address::Address;
 
 pub const SET_GOVERNANCE_DELEGATE_DISCRIMINATOR: u8 = 3;
 
@@ -15,9 +15,9 @@ pub const SET_GOVERNANCE_DELEGATE_DISCRIMINATOR: u8 = 3;
 #[derive(Debug)]
 pub struct SetGovernanceDelegate {
     /// Current governance delegate or governing token owner
-    pub current_delegate_or_owner: solana_pubkey::Pubkey,
+    pub current_delegate_or_owner: solana_address::Address,
 
-    pub token_owner_record: solana_pubkey::Pubkey,
+    pub token_owner_record: solana_address::Address,
 }
 
 impl SetGovernanceDelegate {
@@ -59,7 +59,6 @@ impl SetGovernanceDelegate {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SetGovernanceDelegateInstructionData {
     discriminator: u8,
 }
@@ -81,9 +80,8 @@ impl Default for SetGovernanceDelegateInstructionData {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SetGovernanceDelegateInstructionArgs {
-    pub new_governance_delegate: Option<Pubkey>,
+    pub new_governance_delegate: Option<Address>,
 }
 
 impl SetGovernanceDelegateInstructionArgs {
@@ -100,9 +98,9 @@ impl SetGovernanceDelegateInstructionArgs {
 ///   1. `[writable]` token_owner_record
 #[derive(Clone, Debug, Default)]
 pub struct SetGovernanceDelegateBuilder {
-    current_delegate_or_owner: Option<solana_pubkey::Pubkey>,
-    token_owner_record: Option<solana_pubkey::Pubkey>,
-    new_governance_delegate: Option<Pubkey>,
+    current_delegate_or_owner: Option<solana_address::Address>,
+    token_owner_record: Option<solana_address::Address>,
+    new_governance_delegate: Option<Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
@@ -114,19 +112,19 @@ impl SetGovernanceDelegateBuilder {
     #[inline(always)]
     pub fn current_delegate_or_owner(
         &mut self,
-        current_delegate_or_owner: solana_pubkey::Pubkey,
+        current_delegate_or_owner: solana_address::Address,
     ) -> &mut Self {
         self.current_delegate_or_owner = Some(current_delegate_or_owner);
         self
     }
     #[inline(always)]
-    pub fn token_owner_record(&mut self, token_owner_record: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn token_owner_record(&mut self, token_owner_record: solana_address::Address) -> &mut Self {
         self.token_owner_record = Some(token_owner_record);
         self
     }
     /// `[optional argument]`
     #[inline(always)]
-    pub fn new_governance_delegate(&mut self, new_governance_delegate: Pubkey) -> &mut Self {
+    pub fn new_governance_delegate(&mut self, new_governance_delegate: Address) -> &mut Self {
         self.new_governance_delegate = Some(new_governance_delegate);
         self
     }
@@ -303,7 +301,7 @@ impl<'a, 'b> SetGovernanceDelegateCpiBuilder<'a, 'b> {
     }
     /// `[optional argument]`
     #[inline(always)]
-    pub fn new_governance_delegate(&mut self, new_governance_delegate: Pubkey) -> &mut Self {
+    pub fn new_governance_delegate(&mut self, new_governance_delegate: Address) -> &mut Self {
         self.instruction.new_governance_delegate = Some(new_governance_delegate);
         self
     }
@@ -370,7 +368,7 @@ struct SetGovernanceDelegateCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
     current_delegate_or_owner: Option<&'b solana_account_info::AccountInfo<'a>>,
     token_owner_record: Option<&'b solana_account_info::AccountInfo<'a>>,
-    new_governance_delegate: Option<Pubkey>,
+    new_governance_delegate: Option<Address>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

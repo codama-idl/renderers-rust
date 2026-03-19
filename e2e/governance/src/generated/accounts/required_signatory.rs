@@ -8,23 +8,14 @@
 use crate::generated::types::GovernanceAccountType;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use solana_pubkey::Pubkey;
+use solana_address::Address;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct RequiredSignatory {
     pub account_type: GovernanceAccountType,
     pub account_version: u8,
-    #[cfg_attr(
-        feature = "serde",
-        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
-    )]
-    pub governance: Pubkey,
-    #[cfg_attr(
-        feature = "serde",
-        serde(with = "serde_with::As::<serde_with::DisplayFromStr>")
-    )]
-    pub signatory: Pubkey,
+    pub governance: Address,
+    pub signatory: Address,
 }
 
 impl RequiredSignatory {
@@ -33,16 +24,16 @@ impl RequiredSignatory {
     /// Values are positional and appear in the following order:
     ///
     ///   0. `RequiredSignatory::PREFIX`
-    ///   1. governance (`Pubkey`)
-    ///   2. signatory (`Pubkey`)
+    ///   1. governance (`Address`)
+    ///   2. signatory (`Address`)
     pub const PREFIX: &'static [u8] = "required-signatory".as_bytes();
 
     pub fn create_pda(
-        governance: Pubkey,
-        signatory: Pubkey,
+        governance: Address,
+        signatory: Address,
         bump: u8,
-    ) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
-        solana_pubkey::Pubkey::create_program_address(
+    ) -> Result<solana_address::Address, solana_address::error::AddressError> {
+        solana_address::Address::create_program_address(
             &[
                 "required-signatory".as_bytes(),
                 governance.as_ref(),
@@ -53,8 +44,8 @@ impl RequiredSignatory {
         )
     }
 
-    pub fn find_pda(governance: &Pubkey, signatory: &Pubkey) -> (solana_pubkey::Pubkey, u8) {
-        solana_pubkey::Pubkey::find_program_address(
+    pub fn find_pda(governance: &Address, signatory: &Address) -> (solana_address::Address, u8) {
+        solana_address::Address::find_program_address(
             &[
                 "required-signatory".as_bytes(),
                 governance.as_ref(),
@@ -83,7 +74,7 @@ impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for RequiredSignatory {
 #[cfg(feature = "fetch")]
 pub fn fetch_required_signatory(
     rpc: &solana_client::rpc_client::RpcClient,
-    address: &solana_pubkey::Pubkey,
+    address: &solana_address::Address,
 ) -> Result<crate::shared::DecodedAccount<RequiredSignatory>, std::io::Error> {
     let accounts = fetch_all_required_signatory(rpc, &[*address])?;
     Ok(accounts[0].clone())
@@ -92,18 +83,17 @@ pub fn fetch_required_signatory(
 #[cfg(feature = "fetch")]
 pub fn fetch_all_required_signatory(
     rpc: &solana_client::rpc_client::RpcClient,
-    addresses: &[solana_pubkey::Pubkey],
+    addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::DecodedAccount<RequiredSignatory>>, std::io::Error> {
     let accounts = rpc
         .get_multiple_accounts(addresses)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        .map_err(|e| std::io::Error::other(e.to_string()))?;
     let mut decoded_accounts: Vec<crate::shared::DecodedAccount<RequiredSignatory>> = Vec::new();
     for i in 0..addresses.len() {
         let address = addresses[i];
-        let account = accounts[i].as_ref().ok_or(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            format!("Account not found: {}", address),
-        ))?;
+        let account = accounts[i].as_ref().ok_or(std::io::Error::other(format!(
+            "Account not found: {address}"
+        )))?;
         let data = RequiredSignatory::from_bytes(&account.data)?;
         decoded_accounts.push(crate::shared::DecodedAccount {
             address,
@@ -117,7 +107,7 @@ pub fn fetch_all_required_signatory(
 #[cfg(feature = "fetch")]
 pub fn fetch_maybe_required_signatory(
     rpc: &solana_client::rpc_client::RpcClient,
-    address: &solana_pubkey::Pubkey,
+    address: &solana_address::Address,
 ) -> Result<crate::shared::MaybeAccount<RequiredSignatory>, std::io::Error> {
     let accounts = fetch_all_maybe_required_signatory(rpc, &[*address])?;
     Ok(accounts[0].clone())
@@ -126,11 +116,11 @@ pub fn fetch_maybe_required_signatory(
 #[cfg(feature = "fetch")]
 pub fn fetch_all_maybe_required_signatory(
     rpc: &solana_client::rpc_client::RpcClient,
-    addresses: &[solana_pubkey::Pubkey],
+    addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::MaybeAccount<RequiredSignatory>>, std::io::Error> {
     let accounts = rpc
         .get_multiple_accounts(addresses)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        .map_err(|e| std::io::Error::other(e.to_string()))?;
     let mut decoded_accounts: Vec<crate::shared::MaybeAccount<RequiredSignatory>> = Vec::new();
     for i in 0..addresses.len() {
         let address = addresses[i];
@@ -162,8 +152,8 @@ impl anchor_lang::AccountSerialize for RequiredSignatory {}
 
 #[cfg(feature = "anchor")]
 impl anchor_lang::Owner for RequiredSignatory {
-    fn owner() -> Pubkey {
-        crate::SPL_GOVERNANCE_ID
+    fn owner() -> anchor_lang::solana_program::pubkey::Pubkey {
+        anchor_lang::solana_program::pubkey::Pubkey::from(crate::SPL_GOVERNANCE_ID.to_bytes())
     }
 }
 

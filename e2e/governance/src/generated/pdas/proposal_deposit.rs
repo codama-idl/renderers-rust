@@ -5,16 +5,18 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
+use solana_address::Address;
+
 use crate::SPL_GOVERNANCE_ID;
 
 pub const PROPOSAL_DEPOSIT_SEED: &'static [u8] = b"proposal-deposit";
 /// Proposal deposit made by a specific payer
 pub fn create_proposal_deposit_pda(
-    proposal: solana_pubkey::Pubkey,
-    deposit_payer: solana_pubkey::Pubkey,
+    proposal: Address,
+    deposit_payer: Address,
     bump: u8,
-) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
-    solana_pubkey::Pubkey::create_program_address(
+) -> Result<solana_address::Address, solana_address::error::AddressError> {
+    solana_address::Address::create_program_address(
         &[
             PROPOSAL_DEPOSIT_SEED,
             proposal.as_ref(),
@@ -26,10 +28,10 @@ pub fn create_proposal_deposit_pda(
 }
 /// Proposal deposit made by a specific payer
 pub fn find_proposal_deposit_pda(
-    proposal: &solana_pubkey::Pubkey,
-    deposit_payer: &solana_pubkey::Pubkey,
-) -> (solana_pubkey::Pubkey, u8) {
-    solana_pubkey::Pubkey::find_program_address(
+    proposal: &Address,
+    deposit_payer: &Address,
+) -> (solana_address::Address, u8) {
+    solana_address::Address::find_program_address(
         &[
             PROPOSAL_DEPOSIT_SEED,
             proposal.as_ref(),

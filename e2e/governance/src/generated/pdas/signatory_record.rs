@@ -5,16 +5,18 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
+use solana_address::Address;
+
 use crate::SPL_GOVERNANCE_ID;
 
 pub const SIGNATORY_RECORD_SEED: &'static [u8] = b"governance";
 /// Signatory's record on a proposal
 pub fn create_signatory_record_pda(
-    proposal: solana_pubkey::Pubkey,
-    signatory: solana_pubkey::Pubkey,
+    proposal: Address,
+    signatory: Address,
     bump: u8,
-) -> Result<solana_pubkey::Pubkey, solana_pubkey::PubkeyError> {
-    solana_pubkey::Pubkey::create_program_address(
+) -> Result<solana_address::Address, solana_address::error::AddressError> {
+    solana_address::Address::create_program_address(
         &[
             SIGNATORY_RECORD_SEED,
             proposal.as_ref(),
@@ -26,10 +28,10 @@ pub fn create_signatory_record_pda(
 }
 /// Signatory's record on a proposal
 pub fn find_signatory_record_pda(
-    proposal: &solana_pubkey::Pubkey,
-    signatory: &solana_pubkey::Pubkey,
-) -> (solana_pubkey::Pubkey, u8) {
-    solana_pubkey::Pubkey::find_program_address(
+    proposal: &Address,
+    signatory: &Address,
+) -> (solana_address::Address, u8) {
+    solana_address::Address::find_program_address(
         &[SIGNATORY_RECORD_SEED, proposal.as_ref(), signatory.as_ref()],
         &SPL_GOVERNANCE_ID,
     )

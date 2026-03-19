@@ -8,7 +8,7 @@
 use crate::generated::types::VoteType;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use solana_pubkey::Pubkey;
+use solana_address::Address;
 
 pub const CREATE_PROPOSAL_DISCRIMINATOR: u8 = 6;
 
@@ -16,29 +16,29 @@ pub const CREATE_PROPOSAL_DISCRIMINATOR: u8 = 6;
 #[derive(Debug)]
 pub struct CreateProposal {
     /// Realm account the created Proposal belongs to
-    pub realm_account: solana_pubkey::Pubkey,
+    pub realm_account: solana_address::Address,
     /// Proposal account. PDA seeds ['governance',governance, governing_token_mint, proposal_index]
-    pub proposal_account: solana_pubkey::Pubkey,
+    pub proposal_account: solana_address::Address,
     /// Governance account
-    pub governance_account: solana_pubkey::Pubkey,
+    pub governance_account: solana_address::Address,
     /// TokenOwnerRecord account of the Proposal owner
-    pub token_owner_record: solana_pubkey::Pubkey,
+    pub token_owner_record: solana_address::Address,
     /// Token Mint the Proposal is created for
-    pub governing_token_mint: solana_pubkey::Pubkey,
+    pub governing_token_mint: solana_address::Address,
     /// Governance Authority (Token Owner or Governance Delegate)
-    pub governance_authority: solana_pubkey::Pubkey,
+    pub governance_authority: solana_address::Address,
 
-    pub payer: solana_pubkey::Pubkey,
+    pub payer: solana_address::Address,
 
-    pub system_program: solana_pubkey::Pubkey,
+    pub system_program: solana_address::Address,
     /// RealmConfig account. PDA seeds: ['realm-config', realm]
-    pub realm_config: solana_pubkey::Pubkey,
+    pub realm_config: solana_address::Address,
     /// Optional Voter Weight Record
-    pub voter_weight_record: Option<solana_pubkey::Pubkey>,
+    pub voter_weight_record: Option<solana_address::Address>,
     /// Optional Proposal deposit is required when there are more active
     ///         proposals than the configured deposit exempt amount.
     ///         PDA seeds: ['proposal-deposit', proposal, deposit payer]
-    pub proposal_deposit_account: Option<solana_pubkey::Pubkey>,
+    pub proposal_deposit_account: Option<solana_address::Address>,
 }
 
 impl CreateProposal {
@@ -127,7 +127,6 @@ impl CreateProposal {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CreateProposalInstructionData {
     discriminator: u8,
 }
@@ -149,14 +148,13 @@ impl Default for CreateProposalInstructionData {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CreateProposalInstructionArgs {
     pub name: String,
     pub description_link: String,
     pub vote_type: VoteType,
     pub options: Vec<String>,
     pub use_deny_option: bool,
-    pub proposal_seed: Pubkey,
+    pub proposal_seed: Address,
 }
 
 impl CreateProposalInstructionArgs {
@@ -182,23 +180,23 @@ impl CreateProposalInstructionArgs {
 ///   10. `[optional]` proposal_deposit_account
 #[derive(Clone, Debug, Default)]
 pub struct CreateProposalBuilder {
-    realm_account: Option<solana_pubkey::Pubkey>,
-    proposal_account: Option<solana_pubkey::Pubkey>,
-    governance_account: Option<solana_pubkey::Pubkey>,
-    token_owner_record: Option<solana_pubkey::Pubkey>,
-    governing_token_mint: Option<solana_pubkey::Pubkey>,
-    governance_authority: Option<solana_pubkey::Pubkey>,
-    payer: Option<solana_pubkey::Pubkey>,
-    system_program: Option<solana_pubkey::Pubkey>,
-    realm_config: Option<solana_pubkey::Pubkey>,
-    voter_weight_record: Option<solana_pubkey::Pubkey>,
-    proposal_deposit_account: Option<solana_pubkey::Pubkey>,
+    realm_account: Option<solana_address::Address>,
+    proposal_account: Option<solana_address::Address>,
+    governance_account: Option<solana_address::Address>,
+    token_owner_record: Option<solana_address::Address>,
+    governing_token_mint: Option<solana_address::Address>,
+    governance_authority: Option<solana_address::Address>,
+    payer: Option<solana_address::Address>,
+    system_program: Option<solana_address::Address>,
+    realm_config: Option<solana_address::Address>,
+    voter_weight_record: Option<solana_address::Address>,
+    proposal_deposit_account: Option<solana_address::Address>,
     name: Option<String>,
     description_link: Option<String>,
     vote_type: Option<VoteType>,
     options: Option<Vec<String>>,
     use_deny_option: Option<bool>,
-    proposal_seed: Option<Pubkey>,
+    proposal_seed: Option<Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
@@ -208,25 +206,25 @@ impl CreateProposalBuilder {
     }
     /// Realm account the created Proposal belongs to
     #[inline(always)]
-    pub fn realm_account(&mut self, realm_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn realm_account(&mut self, realm_account: solana_address::Address) -> &mut Self {
         self.realm_account = Some(realm_account);
         self
     }
     /// Proposal account. PDA seeds ['governance',governance, governing_token_mint, proposal_index]
     #[inline(always)]
-    pub fn proposal_account(&mut self, proposal_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn proposal_account(&mut self, proposal_account: solana_address::Address) -> &mut Self {
         self.proposal_account = Some(proposal_account);
         self
     }
     /// Governance account
     #[inline(always)]
-    pub fn governance_account(&mut self, governance_account: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn governance_account(&mut self, governance_account: solana_address::Address) -> &mut Self {
         self.governance_account = Some(governance_account);
         self
     }
     /// TokenOwnerRecord account of the Proposal owner
     #[inline(always)]
-    pub fn token_owner_record(&mut self, token_owner_record: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn token_owner_record(&mut self, token_owner_record: solana_address::Address) -> &mut Self {
         self.token_owner_record = Some(token_owner_record);
         self
     }
@@ -234,7 +232,7 @@ impl CreateProposalBuilder {
     #[inline(always)]
     pub fn governing_token_mint(
         &mut self,
-        governing_token_mint: solana_pubkey::Pubkey,
+        governing_token_mint: solana_address::Address,
     ) -> &mut Self {
         self.governing_token_mint = Some(governing_token_mint);
         self
@@ -243,25 +241,25 @@ impl CreateProposalBuilder {
     #[inline(always)]
     pub fn governance_authority(
         &mut self,
-        governance_authority: solana_pubkey::Pubkey,
+        governance_authority: solana_address::Address,
     ) -> &mut Self {
         self.governance_authority = Some(governance_authority);
         self
     }
     #[inline(always)]
-    pub fn payer(&mut self, payer: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
         self.payer = Some(payer);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
-    pub fn system_program(&mut self, system_program: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn system_program(&mut self, system_program: solana_address::Address) -> &mut Self {
         self.system_program = Some(system_program);
         self
     }
     /// RealmConfig account. PDA seeds: ['realm-config', realm]
     #[inline(always)]
-    pub fn realm_config(&mut self, realm_config: solana_pubkey::Pubkey) -> &mut Self {
+    pub fn realm_config(&mut self, realm_config: solana_address::Address) -> &mut Self {
         self.realm_config = Some(realm_config);
         self
     }
@@ -270,7 +268,7 @@ impl CreateProposalBuilder {
     #[inline(always)]
     pub fn voter_weight_record(
         &mut self,
-        voter_weight_record: Option<solana_pubkey::Pubkey>,
+        voter_weight_record: Option<solana_address::Address>,
     ) -> &mut Self {
         self.voter_weight_record = voter_weight_record;
         self
@@ -282,7 +280,7 @@ impl CreateProposalBuilder {
     #[inline(always)]
     pub fn proposal_deposit_account(
         &mut self,
-        proposal_deposit_account: Option<solana_pubkey::Pubkey>,
+        proposal_deposit_account: Option<solana_address::Address>,
     ) -> &mut Self {
         self.proposal_deposit_account = proposal_deposit_account;
         self
@@ -313,7 +311,7 @@ impl CreateProposalBuilder {
         self
     }
     #[inline(always)]
-    pub fn proposal_seed(&mut self, proposal_seed: Pubkey) -> &mut Self {
+    pub fn proposal_seed(&mut self, proposal_seed: Address) -> &mut Self {
         self.proposal_seed = Some(proposal_seed);
         self
     }
@@ -352,7 +350,7 @@ impl CreateProposalBuilder {
             payer: self.payer.expect("payer is not set"),
             system_program: self
                 .system_program
-                .unwrap_or(solana_pubkey::pubkey!("11111111111111111111111111111111")),
+                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
             realm_config: self.realm_config.expect("realm_config is not set"),
             voter_weight_record: self.voter_weight_record,
             proposal_deposit_account: self.proposal_deposit_account,
@@ -757,7 +755,7 @@ impl<'a, 'b> CreateProposalCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn proposal_seed(&mut self, proposal_seed: Pubkey) -> &mut Self {
+    pub fn proposal_seed(&mut self, proposal_seed: Address) -> &mut Self {
         self.instruction.proposal_seed = Some(proposal_seed);
         self
     }
@@ -899,7 +897,7 @@ struct CreateProposalCpiBuilderInstruction<'a, 'b> {
     vote_type: Option<VoteType>,
     options: Option<Vec<String>>,
     use_deny_option: Option<bool>,
-    proposal_seed: Option<Pubkey>,
+    proposal_seed: Option<Address>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

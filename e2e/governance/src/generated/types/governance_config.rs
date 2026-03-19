@@ -11,7 +11,6 @@ use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GovernanceConfig {
     pub community_vote_threshold: VoteThreshold,
     pub min_community_weight_to_create_proposal: u64,

@@ -8,13 +8,12 @@
 use crate::generated::types::GoverningTokenType;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use solana_pubkey::Pubkey;
+use solana_address::Address;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct GoverningTokenConfig {
-    pub voter_weight_addin: Option<Pubkey>,
-    pub max_voter_weight_addin: Option<Pubkey>,
+    pub voter_weight_addin: Option<Address>,
+    pub max_voter_weight_addin: Option<Address>,
     pub token_type: GoverningTokenType,
     pub reserved: [u8; 8],
 }
