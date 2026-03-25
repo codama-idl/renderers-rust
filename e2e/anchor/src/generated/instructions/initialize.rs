@@ -94,7 +94,7 @@ impl Default for InitializeInstructionData {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable]` extra_metas_account
+///   0. `[writable, optional]` extra_metas_account (default to PDA)
 ///   1. `[]` guard
 ///   2. `[]` mint
 ///   3. `[writable, signer]` transfer_hook_authority
@@ -115,6 +115,7 @@ impl InitializeBuilder {
     pub fn new() -> Self {
         Self::default()
     }
+    /// `[optional account, default to PDA]`
     #[inline(always)]
     pub fn extra_metas_account(
         &mut self,
@@ -169,19 +170,36 @@ impl InitializeBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let mint = self.mint.expect("mint is not set");
+        let extra_metas_account = self.extra_metas_account.unwrap_or_else(|| {
+            solana_address::Address::find_program_address(
+                &[
+                    &[
+                        101, 120, 116, 114, 97, 45, 97, 99, 99, 111, 117, 110, 116, 45, 109, 101,
+                        116, 97, 115,
+                    ],
+                    mint.as_ref(),
+                ],
+                &crate::WEN_TRANSFER_GUARD_ID,
+            )
+            .0
+        });
+        let guard = self.guard.expect("guard is not set");
+        let transfer_hook_authority = self
+            .transfer_hook_authority
+            .expect("transfer_hook_authority is not set");
+        let system_program = self
+            .system_program
+            .unwrap_or(solana_address::address!("11111111111111111111111111111111"));
+        let payer = self.payer.expect("payer is not set");
+
         let accounts = Initialize {
-            extra_metas_account: self
-                .extra_metas_account
-                .expect("extra_metas_account is not set"),
-            guard: self.guard.expect("guard is not set"),
-            mint: self.mint.expect("mint is not set"),
-            transfer_hook_authority: self
-                .transfer_hook_authority
-                .expect("transfer_hook_authority is not set"),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
-            payer: self.payer.expect("payer is not set"),
+            extra_metas_account,
+            guard,
+            mint,
+            transfer_hook_authority,
+            system_program,
+            payer,
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)

@@ -102,9 +102,9 @@ impl UpgradeNonceAccountBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
-        let accounts = UpgradeNonceAccount {
-            nonce_account: self.nonce_account.expect("nonce_account is not set"),
-        };
+        let nonce_account = self.nonce_account.expect("nonce_account is not set");
+
+        let accounts = UpgradeNonceAccount { nonce_account };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
     }

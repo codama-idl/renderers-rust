@@ -182,18 +182,26 @@ impl WithdrawNonceAccountBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let nonce_account = self.nonce_account.expect("nonce_account is not set");
+        let recipient_account = self
+            .recipient_account
+            .expect("recipient_account is not set");
+        let recent_blockhashes_sysvar =
+            self.recent_blockhashes_sysvar
+                .unwrap_or(solana_address::address!(
+                    "SysvarRecentB1ockHashes11111111111111111111"
+                ));
+        let rent_sysvar = self.rent_sysvar.unwrap_or(solana_address::address!(
+            "SysvarRent111111111111111111111111111111111"
+        ));
+        let nonce_authority = self.nonce_authority.expect("nonce_authority is not set");
+
         let accounts = WithdrawNonceAccount {
-            nonce_account: self.nonce_account.expect("nonce_account is not set"),
-            recipient_account: self
-                .recipient_account
-                .expect("recipient_account is not set"),
-            recent_blockhashes_sysvar: self.recent_blockhashes_sysvar.unwrap_or(
-                solana_address::address!("SysvarRecentB1ockHashes11111111111111111111"),
-            ),
-            rent_sysvar: self.rent_sysvar.unwrap_or(solana_address::address!(
-                "SysvarRent111111111111111111111111111111111"
-            )),
-            nonce_authority: self.nonce_authority.expect("nonce_authority is not set"),
+            nonce_account,
+            recipient_account,
+            recent_blockhashes_sysvar,
+            rent_sysvar,
+            nonce_authority,
         };
         let args = WithdrawNonceAccountInstructionArgs {
             withdraw_amount: self

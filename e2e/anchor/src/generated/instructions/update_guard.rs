@@ -114,9 +114,9 @@ impl UpdateGuardInstructionArgs {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable]` guard
+///   0. `[writable, optional]` guard (default to PDA)
 ///   1. `[]` mint
-///   2. `[]` token_account
+///   2. `[optional]` token_account (default to PDA)
 ///   3. `[signer]` guard_authority
 ///   4. `[optional]` token_program (default to `TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb`)
 ///   5. `[optional]` system_program (default to `11111111111111111111111111111111`)
@@ -138,6 +138,7 @@ impl UpdateGuardBuilder {
     pub fn new() -> Self {
         Self::default()
     }
+    /// `[optional account, default to PDA]`
     #[inline(always)]
     pub fn guard(&mut self, guard: solana_address::Address) -> &mut Self {
         self.guard = Some(guard);
@@ -148,6 +149,7 @@ impl UpdateGuardBuilder {
         self.mint = Some(mint);
         self
     }
+    /// `[optional account, default to PDA]`
     #[inline(always)]
     pub fn token_account(&mut self, token_account: solana_address::Address) -> &mut Self {
         self.token_account = Some(token_account);
@@ -207,17 +209,47 @@ impl UpdateGuardBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let mint = self.mint.expect("mint is not set");
+        let guard = self.guard.unwrap_or_else(|| {
+            solana_address::Address::find_program_address(
+                &[
+                    &[
+                        119, 101, 110, 95, 116, 111, 107, 101, 110, 95, 116, 114, 97, 110, 115,
+                        102, 101, 114, 95, 103, 117, 97, 114, 100,
+                    ],
+                    &[103, 117, 97, 114, 100, 95, 118, 49],
+                    mint.as_ref(),
+                ],
+                &crate::WEN_TRANSFER_GUARD_ID,
+            )
+            .0
+        });
+        let guard_authority = self.guard_authority.expect("guard_authority is not set");
+        let token_program = self.token_program.unwrap_or(solana_address::address!(
+            "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        ));
+        let token_account = self.token_account.unwrap_or_else(|| {
+            solana_address::Address::find_program_address(
+                &[
+                    guard_authority.as_ref(),
+                    token_program.as_ref(),
+                    mint.as_ref(),
+                ],
+                &solana_address::address!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
+            )
+            .0
+        });
+        let system_program = self
+            .system_program
+            .unwrap_or(solana_address::address!("11111111111111111111111111111111"));
+
         let accounts = UpdateGuard {
-            guard: self.guard.expect("guard is not set"),
-            mint: self.mint.expect("mint is not set"),
-            token_account: self.token_account.expect("token_account is not set"),
-            guard_authority: self.guard_authority.expect("guard_authority is not set"),
-            token_program: self.token_program.unwrap_or(solana_address::address!(
-                "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
-            )),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
+            guard,
+            mint,
+            token_account,
+            guard_authority,
+            token_program,
+            system_program,
         };
         let args = UpdateGuardInstructionArgs {
             cpi_rule: self.cpi_rule.clone(),

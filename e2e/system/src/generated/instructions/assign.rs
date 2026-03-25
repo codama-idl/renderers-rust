@@ -118,9 +118,9 @@ impl AssignBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
-        let accounts = Assign {
-            account: self.account.expect("account is not set"),
-        };
+        let account = self.account.expect("account is not set");
+
+        let accounts = Assign { account };
         let args = AssignInstructionArgs {
             program_address: self
                 .program_address

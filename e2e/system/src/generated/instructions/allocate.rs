@@ -117,9 +117,9 @@ impl AllocateBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
-        let accounts = Allocate {
-            new_account: self.new_account.expect("new_account is not set"),
-        };
+        let new_account = self.new_account.expect("new_account is not set");
+
+        let accounts = Allocate { new_account };
         let args = AllocateInstructionArgs {
             space: self.space.clone().expect("space is not set"),
         };

@@ -158,9 +158,12 @@ impl AllocateWithSeedBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let new_account = self.new_account.expect("new_account is not set");
+        let base_account = self.base_account.expect("base_account is not set");
+
         let accounts = AllocateWithSeed {
-            new_account: self.new_account.expect("new_account is not set"),
-            base_account: self.base_account.expect("base_account is not set"),
+            new_account,
+            base_account,
         };
         let args = AllocateWithSeedInstructionArgs {
             base: self.base.clone().expect("base is not set"),

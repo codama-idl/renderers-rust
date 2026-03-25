@@ -101,9 +101,9 @@ impl Instruction7Builder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
-        let accounts = Instruction7 {
-            my_account: self.my_account,
-        };
+        let my_account = self.my_account;
+
+        let accounts = Instruction7 { my_account };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
     }
