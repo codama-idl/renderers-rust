@@ -400,9 +400,16 @@ function resolveInstructionPdaDefaults(ctx: {
         if (isNode(defaultValue.pda, 'pdaLinkNode')) {
             pdaNode = linkables.get([...stack.getPath(), defaultValue.pda]);
             if (pdaNode) {
-                isLinked = true;
-                linkedAccountName = pdaNode.name;
-                linkedImportFrom = getImportFrom(defaultValue.pda);
+                // Only use the linked find_pda() path if there's an account struct
+                // that references this PDA (since find_pda is generated on account structs).
+                const linkedAccount = program.accounts.find(
+                    a => a.pda && isNode(a.pda, 'pdaLinkNode') && a.pda.name === defaultValue.pda.name,
+                );
+                if (linkedAccount) {
+                    isLinked = true;
+                    linkedAccountName = linkedAccount.name;
+                    linkedImportFrom = getImportFrom(defaultValue.pda);
+                }
             }
         } else if (isNode(defaultValue.pda, 'pdaNode')) {
             pdaNode = defaultValue.pda;

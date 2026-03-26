@@ -158,8 +158,8 @@ test('it resolves linked pdaValueNode defaults', () => {
     const renderMap = visit(node, getRenderMapVisitor());
     const content = getFromRenderMap(renderMap, 'instructions/do_something.rs').content;
 
-    // Then the builder calls the linked account's find_pda method.
-    codeContains(content, ['unwrap_or_else', 'TestPda::find_pda']);
+    // Then the builder calls the account's find_pda method (using the account name, not PDA name).
+    codeContains(content, ['unwrap_or_else', 'TestAccount::find_pda']);
 });
 
 test('it resolves pdaValueNode defaults with variable seeds referencing accounts', () => {
@@ -481,8 +481,8 @@ test('it resolves linked pdaValueNode with variable account seeds', () => {
     const renderMap = visit(node, getRenderMapVisitor());
     const content = getFromRenderMap(renderMap, 'instructions/claim.rs').content;
 
-    // Then the linked find_pda receives the account reference using rawName.
-    codeContains(content, ['UserTokenPda::find_pda', '&owner,']);
+    // Then the linked find_pda uses the account name (not PDA name) and receives the account reference.
+    codeContains(content, ['UserToken::find_pda', '&owner,']);
 });
 
 test('it falls back to .expect() on circular PDA dependencies', () => {
@@ -566,4 +566,83 @@ test('it uses optional path (not PDA) when account is isOptional with PDA defaul
     // Then the optional flag takes precedence — no PDA auto-derivation.
     codeContains(content, ['let optional_account = self.optional_account;']);
     codeDoesNotContains(content, ['find_program_address', 'unwrap_or_else']);
+});
+
+test('it inlines find_program_address for linked PDA without matching account struct', () => {
+    // Given a PDA defined in program.pdas but with NO corresponding account in program.accounts.
+    const node = programNode({
+        instructions: [
+            instructionNode({
+                accounts: [
+                    instructionAccountNode({
+                        defaultValue: pdaValueNode('pdaOnly', []),
+                        isSigner: false,
+                        isWritable: false,
+                        name: 'derivedAccount',
+                    }),
+                ],
+                name: 'useIt',
+            }),
+        ],
+        name: 'myProgram',
+        pdas: [pdaNode({ name: 'pdaOnly', seeds: [constantPdaSeedNodeFromString('utf8', 'pda_only')] })],
+        publicKey: '1111111111111111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const content = getFromRenderMap(renderMap, 'instructions/use_it.rs').content;
+
+    // Then it falls back to inline find_program_address (not find_pda).
+    codeContains(content, ['find_program_address', '"pda_only".as_bytes()']);
+    codeDoesNotContains(content, ['::find_pda']);
+});
+
+test('it uses the account name (not PDA name) for linked find_pda when names differ', () => {
+    // Given an account named differently from its PDA.
+    const node = programNode({
+        accounts: [
+            accountNode({
+                name: 'extensionsHeader',
+                pda: pdaLinkNode('extensions'),
+            }),
+        ],
+        instructions: [
+            instructionNode({
+                accounts: [
+                    instructionAccountNode({
+                        isSigner: false,
+                        isWritable: false,
+                        name: 'owner',
+                    }),
+                    instructionAccountNode({
+                        defaultValue: pdaValueNode('extensions', [
+                            pdaSeedValueNode('owner', accountValueNode('owner')),
+                        ]),
+                        isSigner: false,
+                        isWritable: false,
+                        name: 'ext',
+                    }),
+                ],
+                name: 'readExtensions',
+            }),
+        ],
+        name: 'myProgram',
+        pdas: [
+            pdaNode({
+                name: 'extensions',
+                seeds: [
+                    constantPdaSeedNodeFromString('utf8', 'ext'),
+                    variablePdaSeedNode('owner', publicKeyTypeNode()),
+                ],
+            }),
+        ],
+        publicKey: '1111111111111111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const content = getFromRenderMap(renderMap, 'instructions/read_extensions.rs').content;
+
+    // Then it calls ExtensionsHeader::find_pda (the account name), not Extensions::find_pda.
+    codeContains(content, ['ExtensionsHeader::find_pda']);
+    codeDoesNotContains(content, ['Extensions::find_pda']);
 });
