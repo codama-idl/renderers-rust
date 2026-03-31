@@ -47,7 +47,7 @@ export const DEFAULT_DEPENDENCY_VERSIONS: CargoDependencies = {
     'solana-account': '~3.0',
     'solana-account-info': '~3.1',
     'solana-address': { features: ['borsh', 'copy', 'curve25519', 'decode'], version: '~2.2' },
-    'solana-client': { optional: true, version: '^3.0' },
+    'solana-rpc-client': { optional: true, version: '^3.0' },
     'solana-cpi': '~3.1',
     'solana-decode-error': '~2.3',
     'solana-instruction': '~3.2',
@@ -104,7 +104,7 @@ export function createNewCargoToml(usedDependencies: CargoDependencies): CargoTo
             features: {
                 anchor: ['dep:anchor-lang'],
                 'anchor-idl-build': ['anchor', 'anchor-lang?/idl-build'],
-                fetch: ['dep:solana-client'],
+                fetch: ['dep:solana-rpc-client'],
             },
             // eslint-disable-next-line sort-keys-fix/sort-keys-fix
             dependencies: {},
