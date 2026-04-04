@@ -34,7 +34,7 @@ impl TokenOwnerRecordV2 {
     ///   1. realm (`Address`)
     ///   2. governing_token_mint (`Address`)
     ///   3. governing_token_owner (`Address`)
-    pub const PREFIX: &'static [u8] = "governance".as_bytes();
+    pub const PREFIX: &'static [u8] = b"governance";
 
     pub fn create_pda(
         realm: Address,
@@ -44,7 +44,7 @@ impl TokenOwnerRecordV2 {
     ) -> Result<solana_address::Address, solana_address::error::AddressError> {
         solana_address::Address::create_program_address(
             &[
-                "governance".as_bytes(),
+                b"governance",
                 realm.as_ref(),
                 governing_token_mint.as_ref(),
                 governing_token_owner.as_ref(),
@@ -61,7 +61,7 @@ impl TokenOwnerRecordV2 {
     ) -> (solana_address::Address, u8) {
         solana_address::Address::find_program_address(
             &[
-                "governance".as_bytes(),
+                b"governance",
                 realm.as_ref(),
                 governing_token_mint.as_ref(),
                 governing_token_owner.as_ref(),

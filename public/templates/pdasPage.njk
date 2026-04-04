@@ -13,10 +13,15 @@ use crate::{{ program.name | snakeCase | upper }}_ID;
 {% set constantIndex = 0 %}
 {% for seed in seeds %}
   {% if seed.kind === 'constantPdaSeedNode' and seed.value.kind !== 'programIdValueNode' %}
-pub const {{ pda.name | snakeCase | upper }}_SEED{% if constantSeeds.length > 1 %}_{{ constantIndex }}{% endif %}: &'static [u8] = b{{ seed.valueManifest.render }};
+pub const {{ pda.name | snakeCase | upper }}_SEED{% if constantSeeds.length > 1 %}_{{ constantIndex }}{% endif %}: &'static [u8] = {{ seed.seedBytesExpr }};
     {% set constantIndex = constantIndex + 1 %}
   {% endif %}
 {% endfor %}
+{% if precomputedAddress %}
+
+pub const {{ pda.name | snakeCase | upper }}_ADDRESS: solana_address::Address =
+    solana_address::address!("{{ precomputedAddress }}");
+{% endif %}
 
 {{- macros.docblock(pda.docs) -}}
 pub fn create_{{ pda.name | snakeCase }}_pda(

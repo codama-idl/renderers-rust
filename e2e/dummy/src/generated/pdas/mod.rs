@@ -5,9 +5,8 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
-pub mod errors;
-pub mod instructions;
-pub mod pdas;
-pub mod programs;
+pub mod derived_account;
+pub mod global_config;
 
-pub(crate) use programs::*;
+pub use self::derived_account::*;
+pub use self::global_config::*;

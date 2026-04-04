@@ -26,7 +26,7 @@ impl SignatoryRecordV1 {
     ///   0. `SignatoryRecordV1::PREFIX`
     ///   1. proposal (`Address`)
     ///   2. signatory (`Address`)
-    pub const PREFIX: &'static [u8] = "governance".as_bytes();
+    pub const PREFIX: &'static [u8] = b"governance";
 
     pub fn create_pda(
         proposal: Address,
@@ -35,7 +35,7 @@ impl SignatoryRecordV1 {
     ) -> Result<solana_address::Address, solana_address::error::AddressError> {
         solana_address::Address::create_program_address(
             &[
-                "governance".as_bytes(),
+                b"governance",
                 proposal.as_ref(),
                 signatory.as_ref(),
                 &[bump],
@@ -46,11 +46,7 @@ impl SignatoryRecordV1 {
 
     pub fn find_pda(proposal: &Address, signatory: &Address) -> (solana_address::Address, u8) {
         solana_address::Address::find_program_address(
-            &[
-                "governance".as_bytes(),
-                proposal.as_ref(),
-                signatory.as_ref(),
-            ],
+            &[b"governance", proposal.as_ref(), signatory.as_ref()],
             &crate::SPL_GOVERNANCE_ID,
         )
     }

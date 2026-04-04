@@ -121,7 +121,7 @@ impl ExecuteInstructionArgs {
 ///   1. `[]` mint
 ///   2. `[]` destination_account
 ///   3. `[]` owner_delegate
-///   4. `[]` extra_metas_account
+///   4. `[optional]` extra_metas_account (default to PDA derived from 'extraMetasAccount')
 ///   5. `[]` guard
 ///   6. `[optional]` instruction_sysvar_account (default to `Sysvar1nstructions1111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
@@ -164,6 +164,7 @@ impl ExecuteBuilder {
         self.owner_delegate = Some(owner_delegate);
         self
     }
+    /// `[optional account, default to PDA derived from 'extraMetasAccount']`
     #[inline(always)]
     pub fn extra_metas_account(
         &mut self,
@@ -208,6 +209,14 @@ impl ExecuteBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let extra_metas_account = self.extra_metas_account.unwrap_or_else(|| {
+            crate::pdas::find_extra_metas_account_pda(
+                &self
+                    .mint
+                    .expect("mint is needed for extra_metas_account PDA"),
+            )
+            .0
+        });
         let accounts = Execute {
             source_account: self.source_account.expect("source_account is not set"),
             mint: self.mint.expect("mint is not set"),
@@ -215,9 +224,7 @@ impl ExecuteBuilder {
                 .destination_account
                 .expect("destination_account is not set"),
             owner_delegate: self.owner_delegate.expect("owner_delegate is not set"),
-            extra_metas_account: self
-                .extra_metas_account
-                .expect("extra_metas_account is not set"),
+            extra_metas_account,
             guard: self.guard.expect("guard is not set"),
             instruction_sysvar_account: self.instruction_sysvar_account.unwrap_or(
                 solana_address::address!("Sysvar1nstructions1111111111111111111111111"),

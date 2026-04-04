@@ -52,7 +52,7 @@ impl ProposalV1 {
     ///   1. governance (`Address`)
     ///   2. governing_token_mint (`Address`)
     ///   3. proposal_seed (`Address`)
-    pub const PREFIX: &'static [u8] = "governance".as_bytes();
+    pub const PREFIX: &'static [u8] = b"governance";
 
     pub fn create_pda(
         governance: Address,
@@ -62,7 +62,7 @@ impl ProposalV1 {
     ) -> Result<solana_address::Address, solana_address::error::AddressError> {
         solana_address::Address::create_program_address(
             &[
-                "governance".as_bytes(),
+                b"governance",
                 governance.as_ref(),
                 governing_token_mint.as_ref(),
                 proposal_seed.as_ref(),
@@ -79,7 +79,7 @@ impl ProposalV1 {
     ) -> (solana_address::Address, u8) {
         solana_address::Address::find_program_address(
             &[
-                "governance".as_bytes(),
+                b"governance",
                 governance.as_ref(),
                 governing_token_mint.as_ref(),
                 proposal_seed.as_ref(),

@@ -124,9 +124,9 @@ impl CreateGuardInstructionArgs {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable]` guard
+///   0. `[writable, optional]` guard (default to PDA derived from 'guard')
 ///   1. `[writable, signer]` mint
-///   2. `[writable]` mint_token_account
+///   2. `[writable, optional]` mint_token_account (default to PDA derived from 'mintTokenAccount')
 ///   3. `[signer]` guard_authority
 ///   4. `[writable, signer]` payer
 ///   5. `[optional]` associated_token_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
@@ -155,6 +155,7 @@ impl CreateGuardBuilder {
     pub fn new() -> Self {
         Self::default()
     }
+    /// `[optional account, default to PDA derived from 'guard']`
     #[inline(always)]
     pub fn guard(&mut self, guard: solana_address::Address) -> &mut Self {
         self.guard = Some(guard);
@@ -165,6 +166,7 @@ impl CreateGuardBuilder {
         self.mint = Some(mint);
         self
     }
+    /// `[optional account, default to PDA derived from 'mintTokenAccount']`
     #[inline(always)]
     pub fn mint_token_account(&mut self, mint_token_account: solana_address::Address) -> &mut Self {
         self.mint_token_account = Some(mint_token_account);
@@ -253,12 +255,32 @@ impl CreateGuardBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let guard = self.guard.unwrap_or_else(|| {
+            crate::pdas::find_guard_pda(&self.mint.expect("mint is needed for guard PDA")).0
+        });
+        let mint_token_account = self.mint_token_account.unwrap_or_else(|| {
+            solana_address::Address::find_program_address(
+                &[
+                    self.guard_authority
+                        .expect("guard_authority is needed for mint_token_account PDA")
+                        .as_ref(),
+                    self.token_program
+                        .unwrap_or(solana_address::address!(
+                            "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+                        ))
+                        .as_ref(),
+                    self.mint
+                        .expect("mint is needed for mint_token_account PDA")
+                        .as_ref(),
+                ],
+                &solana_address::address!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
+            )
+            .0
+        });
         let accounts = CreateGuard {
-            guard: self.guard.expect("guard is not set"),
+            guard,
             mint: self.mint.expect("mint is not set"),
-            mint_token_account: self
-                .mint_token_account
-                .expect("mint_token_account is not set"),
+            mint_token_account,
             guard_authority: self.guard_authority.expect("guard_authority is not set"),
             payer: self.payer.expect("payer is not set"),
             associated_token_program: self.associated_token_program.unwrap_or(

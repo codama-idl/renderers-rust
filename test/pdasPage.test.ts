@@ -1,6 +1,7 @@
 import {
     bytesTypeNode,
     constantPdaSeedNode,
+    constantPdaSeedNodeFromBytes,
     constantPdaSeedNodeFromString,
     fixedSizeTypeNode,
     numberTypeNode,
@@ -16,7 +17,7 @@ import { visit } from '@codama/visitors-core';
 import { test } from 'vitest';
 
 import { getRenderMapVisitor } from '../src';
-import { codeContains } from './_setup';
+import { codeContains, codeDoesNotContains } from './_setup';
 
 test('it renders a standalone PDA with variable seeds', () => {
     // Given a program with a PDA that has variable seeds.
@@ -68,10 +69,11 @@ test('it renders a PDA with only constant seeds', () => {
     // When we render it.
     const renderMap = visit(node, getRenderMapVisitor());
 
-    // Then we expect the PDA functions without variable parameters.
     codeContains(getFromRenderMap(renderMap, 'pdas/config_pda.rs').content, [
         'pub const CONFIG_PDA_SEED_0: &\'static [u8] = b"config";',
-        "pub const CONFIG_PDA_SEED_1: &'static [u8] = b1;",
+        "pub const CONFIG_PDA_SEED_1: &'static [u8] = &1u64.to_le_bytes();",
+        'pub const CONFIG_PDA_ADDRESS: solana_address::Address =',
+        'solana_address::address!("EdgDu3sEjDtMpJuDkG8VsWnKq16EYxTsuwCmSko3wZnR")',
         'pub fn create_config_pda_pda(',
         'bump: u8,',
         'pub fn find_config_pda_pda(',
@@ -158,4 +160,52 @@ test('it includes PDAs module in the root mod file', () => {
 
     // Then we expect the pdas module to be included in the root mod.
     codeContains(getFromRenderMap(renderMap, 'mod.rs').content, ['pub mod pdas;']);
+});
+
+test('it does not emit a precomputed address for PDAs with variable seeds', () => {
+    const node = programNode({
+        name: 'myProgram',
+        pdas: [
+            pdaNode({
+                name: 'myPda',
+                seeds: [
+                    constantPdaSeedNodeFromString('utf8', 'metadata'),
+                    variablePdaSeedNode('mint', publicKeyTypeNode()),
+                ],
+            }),
+        ],
+        publicKey: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    codeDoesNotContains(getFromRenderMap(renderMap, 'pdas/my_pda.rs').content, ['_ADDRESS']);
+});
+
+test('it renders a PDA with byte array constant seeds', () => {
+    // Given a program with a PDA that has byte array seeds (e.g. from Anchor IDL extraction).
+    const node = programNode({
+        name: 'myProgram',
+        pdas: [
+            pdaNode({
+                name: 'guardPda',
+                seeds: [
+                    constantPdaSeedNodeFromBytes('base58', 'F9bS'),
+                    variablePdaSeedNode('mint', publicKeyTypeNode()),
+                ],
+            }),
+        ],
+        publicKey: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+    });
+
+    // When we render it.
+    const renderMap = visit(node, getRenderMapVisitor());
+
+    // Then we expect byte array seeds to use &[...] syntax, not b[...].
+    codeContains(getFromRenderMap(renderMap, 'pdas/guard_pda.rs').content, [
+        "pub const GUARD_PDA_SEED: &'static [u8] = &[",
+        'pub fn create_guard_pda_pda(',
+        'mint: Address,',
+        'pub fn find_guard_pda_pda(',
+        'mint: &Address,',
+    ]);
 });

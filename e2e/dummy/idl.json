@@ -2,7 +2,44 @@
     "kind": "rootNode",
     "program": {
       "kind": "programNode",
-      "pdas": [],
+      "pdas": [
+        {
+          "kind": "pdaNode",
+          "name": "derivedAccount",
+          "seeds": [
+            {
+              "kind": "constantPdaSeedNode",
+              "type": { "kind": "stringTypeNode", "encoding": "utf8" },
+              "value": { "kind": "stringValueNode", "string": "derived" }
+            },
+            {
+              "kind": "variablePdaSeedNode",
+              "name": "mint",
+              "type": { "kind": "publicKeyTypeNode" },
+              "docs": []
+            },
+            {
+              "kind": "variablePdaSeedNode",
+              "name": "tokenProgram",
+              "type": { "kind": "publicKeyTypeNode" },
+              "docs": []
+            }
+          ],
+          "docs": []
+        },
+        {
+          "kind": "pdaNode",
+          "name": "globalConfig",
+          "seeds": [
+            {
+              "kind": "constantPdaSeedNode",
+              "type": { "kind": "stringTypeNode", "encoding": "utf8" },
+              "value": { "kind": "stringValueNode", "string": "global_config" }
+            }
+          ],
+          "docs": ["A PDA with only constant seeds — address is deterministic."]
+        }
+      ],
       "accounts": [],
       "instructions": [
         {
@@ -130,6 +167,88 @@
               "isSigner": false,
               "isOptional": true,
               "docs": []
+            }
+          ],
+          "arguments": []
+        },
+        {
+          "kind": "instructionNode",
+          "name": "instruction8",
+          "optionalAccountStrategy": "programId",
+          "docs": ["Testing pdaLinkNode auto-derivation with upstream defaulted seed account"],
+          "accounts": [
+            {
+              "kind": "instructionAccountNode",
+              "name": "mint",
+              "isWritable": false,
+              "isSigner": false,
+              "isOptional": false,
+              "docs": []
+            },
+            {
+              "kind": "instructionAccountNode",
+              "name": "tokenProgram",
+              "isWritable": false,
+              "isSigner": false,
+              "isOptional": false,
+              "docs": [],
+              "defaultValue": {
+                "kind": "publicKeyValueNode",
+                "publicKey": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+              }
+            },
+            {
+              "kind": "instructionAccountNode",
+              "name": "derivedAccount",
+              "isWritable": true,
+              "isSigner": false,
+              "isOptional": false,
+              "docs": [],
+              "defaultValue": {
+                "kind": "pdaValueNode",
+                "pda": {
+                  "kind": "pdaLinkNode",
+                  "name": "derivedAccount"
+                },
+                "seeds": [
+                  {
+                    "kind": "pdaSeedValueNode",
+                    "name": "mint",
+                    "value": { "kind": "accountValueNode", "name": "mint" }
+                  },
+                  {
+                    "kind": "pdaSeedValueNode",
+                    "name": "tokenProgram",
+                    "value": { "kind": "accountValueNode", "name": "tokenProgram" }
+                  }
+                ]
+              }
+            }
+          ],
+          "arguments": [],
+          "remainingAccounts": []
+        },
+        {
+          "kind": "instructionNode",
+          "name": "instruction9",
+          "optionalAccountStrategy": "programId",
+          "docs": ["Testing precomputed PDA constant for zero-variable-seed linked PDA"],
+          "accounts": [
+            {
+              "kind": "instructionAccountNode",
+              "name": "globalConfig",
+              "isWritable": false,
+              "isSigner": false,
+              "isOptional": false,
+              "docs": [],
+              "defaultValue": {
+                "kind": "pdaValueNode",
+                "pda": {
+                  "kind": "pdaLinkNode",
+                  "name": "globalConfig"
+                },
+                "seeds": []
+              }
             }
           ],
           "arguments": []

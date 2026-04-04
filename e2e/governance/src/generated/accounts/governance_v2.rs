@@ -32,7 +32,7 @@ impl GovernanceV2 {
     ///   0. `GovernanceV2::PREFIX`
     ///   1. realm (`Address`)
     ///   2. seed (`Address`)
-    pub const PREFIX: &'static [u8] = "account-governance".as_bytes();
+    pub const PREFIX: &'static [u8] = b"account-governance";
 
     pub fn create_pda(
         realm: Address,
@@ -41,7 +41,7 @@ impl GovernanceV2 {
     ) -> Result<solana_address::Address, solana_address::error::AddressError> {
         solana_address::Address::create_program_address(
             &[
-                "account-governance".as_bytes(),
+                b"account-governance",
                 realm.as_ref(),
                 seed.as_ref(),
                 &[bump],
@@ -52,11 +52,7 @@ impl GovernanceV2 {
 
     pub fn find_pda(realm: &Address, seed: &Address) -> (solana_address::Address, u8) {
         solana_address::Address::find_program_address(
-            &[
-                "account-governance".as_bytes(),
-                realm.as_ref(),
-                seed.as_ref(),
-            ],
+            &[b"account-governance", realm.as_ref(), seed.as_ref()],
             &crate::SPL_GOVERNANCE_ID,
         )
     }

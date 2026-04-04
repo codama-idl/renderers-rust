@@ -26,7 +26,7 @@ impl ProposalDeposit {
     ///   0. `ProposalDeposit::PREFIX`
     ///   1. proposal (`Address`)
     ///   2. deposit_payer (`Address`)
-    pub const PREFIX: &'static [u8] = "proposal-deposit".as_bytes();
+    pub const PREFIX: &'static [u8] = b"proposal-deposit";
 
     pub fn create_pda(
         proposal: Address,
@@ -35,7 +35,7 @@ impl ProposalDeposit {
     ) -> Result<solana_address::Address, solana_address::error::AddressError> {
         solana_address::Address::create_program_address(
             &[
-                "proposal-deposit".as_bytes(),
+                b"proposal-deposit",
                 proposal.as_ref(),
                 deposit_payer.as_ref(),
                 &[bump],
@@ -47,7 +47,7 @@ impl ProposalDeposit {
     pub fn find_pda(proposal: &Address, deposit_payer: &Address) -> (solana_address::Address, u8) {
         solana_address::Address::find_program_address(
             &[
-                "proposal-deposit".as_bytes(),
+                b"proposal-deposit",
                 proposal.as_ref(),
                 deposit_payer.as_ref(),
             ],

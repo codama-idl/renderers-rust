@@ -94,7 +94,7 @@ impl Default for InitializeInstructionData {
 ///
 /// ### Accounts:
 ///
-///   0. `[writable]` extra_metas_account
+///   0. `[writable, optional]` extra_metas_account (default to PDA derived from 'extraMetasAccount')
 ///   1. `[]` guard
 ///   2. `[]` mint
 ///   3. `[writable, signer]` transfer_hook_authority
@@ -115,6 +115,7 @@ impl InitializeBuilder {
     pub fn new() -> Self {
         Self::default()
     }
+    /// `[optional account, default to PDA derived from 'extraMetasAccount']`
     #[inline(always)]
     pub fn extra_metas_account(
         &mut self,
@@ -169,10 +170,16 @@ impl InitializeBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let extra_metas_account = self.extra_metas_account.unwrap_or_else(|| {
+            crate::pdas::find_extra_metas_account_pda(
+                &self
+                    .mint
+                    .expect("mint is needed for extra_metas_account PDA"),
+            )
+            .0
+        });
         let accounts = Initialize {
-            extra_metas_account: self
-                .extra_metas_account
-                .expect("extra_metas_account is not set"),
+            extra_metas_account,
             guard: self.guard.expect("guard is not set"),
             mint: self.mint.expect("mint is not set"),
             transfer_hook_authority: self

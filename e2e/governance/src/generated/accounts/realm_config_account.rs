@@ -28,21 +28,21 @@ impl RealmConfigAccount {
     ///
     ///   0. `RealmConfigAccount::PREFIX`
     ///   1. realm (`Address`)
-    pub const PREFIX: &'static [u8] = "realm-config".as_bytes();
+    pub const PREFIX: &'static [u8] = b"realm-config";
 
     pub fn create_pda(
         realm: Address,
         bump: u8,
     ) -> Result<solana_address::Address, solana_address::error::AddressError> {
         solana_address::Address::create_program_address(
-            &["realm-config".as_bytes(), realm.as_ref(), &[bump]],
+            &[b"realm-config", realm.as_ref(), &[bump]],
             &crate::SPL_GOVERNANCE_ID,
         )
     }
 
     pub fn find_pda(realm: &Address) -> (solana_address::Address, u8) {
         solana_address::Address::find_program_address(
-            &["realm-config".as_bytes(), realm.as_ref()],
+            &[b"realm-config", realm.as_ref()],
             &crate::SPL_GOVERNANCE_ID,
         )
     }

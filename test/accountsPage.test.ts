@@ -103,7 +103,7 @@ test('it renders constant PDA seeds as prefix consts', () => {
         '///   0. `TestAccount::PREFIX.0`',
         '///   1. my_account (`Address`)',
         '///   2. `TestAccount::PREFIX.1`',
-        /pub const PREFIX: \(\s*&'static \[u8\],\s*&'static \[u8\],\s*\) = \(\s*"myPrefix"\.as_bytes\(\),\s*42\.as_bytes\(\),\s*\)/,
+        /pub const PREFIX: \(\s*&'static \[u8\],\s*&'static \[u8\],\s*\) = \(\s*b"myPrefix",\s*&42u64\.to_le_bytes\(\),\s*\)/,
     ]);
 });
 

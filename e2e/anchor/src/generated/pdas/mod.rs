@@ -5,9 +5,8 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
-pub mod errors;
-pub mod instructions;
-pub mod pdas;
-pub mod programs;
+pub mod extra_metas_account;
+pub mod guard;
 
-pub(crate) use programs::*;
+pub use self::extra_metas_account::*;
+pub use self::guard::*;

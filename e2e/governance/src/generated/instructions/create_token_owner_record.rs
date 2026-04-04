@@ -100,7 +100,7 @@ impl Default for CreateTokenOwnerRecordInstructionData {
 ///
 ///   0. `[]` realm_account
 ///   1. `[]` governing_token_owner_account
-///   2. `[writable]` token_owner_record
+///   2. `[writable, optional]` token_owner_record (default to PDA derived from 'tokenOwnerRecord')
 ///   3. `[]` governing_token_mint
 ///   4. `[signer]` payer
 ///   5. `[optional]` system_program (default to `11111111111111111111111111111111`)
@@ -132,6 +132,7 @@ impl CreateTokenOwnerRecordBuilder {
         self.governing_token_owner_account = Some(governing_token_owner_account);
         self
     }
+    /// `[optional account, default to PDA derived from 'tokenOwnerRecord']`
     /// seeds=['governance', realm, governing_token_mint, governing_token_owner]
     #[inline(always)]
     pub fn token_owner_record(&mut self, token_owner_record: solana_address::Address) -> &mut Self {
@@ -174,14 +175,26 @@ impl CreateTokenOwnerRecordBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let token_owner_record = self.token_owner_record.unwrap_or_else(|| {
+            crate::pdas::find_token_owner_record_pda(
+                &self
+                    .realm_account
+                    .expect("realm_account is needed for token_owner_record PDA"),
+                &self
+                    .governing_token_mint
+                    .expect("governing_token_mint is needed for token_owner_record PDA"),
+                &self
+                    .governing_token_owner_account
+                    .expect("governing_token_owner_account is needed for token_owner_record PDA"),
+            )
+            .0
+        });
         let accounts = CreateTokenOwnerRecord {
             realm_account: self.realm_account.expect("realm_account is not set"),
             governing_token_owner_account: self
                 .governing_token_owner_account
                 .expect("governing_token_owner_account is not set"),
-            token_owner_record: self
-                .token_owner_record
-                .expect("token_owner_record is not set"),
+            token_owner_record,
             governing_token_mint: self
                 .governing_token_mint
                 .expect("governing_token_mint is not set"),
