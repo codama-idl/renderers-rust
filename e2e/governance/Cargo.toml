@@ -6,6 +6,7 @@ edition = "2021"
 [features]
 anchor = ["dep:anchor-lang"]
 anchor-idl-build = ["anchor", "anchor-lang?/idl-build"]
+fetch = ["dep:solana-client"]
 serde = ["dep:serde", "dep:serde_with", "dep:serde-big-array"]
 test-sbf = []
 

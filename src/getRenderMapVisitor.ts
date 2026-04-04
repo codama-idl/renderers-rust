@@ -73,7 +73,7 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
         v =>
             extendVisitor(v, {
                 visitAccount(node) {
-                   const accountPath = stack.getPath('accountNode');
+                    const accountPath = stack.getPath('accountNode');
                     const program = findProgramNodeFromPath(accountPath);
                     if (!program) {
                         throw new Error('Account must be visited inside a program.');

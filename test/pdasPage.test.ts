@@ -71,7 +71,7 @@ test('it renders a PDA with only constant seeds', () => {
     // Then we expect the PDA functions without variable parameters.
     codeContains(getFromRenderMap(renderMap, 'pdas/config_pda.rs').content, [
         'pub const CONFIG_PDA_SEED_0: &\'static [u8] = b"config";',
-        'pub const CONFIG_PDA_SEED_1: &\'static [u8] = b1;',
+        "pub const CONFIG_PDA_SEED_1: &'static [u8] = b1;",
         'pub fn create_config_pda_pda(',
         'bump: u8,',
         'pub fn find_config_pda_pda(',
@@ -157,7 +157,5 @@ test('it includes PDAs module in the root mod file', () => {
     const renderMap = visit(node, getRenderMapVisitor());
 
     // Then we expect the pdas module to be included in the root mod.
-    codeContains(getFromRenderMap(renderMap, 'mod.rs').content, [
-        'pub mod pdas;',
-    ]);
+    codeContains(getFromRenderMap(renderMap, 'mod.rs').content, ['pub mod pdas;']);
 });
