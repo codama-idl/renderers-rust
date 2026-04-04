@@ -81,8 +81,14 @@ impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for LegacyTokenOwnerReco
     type Error = std::io::Error;
 
     fn try_from(account_info: &solana_account_info::AccountInfo<'a>) -> Result<Self, Self::Error> {
-        let mut data: &[u8] = &(*account_info.data).borrow();
-        Self::deserialize(&mut data)
+        if account_info.owner != &crate::SPL_GOVERNANCE_ID {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "invalid account owner",
+            ));
+        }
+        let data: &[u8] = &(*account_info.data).borrow();
+        Self::from_bytes(data)
     }
 }
 
@@ -110,6 +116,11 @@ pub fn fetch_all_legacy_token_owner_record(
         let account = accounts[i].as_ref().ok_or(std::io::Error::other(format!(
             "Account not found: {address}"
         )))?;
+        if account.owner != crate::SPL_GOVERNANCE_ID {
+            return Err(std::io::Error::other(format!(
+                "Invalid owner for account: {address}"
+            )));
+        }
         let data = LegacyTokenOwnerRecord::from_bytes(&account.data)?;
         decoded_accounts.push(crate::shared::DecodedAccount {
             address,
@@ -141,6 +152,11 @@ pub fn fetch_all_maybe_legacy_token_owner_record(
     for i in 0..addresses.len() {
         let address = addresses[i];
         if let Some(account) = accounts[i].as_ref() {
+            if account.owner != crate::SPL_GOVERNANCE_ID {
+                return Err(std::io::Error::other(format!(
+                    "Invalid owner for account: {address}"
+                )));
+            }
             let data = LegacyTokenOwnerRecord::from_bytes(&account.data)?;
             decoded_accounts.push(crate::shared::MaybeAccount::Exists(
                 crate::shared::DecodedAccount {

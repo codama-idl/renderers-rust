@@ -25,6 +25,34 @@ function mergeFragments(fragments: Fragment[], merge: (parts: string[]) => strin
     return { imports, render };
 }
 
+export function getByteArrayDiscriminatorConstantName(scope: {
+    discriminatorNodes: DiscriminatorNode[];
+    fields: InstructionArgumentNode[] | StructFieldTypeNode[];
+    prefix: string;
+}): string | null {
+    const { discriminatorNodes, fields, prefix } = scope;
+
+    for (const disc of discriminatorNodes) {
+        if (isNode(disc, 'constantDiscriminatorNode')) {
+            return snakeCase(camelCase(`${prefix}_discriminator`)).toUpperCase();
+        }
+        if (isNode(disc, 'fieldDiscriminatorNode')) {
+            const field = fields.find(f => f.name === disc.name);
+            if (
+                field &&
+                field.defaultValue &&
+                isNode(field.defaultValue, VALUE_NODES) &&
+                isNode(field.type, 'fixedSizeTypeNode') &&
+                isNode(field.type.type, 'bytesTypeNode')
+            ) {
+                return snakeCase(camelCase(`${prefix}_${disc.name}`)).toUpperCase();
+            }
+        }
+    }
+
+    return null;
+}
+
 export function getDiscriminatorConstants(scope: {
     discriminatorNodes: DiscriminatorNode[];
     fields: InstructionArgumentNode[] | StructFieldTypeNode[];

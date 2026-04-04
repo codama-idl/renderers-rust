@@ -1,9 +1,12 @@
 import {
     accountNode,
     bytesTypeNode,
+    bytesValueNode,
     camelCase,
+    constantDiscriminatorNode,
     constantPdaSeedNode,
     constantPdaSeedNodeFromString,
+    constantValueNode,
     fixedSizeTypeNode,
     numberTypeNode,
     numberValueNode,
@@ -11,6 +14,8 @@ import {
     pdaNode,
     programNode,
     publicKeyTypeNode,
+    structFieldTypeNode,
+    structTypeNode,
     variablePdaSeedNode,
 } from '@codama/nodes';
 import { getFromRenderMap } from '@codama/renderers-core';
@@ -136,6 +141,7 @@ test('it renders anchor traits impl', () => {
         'impl anchor_lang::AccountDeserialize for TestAccount',
         'impl anchor_lang::AccountSerialize for TestAccount {}',
         'impl anchor_lang::Owner for TestAccount',
+        'const DISCRIMINATOR: &[u8] = &[0; 8]',
     ]);
 });
 
@@ -169,6 +175,206 @@ test('it renders fetch functions', () => {
         'pub fn fetch_all_test_account',
         'pub fn fetch_all_maybe_test_account',
     ]);
+});
+
+test('it validates byte-array discriminator in from_bytes and TryFrom', () => {
+    // Given an account with a byte-array discriminator field.
+    const node = programNode({
+        accounts: [
+            accountNode({
+                data: structTypeNode([
+                    structFieldTypeNode({
+                        defaultValue: bytesValueNode('base16', 'b9959c4ef56cac44'),
+                        defaultValueStrategy: 'omitted',
+                        name: 'discriminator',
+                        type: fixedSizeTypeNode(bytesTypeNode(), 8),
+                    }),
+                    structFieldTypeNode({
+                        name: 'amount',
+                        type: numberTypeNode('u64'),
+                    }),
+                ]),
+                discriminators: [
+                    {
+                        kind: 'fieldDiscriminatorNode',
+                        name: camelCase('discriminator'),
+                        offset: 0,
+                    },
+                ],
+                name: 'testAccount',
+            }),
+        ],
+        name: 'myProgram',
+        publicKey: '1111',
+    });
+
+    // When we render it.
+    const renderMap = visit(node, getRenderMapVisitor());
+    const code = getFromRenderMap(renderMap, 'accounts/test_account.rs').content;
+
+    // Then from_bytes validates the discriminator before deserializing.
+    codeContains(code, ['TEST_ACCOUNT_DISCRIMINATOR', 'invalid account discriminator', 'Self::from_bytes(data)']);
+
+    // And the Discriminator trait uses the real constant.
+    codeContains(code, ['const DISCRIMINATOR: &[u8] = &TEST_ACCOUNT_DISCRIMINATOR;']);
+});
+
+test('it validates constant discriminator in from_bytes and TryFrom', () => {
+    // Given an account with a constantDiscriminatorNode (no discriminator struct field).
+    const node = programNode({
+        accounts: [
+            accountNode({
+                data: structTypeNode([
+                    structFieldTypeNode({
+                        name: 'amount',
+                        type: numberTypeNode('u64'),
+                    }),
+                ]),
+                discriminators: [
+                    constantDiscriminatorNode(
+                        constantValueNode(
+                            fixedSizeTypeNode(bytesTypeNode(), 8),
+                            bytesValueNode('base16', 'aabbccdd11223344'),
+                        ),
+                    ),
+                ],
+                name: 'testAccount',
+            }),
+        ],
+        name: 'myProgram',
+        publicKey: '1111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const code = getFromRenderMap(renderMap, 'accounts/test_account.rs').content;
+
+    // from_bytes validates the discriminator.
+    codeContains(code, ['TEST_ACCOUNT_DISCRIMINATOR', 'invalid account discriminator']);
+
+    // Anchor Discriminator trait uses the real constant.
+    codeContains(code, ['const DISCRIMINATOR: &[u8] = &TEST_ACCOUNT_DISCRIMINATOR;']);
+});
+
+test('it validates account owner in TryFrom and fetch', () => {
+    // Given an account with a discriminator.
+    const node = programNode({
+        accounts: [
+            accountNode({
+                data: structTypeNode([
+                    structFieldTypeNode({
+                        defaultValue: bytesValueNode('base16', 'b9959c4ef56cac44'),
+                        defaultValueStrategy: 'omitted',
+                        name: 'discriminator',
+                        type: fixedSizeTypeNode(bytesTypeNode(), 8),
+                    }),
+                ]),
+                discriminators: [
+                    {
+                        kind: 'fieldDiscriminatorNode',
+                        name: camelCase('discriminator'),
+                        offset: 0,
+                    },
+                ],
+                name: 'testAccount',
+            }),
+        ],
+        name: 'myProgram',
+        publicKey: '1111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const code = getFromRenderMap(renderMap, 'accounts/test_account.rs').content;
+
+    // TryFrom checks account owner.
+    codeContains(code, ['invalid account owner', 'account_info.owner', 'MY_PROGRAM_ID']);
+
+    // Fetch functions check account owner.
+    codeContains(code, ['Invalid owner for account']);
+});
+
+test('it validates account owner even without a discriminator', () => {
+    const node = programNode({
+        accounts: [accountNode({ name: 'testAccount' })],
+        name: 'myProgram',
+        publicKey: '1111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const code = getFromRenderMap(renderMap, 'accounts/test_account.rs').content;
+
+    codeContains(code, ['invalid account owner', 'MY_PROGRAM_ID']);
+    codeDoesNotContains(code, ['invalid account discriminator']);
+});
+
+test('it validates discriminator in anchor try_deserialize', () => {
+    // Given an account with a byte-array discriminator.
+    const node = programNode({
+        accounts: [
+            accountNode({
+                data: structTypeNode([
+                    structFieldTypeNode({
+                        defaultValue: bytesValueNode('base16', 'b9959c4ef56cac44'),
+                        defaultValueStrategy: 'omitted',
+                        name: 'discriminator',
+                        type: fixedSizeTypeNode(bytesTypeNode(), 8),
+                    }),
+                ]),
+                discriminators: [
+                    {
+                        kind: 'fieldDiscriminatorNode',
+                        name: camelCase('discriminator'),
+                        offset: 0,
+                    },
+                ],
+                name: 'testAccount',
+            }),
+        ],
+        name: 'myProgram',
+        publicKey: '1111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const code = getFromRenderMap(renderMap, 'accounts/test_account.rs').content;
+
+    // try_deserialize checks the discriminator before delegating to unchecked.
+    codeContains(code, [
+        'fn try_deserialize(buf: &mut &[u8])',
+        'AccountDiscriminatorMismatch',
+        'TEST_ACCOUNT_DISCRIMINATOR',
+    ]);
+});
+
+test('it skips discriminator validation when field has no default value', () => {
+    // Given an account with a byte-array discriminator field but no defaultValue.
+    const node = programNode({
+        accounts: [
+            accountNode({
+                data: structTypeNode([
+                    structFieldTypeNode({
+                        name: 'discriminator',
+                        type: fixedSizeTypeNode(bytesTypeNode(), 8),
+                    }),
+                ]),
+                discriminators: [
+                    {
+                        kind: 'fieldDiscriminatorNode',
+                        name: camelCase('discriminator'),
+                        offset: 0,
+                    },
+                ],
+                name: 'testAccount',
+            }),
+        ],
+        name: 'myProgram',
+        publicKey: '1111',
+    });
+
+    // When we render it.
+    const renderMap = visit(node, getRenderMapVisitor());
+    const code = getFromRenderMap(renderMap, 'accounts/test_account.rs').content;
+
+    // Then from_bytes does not validate a discriminator.
+    codeDoesNotContains(code, ['invalid account discriminator', 'TEST_ACCOUNT_DISCRIMINATOR']);
 });
 
 test('it renders account without anchor traits', () => {

@@ -39,6 +39,7 @@ import {
     CargoDependencies,
     computePdaAddress,
     Fragment,
+    getByteArrayDiscriminatorConstantName,
     getDiscriminatorConstants,
     getImportFromFactory,
     type GetImportFromFunction,
@@ -97,6 +98,12 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                         typeManifestVisitor,
                     });
 
+                    const discriminatorConstantName = getByteArrayDiscriminatorConstantName({
+                        discriminatorNodes: node.discriminators ?? [],
+                        fields,
+                        prefix: node.name,
+                    });
+
                     // Seeds.
                     const seedsImports = new ImportMap();
                     const pda = node.pda ? linkables.get([...stack.getPath(), node.pda]) : undefined;
@@ -144,6 +151,7 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                             account: node,
                             anchorTraits,
                             constantSeeds,
+                            discriminatorConstantName,
                             discriminatorConstants: discriminatorConstants.render,
                             hasVariableSeeds,
                             imports: imports.toString(dependencyMap),
