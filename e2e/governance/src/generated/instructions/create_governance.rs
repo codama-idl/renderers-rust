@@ -150,79 +150,50 @@ impl CreateGovernanceInstructionArgs {
 ///   6. `[signer]` governance_authority
 ///   7. `[]` realm_config_account
 ///   8. `[optional]` voter_weight_record
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct CreateGovernanceBuilder {
-    realm_account: Option<solana_address::Address>,
-    governance_account: Option<solana_address::Address>,
-    governed_account: Option<solana_address::Address>,
-    governing_token_owner_record: Option<solana_address::Address>,
-    payer: Option<solana_address::Address>,
+    realm_account: solana_address::Address,
+    governance_account: solana_address::Address,
+    governed_account: solana_address::Address,
+    governing_token_owner_record: solana_address::Address,
+    payer: solana_address::Address,
     system_program: Option<solana_address::Address>,
-    governance_authority: Option<solana_address::Address>,
-    realm_config_account: Option<solana_address::Address>,
+    governance_authority: solana_address::Address,
+    realm_config_account: solana_address::Address,
     voter_weight_record: Option<solana_address::Address>,
-    config: Option<GovernanceConfig>,
+    config: GovernanceConfig,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl CreateGovernanceBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    /// Realm account the created governance belongs to
-    #[inline(always)]
-    pub fn realm_account(&mut self, realm_account: solana_address::Address) -> &mut Self {
-        self.realm_account = Some(realm_account);
-        self
-    }
-    /// seeds=['account-governance', realm, governed_account]
-    #[inline(always)]
-    pub fn governance_account(&mut self, governance_account: solana_address::Address) -> &mut Self {
-        self.governance_account = Some(governance_account);
-        self
-    }
-    /// Account governed by this Governance (governing_account).
-    ///         Note: the account doesn't have to exist and can be used only as a unique identified for the Governance account
-    #[inline(always)]
-    pub fn governed_account(&mut self, governed_account: solana_address::Address) -> &mut Self {
-        self.governed_account = Some(governed_account);
-        self
-    }
-    /// Used only if not signed by RealmAuthority
-    #[inline(always)]
-    pub fn governing_token_owner_record(
-        &mut self,
+    pub fn new(
+        realm_account: solana_address::Address,
+        governance_account: solana_address::Address,
+        governed_account: solana_address::Address,
         governing_token_owner_record: solana_address::Address,
-    ) -> &mut Self {
-        self.governing_token_owner_record = Some(governing_token_owner_record);
-        self
-    }
-    #[inline(always)]
-    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
-        self.payer = Some(payer);
-        self
+        payer: solana_address::Address,
+        governance_authority: solana_address::Address,
+        realm_config_account: solana_address::Address,
+        config: GovernanceConfig,
+    ) -> Self {
+        Self {
+            realm_account,
+            governance_account,
+            governed_account,
+            governing_token_owner_record,
+            payer,
+            system_program: None,
+            governance_authority,
+            realm_config_account,
+            voter_weight_record: None,
+            config,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_address::Address) -> &mut Self {
         self.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn governance_authority(
-        &mut self,
-        governance_authority: solana_address::Address,
-    ) -> &mut Self {
-        self.governance_authority = Some(governance_authority);
-        self
-    }
-    /// seeds=['realm-config', realm]
-    #[inline(always)]
-    pub fn realm_config_account(
-        &mut self,
-        realm_config_account: solana_address::Address,
-    ) -> &mut Self {
-        self.realm_config_account = Some(realm_config_account);
         self
     }
     /// `[optional account]`
@@ -233,11 +204,6 @@ impl CreateGovernanceBuilder {
         voter_weight_record: Option<solana_address::Address>,
     ) -> &mut Self {
         self.voter_weight_record = voter_weight_record;
-        self
-    }
-    #[inline(always)]
-    pub fn config(&mut self, config: GovernanceConfig) -> &mut Self {
-        self.config = Some(config);
         self
     }
     /// Add an additional account to the instruction.
@@ -257,29 +223,30 @@ impl CreateGovernanceBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let realm_account = self.realm_account;
+        let governance_account = self.governance_account;
+        let governed_account = self.governed_account;
+        let governing_token_owner_record = self.governing_token_owner_record;
+        let payer = self.payer;
+        let system_program = self
+            .system_program
+            .unwrap_or(solana_address::address!("11111111111111111111111111111111"));
+        let governance_authority = self.governance_authority;
+        let realm_config_account = self.realm_config_account;
+        let voter_weight_record = self.voter_weight_record;
         let accounts = CreateGovernance {
-            realm_account: self.realm_account.expect("realm_account is not set"),
-            governance_account: self
-                .governance_account
-                .expect("governance_account is not set"),
-            governed_account: self.governed_account.expect("governed_account is not set"),
-            governing_token_owner_record: self
-                .governing_token_owner_record
-                .expect("governing_token_owner_record is not set"),
-            payer: self.payer.expect("payer is not set"),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
-            governance_authority: self
-                .governance_authority
-                .expect("governance_authority is not set"),
-            realm_config_account: self
-                .realm_config_account
-                .expect("realm_config_account is not set"),
-            voter_weight_record: self.voter_weight_record,
+            realm_account,
+            governance_account,
+            governed_account,
+            governing_token_owner_record,
+            payer,
+            system_program,
+            governance_authority,
+            realm_config_account,
+            voter_weight_record,
         };
         let args = CreateGovernanceInstructionArgs {
-            config: self.config.clone().expect("config is not set"),
+            config: self.config.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -483,89 +450,33 @@ pub struct CreateGovernanceCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> CreateGovernanceCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        realm_account: &'b solana_account_info::AccountInfo<'a>,
+        governance_account: &'b solana_account_info::AccountInfo<'a>,
+        governed_account: &'b solana_account_info::AccountInfo<'a>,
+        governing_token_owner_record: &'b solana_account_info::AccountInfo<'a>,
+        payer: &'b solana_account_info::AccountInfo<'a>,
+        system_program: &'b solana_account_info::AccountInfo<'a>,
+        governance_authority: &'b solana_account_info::AccountInfo<'a>,
+        realm_config_account: &'b solana_account_info::AccountInfo<'a>,
+        config: GovernanceConfig,
+    ) -> Self {
         let instruction = Box::new(CreateGovernanceCpiBuilderInstruction {
-            __program: program,
-            realm_account: None,
-            governance_account: None,
-            governed_account: None,
-            governing_token_owner_record: None,
-            payer: None,
-            system_program: None,
-            governance_authority: None,
-            realm_config_account: None,
+            __program,
+            realm_account,
+            governance_account,
+            governed_account,
+            governing_token_owner_record,
+            payer,
+            system_program,
+            governance_authority,
+            realm_config_account,
             voter_weight_record: None,
-            config: None,
+            config,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// Realm account the created governance belongs to
-    #[inline(always)]
-    pub fn realm_account(
-        &mut self,
-        realm_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.realm_account = Some(realm_account);
-        self
-    }
-    /// seeds=['account-governance', realm, governed_account]
-    #[inline(always)]
-    pub fn governance_account(
-        &mut self,
-        governance_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governance_account = Some(governance_account);
-        self
-    }
-    /// Account governed by this Governance (governing_account).
-    ///         Note: the account doesn't have to exist and can be used only as a unique identified for the Governance account
-    #[inline(always)]
-    pub fn governed_account(
-        &mut self,
-        governed_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governed_account = Some(governed_account);
-        self
-    }
-    /// Used only if not signed by RealmAuthority
-    #[inline(always)]
-    pub fn governing_token_owner_record(
-        &mut self,
-        governing_token_owner_record: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governing_token_owner_record = Some(governing_token_owner_record);
-        self
-    }
-    #[inline(always)]
-    pub fn payer(&mut self, payer: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.payer = Some(payer);
-        self
-    }
-    #[inline(always)]
-    pub fn system_program(
-        &mut self,
-        system_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn governance_authority(
-        &mut self,
-        governance_authority: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governance_authority = Some(governance_authority);
-        self
-    }
-    /// seeds=['realm-config', realm]
-    #[inline(always)]
-    pub fn realm_config_account(
-        &mut self,
-        realm_config_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.realm_config_account = Some(realm_config_account);
-        self
     }
     /// `[optional account]`
     /// Optional Voter Weight Record
@@ -575,11 +486,6 @@ impl<'a, 'b> CreateGovernanceCpiBuilder<'a, 'b> {
         voter_weight_record: Option<&'b solana_account_info::AccountInfo<'a>>,
     ) -> &mut Self {
         self.instruction.voter_weight_record = voter_weight_record;
-        self
-    }
-    #[inline(always)]
-    pub fn config(&mut self, config: GovernanceConfig) -> &mut Self {
-        self.instruction.config = Some(config);
         self
     }
     /// Add an additional account to the instruction.
@@ -617,48 +523,18 @@ impl<'a, 'b> CreateGovernanceCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = CreateGovernanceInstructionArgs {
-            config: self.instruction.config.clone().expect("config is not set"),
+            config: self.instruction.config.clone(),
         };
         let instruction = CreateGovernanceCpi {
             __program: self.instruction.__program,
-
-            realm_account: self
-                .instruction
-                .realm_account
-                .expect("realm_account is not set"),
-
-            governance_account: self
-                .instruction
-                .governance_account
-                .expect("governance_account is not set"),
-
-            governed_account: self
-                .instruction
-                .governed_account
-                .expect("governed_account is not set"),
-
-            governing_token_owner_record: self
-                .instruction
-                .governing_token_owner_record
-                .expect("governing_token_owner_record is not set"),
-
-            payer: self.instruction.payer.expect("payer is not set"),
-
-            system_program: self
-                .instruction
-                .system_program
-                .expect("system_program is not set"),
-
-            governance_authority: self
-                .instruction
-                .governance_authority
-                .expect("governance_authority is not set"),
-
-            realm_config_account: self
-                .instruction
-                .realm_config_account
-                .expect("realm_config_account is not set"),
-
+            realm_account: self.instruction.realm_account,
+            governance_account: self.instruction.governance_account,
+            governed_account: self.instruction.governed_account,
+            governing_token_owner_record: self.instruction.governing_token_owner_record,
+            payer: self.instruction.payer,
+            system_program: self.instruction.system_program,
+            governance_authority: self.instruction.governance_authority,
+            realm_config_account: self.instruction.realm_config_account,
             voter_weight_record: self.instruction.voter_weight_record,
             __args: args,
         };
@@ -672,16 +548,16 @@ impl<'a, 'b> CreateGovernanceCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct CreateGovernanceCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    realm_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    governance_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    governed_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    governing_token_owner_record: Option<&'b solana_account_info::AccountInfo<'a>>,
-    payer: Option<&'b solana_account_info::AccountInfo<'a>>,
-    system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    governance_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
-    realm_config_account: Option<&'b solana_account_info::AccountInfo<'a>>,
+    realm_account: &'b solana_account_info::AccountInfo<'a>,
+    governance_account: &'b solana_account_info::AccountInfo<'a>,
+    governed_account: &'b solana_account_info::AccountInfo<'a>,
+    governing_token_owner_record: &'b solana_account_info::AccountInfo<'a>,
+    payer: &'b solana_account_info::AccountInfo<'a>,
+    system_program: &'b solana_account_info::AccountInfo<'a>,
+    governance_authority: &'b solana_account_info::AccountInfo<'a>,
+    realm_config_account: &'b solana_account_info::AccountInfo<'a>,
     voter_weight_record: Option<&'b solana_account_info::AccountInfo<'a>>,
-    config: Option<GovernanceConfig>,
+    config: GovernanceConfig,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

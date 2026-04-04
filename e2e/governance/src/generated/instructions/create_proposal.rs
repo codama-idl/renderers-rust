@@ -178,89 +178,70 @@ impl CreateProposalInstructionArgs {
 ///   8. `[]` realm_config
 ///   9. `[writable, optional]` voter_weight_record
 ///   10. `[optional]` proposal_deposit_account
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct CreateProposalBuilder {
-    realm_account: Option<solana_address::Address>,
-    proposal_account: Option<solana_address::Address>,
-    governance_account: Option<solana_address::Address>,
-    token_owner_record: Option<solana_address::Address>,
-    governing_token_mint: Option<solana_address::Address>,
-    governance_authority: Option<solana_address::Address>,
-    payer: Option<solana_address::Address>,
+    realm_account: solana_address::Address,
+    proposal_account: solana_address::Address,
+    governance_account: solana_address::Address,
+    token_owner_record: solana_address::Address,
+    governing_token_mint: solana_address::Address,
+    governance_authority: solana_address::Address,
+    payer: solana_address::Address,
     system_program: Option<solana_address::Address>,
-    realm_config: Option<solana_address::Address>,
+    realm_config: solana_address::Address,
     voter_weight_record: Option<solana_address::Address>,
     proposal_deposit_account: Option<solana_address::Address>,
-    name: Option<String>,
-    description_link: Option<String>,
-    vote_type: Option<VoteType>,
-    options: Option<Vec<String>>,
-    use_deny_option: Option<bool>,
-    proposal_seed: Option<Address>,
+    name: String,
+    description_link: String,
+    vote_type: VoteType,
+    options: Vec<String>,
+    use_deny_option: bool,
+    proposal_seed: Address,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl CreateProposalBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    /// Realm account the created Proposal belongs to
-    #[inline(always)]
-    pub fn realm_account(&mut self, realm_account: solana_address::Address) -> &mut Self {
-        self.realm_account = Some(realm_account);
-        self
-    }
-    /// Proposal account. PDA seeds ['governance',governance, governing_token_mint, proposal_index]
-    #[inline(always)]
-    pub fn proposal_account(&mut self, proposal_account: solana_address::Address) -> &mut Self {
-        self.proposal_account = Some(proposal_account);
-        self
-    }
-    /// Governance account
-    #[inline(always)]
-    pub fn governance_account(&mut self, governance_account: solana_address::Address) -> &mut Self {
-        self.governance_account = Some(governance_account);
-        self
-    }
-    /// TokenOwnerRecord account of the Proposal owner
-    #[inline(always)]
-    pub fn token_owner_record(&mut self, token_owner_record: solana_address::Address) -> &mut Self {
-        self.token_owner_record = Some(token_owner_record);
-        self
-    }
-    /// Token Mint the Proposal is created for
-    #[inline(always)]
-    pub fn governing_token_mint(
-        &mut self,
+    pub fn new(
+        realm_account: solana_address::Address,
+        proposal_account: solana_address::Address,
+        governance_account: solana_address::Address,
+        token_owner_record: solana_address::Address,
         governing_token_mint: solana_address::Address,
-    ) -> &mut Self {
-        self.governing_token_mint = Some(governing_token_mint);
-        self
-    }
-    /// Governance Authority (Token Owner or Governance Delegate)
-    #[inline(always)]
-    pub fn governance_authority(
-        &mut self,
         governance_authority: solana_address::Address,
-    ) -> &mut Self {
-        self.governance_authority = Some(governance_authority);
-        self
-    }
-    #[inline(always)]
-    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
-        self.payer = Some(payer);
-        self
+        payer: solana_address::Address,
+        realm_config: solana_address::Address,
+        name: String,
+        description_link: String,
+        vote_type: VoteType,
+        options: Vec<String>,
+        use_deny_option: bool,
+        proposal_seed: Address,
+    ) -> Self {
+        Self {
+            realm_account,
+            proposal_account,
+            governance_account,
+            token_owner_record,
+            governing_token_mint,
+            governance_authority,
+            payer,
+            system_program: None,
+            realm_config,
+            voter_weight_record: None,
+            proposal_deposit_account: None,
+            name,
+            description_link,
+            vote_type,
+            options,
+            use_deny_option,
+            proposal_seed,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_address::Address) -> &mut Self {
         self.system_program = Some(system_program);
-        self
-    }
-    /// RealmConfig account. PDA seeds: ['realm-config', realm]
-    #[inline(always)]
-    pub fn realm_config(&mut self, realm_config: solana_address::Address) -> &mut Self {
-        self.realm_config = Some(realm_config);
         self
     }
     /// `[optional account]`
@@ -285,36 +266,6 @@ impl CreateProposalBuilder {
         self.proposal_deposit_account = proposal_deposit_account;
         self
     }
-    #[inline(always)]
-    pub fn name(&mut self, name: String) -> &mut Self {
-        self.name = Some(name);
-        self
-    }
-    #[inline(always)]
-    pub fn description_link(&mut self, description_link: String) -> &mut Self {
-        self.description_link = Some(description_link);
-        self
-    }
-    #[inline(always)]
-    pub fn vote_type(&mut self, vote_type: VoteType) -> &mut Self {
-        self.vote_type = Some(vote_type);
-        self
-    }
-    #[inline(always)]
-    pub fn options(&mut self, options: Vec<String>) -> &mut Self {
-        self.options = Some(options);
-        self
-    }
-    #[inline(always)]
-    pub fn use_deny_option(&mut self, use_deny_option: bool) -> &mut Self {
-        self.use_deny_option = Some(use_deny_option);
-        self
-    }
-    #[inline(always)]
-    pub fn proposal_seed(&mut self, proposal_seed: Address) -> &mut Self {
-        self.proposal_seed = Some(proposal_seed);
-        self
-    }
     /// Add an additional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(&mut self, account: solana_instruction::AccountMeta) -> &mut Self {
@@ -332,45 +283,39 @@ impl CreateProposalBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let realm_account = self.realm_account;
+        let proposal_account = self.proposal_account;
+        let governance_account = self.governance_account;
+        let token_owner_record = self.token_owner_record;
+        let governing_token_mint = self.governing_token_mint;
+        let governance_authority = self.governance_authority;
+        let payer = self.payer;
+        let system_program = self
+            .system_program
+            .unwrap_or(solana_address::address!("11111111111111111111111111111111"));
+        let realm_config = self.realm_config;
+        let voter_weight_record = self.voter_weight_record;
+        let proposal_deposit_account = self.proposal_deposit_account;
         let accounts = CreateProposal {
-            realm_account: self.realm_account.expect("realm_account is not set"),
-            proposal_account: self.proposal_account.expect("proposal_account is not set"),
-            governance_account: self
-                .governance_account
-                .expect("governance_account is not set"),
-            token_owner_record: self
-                .token_owner_record
-                .expect("token_owner_record is not set"),
-            governing_token_mint: self
-                .governing_token_mint
-                .expect("governing_token_mint is not set"),
-            governance_authority: self
-                .governance_authority
-                .expect("governance_authority is not set"),
-            payer: self.payer.expect("payer is not set"),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
-            realm_config: self.realm_config.expect("realm_config is not set"),
-            voter_weight_record: self.voter_weight_record,
-            proposal_deposit_account: self.proposal_deposit_account,
+            realm_account,
+            proposal_account,
+            governance_account,
+            token_owner_record,
+            governing_token_mint,
+            governance_authority,
+            payer,
+            system_program,
+            realm_config,
+            voter_weight_record,
+            proposal_deposit_account,
         };
         let args = CreateProposalInstructionArgs {
-            name: self.name.clone().expect("name is not set"),
-            description_link: self
-                .description_link
-                .clone()
-                .expect("description_link is not set"),
-            vote_type: self.vote_type.clone().expect("vote_type is not set"),
-            options: self.options.clone().expect("options is not set"),
-            use_deny_option: self
-                .use_deny_option
-                .clone()
-                .expect("use_deny_option is not set"),
-            proposal_seed: self
-                .proposal_seed
-                .clone()
-                .expect("proposal_seed is not set"),
+            name: self.name.clone(),
+            description_link: self.description_link.clone(),
+            vote_type: self.vote_type.clone(),
+            options: self.options.clone(),
+            use_deny_option: self.use_deny_option.clone(),
+            proposal_seed: self.proposal_seed.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -607,105 +552,46 @@ pub struct CreateProposalCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> CreateProposalCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        realm_account: &'b solana_account_info::AccountInfo<'a>,
+        proposal_account: &'b solana_account_info::AccountInfo<'a>,
+        governance_account: &'b solana_account_info::AccountInfo<'a>,
+        token_owner_record: &'b solana_account_info::AccountInfo<'a>,
+        governing_token_mint: &'b solana_account_info::AccountInfo<'a>,
+        governance_authority: &'b solana_account_info::AccountInfo<'a>,
+        payer: &'b solana_account_info::AccountInfo<'a>,
+        system_program: &'b solana_account_info::AccountInfo<'a>,
+        realm_config: &'b solana_account_info::AccountInfo<'a>,
+        name: String,
+        description_link: String,
+        vote_type: VoteType,
+        options: Vec<String>,
+        use_deny_option: bool,
+        proposal_seed: Address,
+    ) -> Self {
         let instruction = Box::new(CreateProposalCpiBuilderInstruction {
-            __program: program,
-            realm_account: None,
-            proposal_account: None,
-            governance_account: None,
-            token_owner_record: None,
-            governing_token_mint: None,
-            governance_authority: None,
-            payer: None,
-            system_program: None,
-            realm_config: None,
+            __program,
+            realm_account,
+            proposal_account,
+            governance_account,
+            token_owner_record,
+            governing_token_mint,
+            governance_authority,
+            payer,
+            system_program,
+            realm_config,
             voter_weight_record: None,
             proposal_deposit_account: None,
-            name: None,
-            description_link: None,
-            vote_type: None,
-            options: None,
-            use_deny_option: None,
-            proposal_seed: None,
+            name,
+            description_link,
+            vote_type,
+            options,
+            use_deny_option,
+            proposal_seed,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// Realm account the created Proposal belongs to
-    #[inline(always)]
-    pub fn realm_account(
-        &mut self,
-        realm_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.realm_account = Some(realm_account);
-        self
-    }
-    /// Proposal account. PDA seeds ['governance',governance, governing_token_mint, proposal_index]
-    #[inline(always)]
-    pub fn proposal_account(
-        &mut self,
-        proposal_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.proposal_account = Some(proposal_account);
-        self
-    }
-    /// Governance account
-    #[inline(always)]
-    pub fn governance_account(
-        &mut self,
-        governance_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governance_account = Some(governance_account);
-        self
-    }
-    /// TokenOwnerRecord account of the Proposal owner
-    #[inline(always)]
-    pub fn token_owner_record(
-        &mut self,
-        token_owner_record: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.token_owner_record = Some(token_owner_record);
-        self
-    }
-    /// Token Mint the Proposal is created for
-    #[inline(always)]
-    pub fn governing_token_mint(
-        &mut self,
-        governing_token_mint: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governing_token_mint = Some(governing_token_mint);
-        self
-    }
-    /// Governance Authority (Token Owner or Governance Delegate)
-    #[inline(always)]
-    pub fn governance_authority(
-        &mut self,
-        governance_authority: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governance_authority = Some(governance_authority);
-        self
-    }
-    #[inline(always)]
-    pub fn payer(&mut self, payer: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.payer = Some(payer);
-        self
-    }
-    #[inline(always)]
-    pub fn system_program(
-        &mut self,
-        system_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.system_program = Some(system_program);
-        self
-    }
-    /// RealmConfig account. PDA seeds: ['realm-config', realm]
-    #[inline(always)]
-    pub fn realm_config(
-        &mut self,
-        realm_config: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.realm_config = Some(realm_config);
-        self
     }
     /// `[optional account]`
     /// Optional Voter Weight Record
@@ -727,36 +613,6 @@ impl<'a, 'b> CreateProposalCpiBuilder<'a, 'b> {
         proposal_deposit_account: Option<&'b solana_account_info::AccountInfo<'a>>,
     ) -> &mut Self {
         self.instruction.proposal_deposit_account = proposal_deposit_account;
-        self
-    }
-    #[inline(always)]
-    pub fn name(&mut self, name: String) -> &mut Self {
-        self.instruction.name = Some(name);
-        self
-    }
-    #[inline(always)]
-    pub fn description_link(&mut self, description_link: String) -> &mut Self {
-        self.instruction.description_link = Some(description_link);
-        self
-    }
-    #[inline(always)]
-    pub fn vote_type(&mut self, vote_type: VoteType) -> &mut Self {
-        self.instruction.vote_type = Some(vote_type);
-        self
-    }
-    #[inline(always)]
-    pub fn options(&mut self, options: Vec<String>) -> &mut Self {
-        self.instruction.options = Some(options);
-        self
-    }
-    #[inline(always)]
-    pub fn use_deny_option(&mut self, use_deny_option: bool) -> &mut Self {
-        self.instruction.use_deny_option = Some(use_deny_option);
-        self
-    }
-    #[inline(always)]
-    pub fn proposal_seed(&mut self, proposal_seed: Address) -> &mut Self {
-        self.instruction.proposal_seed = Some(proposal_seed);
         self
     }
     /// Add an additional account to the instruction.
@@ -794,80 +650,25 @@ impl<'a, 'b> CreateProposalCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = CreateProposalInstructionArgs {
-            name: self.instruction.name.clone().expect("name is not set"),
-            description_link: self
-                .instruction
-                .description_link
-                .clone()
-                .expect("description_link is not set"),
-            vote_type: self
-                .instruction
-                .vote_type
-                .clone()
-                .expect("vote_type is not set"),
-            options: self
-                .instruction
-                .options
-                .clone()
-                .expect("options is not set"),
-            use_deny_option: self
-                .instruction
-                .use_deny_option
-                .clone()
-                .expect("use_deny_option is not set"),
-            proposal_seed: self
-                .instruction
-                .proposal_seed
-                .clone()
-                .expect("proposal_seed is not set"),
+            name: self.instruction.name.clone(),
+            description_link: self.instruction.description_link.clone(),
+            vote_type: self.instruction.vote_type.clone(),
+            options: self.instruction.options.clone(),
+            use_deny_option: self.instruction.use_deny_option.clone(),
+            proposal_seed: self.instruction.proposal_seed.clone(),
         };
         let instruction = CreateProposalCpi {
             __program: self.instruction.__program,
-
-            realm_account: self
-                .instruction
-                .realm_account
-                .expect("realm_account is not set"),
-
-            proposal_account: self
-                .instruction
-                .proposal_account
-                .expect("proposal_account is not set"),
-
-            governance_account: self
-                .instruction
-                .governance_account
-                .expect("governance_account is not set"),
-
-            token_owner_record: self
-                .instruction
-                .token_owner_record
-                .expect("token_owner_record is not set"),
-
-            governing_token_mint: self
-                .instruction
-                .governing_token_mint
-                .expect("governing_token_mint is not set"),
-
-            governance_authority: self
-                .instruction
-                .governance_authority
-                .expect("governance_authority is not set"),
-
-            payer: self.instruction.payer.expect("payer is not set"),
-
-            system_program: self
-                .instruction
-                .system_program
-                .expect("system_program is not set"),
-
-            realm_config: self
-                .instruction
-                .realm_config
-                .expect("realm_config is not set"),
-
+            realm_account: self.instruction.realm_account,
+            proposal_account: self.instruction.proposal_account,
+            governance_account: self.instruction.governance_account,
+            token_owner_record: self.instruction.token_owner_record,
+            governing_token_mint: self.instruction.governing_token_mint,
+            governance_authority: self.instruction.governance_authority,
+            payer: self.instruction.payer,
+            system_program: self.instruction.system_program,
+            realm_config: self.instruction.realm_config,
             voter_weight_record: self.instruction.voter_weight_record,
-
             proposal_deposit_account: self.instruction.proposal_deposit_account,
             __args: args,
         };
@@ -881,23 +682,23 @@ impl<'a, 'b> CreateProposalCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct CreateProposalCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    realm_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    proposal_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    governance_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    token_owner_record: Option<&'b solana_account_info::AccountInfo<'a>>,
-    governing_token_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
-    governance_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
-    payer: Option<&'b solana_account_info::AccountInfo<'a>>,
-    system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    realm_config: Option<&'b solana_account_info::AccountInfo<'a>>,
+    realm_account: &'b solana_account_info::AccountInfo<'a>,
+    proposal_account: &'b solana_account_info::AccountInfo<'a>,
+    governance_account: &'b solana_account_info::AccountInfo<'a>,
+    token_owner_record: &'b solana_account_info::AccountInfo<'a>,
+    governing_token_mint: &'b solana_account_info::AccountInfo<'a>,
+    governance_authority: &'b solana_account_info::AccountInfo<'a>,
+    payer: &'b solana_account_info::AccountInfo<'a>,
+    system_program: &'b solana_account_info::AccountInfo<'a>,
+    realm_config: &'b solana_account_info::AccountInfo<'a>,
     voter_weight_record: Option<&'b solana_account_info::AccountInfo<'a>>,
     proposal_deposit_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    name: Option<String>,
-    description_link: Option<String>,
-    vote_type: Option<VoteType>,
-    options: Option<Vec<String>>,
-    use_deny_option: Option<bool>,
-    proposal_seed: Option<Address>,
+    name: String,
+    description_link: String,
+    vote_type: VoteType,
+    options: Vec<String>,
+    use_deny_option: bool,
+    proposal_seed: Address,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

@@ -84,40 +84,26 @@ impl Default for RefundProposalDepositInstructionData {
 ///   0. `[]` proposal_account
 ///   1. `[writable]` proposal_deposit_account
 ///   2. `[writable]` proposal_deposit_payer
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct RefundProposalDepositBuilder {
-    proposal_account: Option<solana_address::Address>,
-    proposal_deposit_account: Option<solana_address::Address>,
-    proposal_deposit_payer: Option<solana_address::Address>,
+    proposal_account: solana_address::Address,
+    proposal_deposit_account: solana_address::Address,
+    proposal_deposit_payer: solana_address::Address,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl RefundProposalDepositBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    #[inline(always)]
-    pub fn proposal_account(&mut self, proposal_account: solana_address::Address) -> &mut Self {
-        self.proposal_account = Some(proposal_account);
-        self
-    }
-    /// PDA Seeds: ['proposal-deposit', proposal, deposit payer]
-    #[inline(always)]
-    pub fn proposal_deposit_account(
-        &mut self,
+    pub fn new(
+        proposal_account: solana_address::Address,
         proposal_deposit_account: solana_address::Address,
-    ) -> &mut Self {
-        self.proposal_deposit_account = Some(proposal_deposit_account);
-        self
-    }
-    /// Proposal Deposit Payer (beneficiary) account
-    #[inline(always)]
-    pub fn proposal_deposit_payer(
-        &mut self,
         proposal_deposit_payer: solana_address::Address,
-    ) -> &mut Self {
-        self.proposal_deposit_payer = Some(proposal_deposit_payer);
-        self
+    ) -> Self {
+        Self {
+            proposal_account,
+            proposal_deposit_account,
+            proposal_deposit_payer,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -136,14 +122,13 @@ impl RefundProposalDepositBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let proposal_account = self.proposal_account;
+        let proposal_deposit_account = self.proposal_deposit_account;
+        let proposal_deposit_payer = self.proposal_deposit_payer;
         let accounts = RefundProposalDeposit {
-            proposal_account: self.proposal_account.expect("proposal_account is not set"),
-            proposal_deposit_account: self
-                .proposal_deposit_account
-                .expect("proposal_deposit_account is not set"),
-            proposal_deposit_payer: self
-                .proposal_deposit_payer
-                .expect("proposal_deposit_payer is not set"),
+            proposal_account,
+            proposal_deposit_account,
+            proposal_deposit_payer,
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
@@ -265,41 +250,20 @@ pub struct RefundProposalDepositCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> RefundProposalDepositCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        proposal_account: &'b solana_account_info::AccountInfo<'a>,
+        proposal_deposit_account: &'b solana_account_info::AccountInfo<'a>,
+        proposal_deposit_payer: &'b solana_account_info::AccountInfo<'a>,
+    ) -> Self {
         let instruction = Box::new(RefundProposalDepositCpiBuilderInstruction {
-            __program: program,
-            proposal_account: None,
-            proposal_deposit_account: None,
-            proposal_deposit_payer: None,
+            __program,
+            proposal_account,
+            proposal_deposit_account,
+            proposal_deposit_payer,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn proposal_account(
-        &mut self,
-        proposal_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.proposal_account = Some(proposal_account);
-        self
-    }
-    /// PDA Seeds: ['proposal-deposit', proposal, deposit payer]
-    #[inline(always)]
-    pub fn proposal_deposit_account(
-        &mut self,
-        proposal_deposit_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.proposal_deposit_account = Some(proposal_deposit_account);
-        self
-    }
-    /// Proposal Deposit Payer (beneficiary) account
-    #[inline(always)]
-    pub fn proposal_deposit_payer(
-        &mut self,
-        proposal_deposit_payer: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.proposal_deposit_payer = Some(proposal_deposit_payer);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -337,21 +301,9 @@ impl<'a, 'b> RefundProposalDepositCpiBuilder<'a, 'b> {
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let instruction = RefundProposalDepositCpi {
             __program: self.instruction.__program,
-
-            proposal_account: self
-                .instruction
-                .proposal_account
-                .expect("proposal_account is not set"),
-
-            proposal_deposit_account: self
-                .instruction
-                .proposal_deposit_account
-                .expect("proposal_deposit_account is not set"),
-
-            proposal_deposit_payer: self
-                .instruction
-                .proposal_deposit_payer
-                .expect("proposal_deposit_payer is not set"),
+            proposal_account: self.instruction.proposal_account,
+            proposal_deposit_account: self.instruction.proposal_deposit_account,
+            proposal_deposit_payer: self.instruction.proposal_deposit_payer,
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -363,9 +315,9 @@ impl<'a, 'b> RefundProposalDepositCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct RefundProposalDepositCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    proposal_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    proposal_deposit_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    proposal_deposit_payer: Option<&'b solana_account_info::AccountInfo<'a>>,
+    proposal_account: &'b solana_account_info::AccountInfo<'a>,
+    proposal_deposit_account: &'b solana_account_info::AccountInfo<'a>,
+    proposal_deposit_payer: &'b solana_account_info::AccountInfo<'a>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

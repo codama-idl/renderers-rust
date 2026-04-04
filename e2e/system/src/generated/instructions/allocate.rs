@@ -79,26 +79,20 @@ impl AllocateInstructionArgs {
 /// ### Accounts:
 ///
 ///   0. `[writable, signer]` new_account
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct AllocateBuilder {
-    new_account: Option<solana_address::Address>,
-    space: Option<u64>,
+    new_account: solana_address::Address,
+    space: u64,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl AllocateBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    #[inline(always)]
-    pub fn new_account(&mut self, new_account: solana_address::Address) -> &mut Self {
-        self.new_account = Some(new_account);
-        self
-    }
-    #[inline(always)]
-    pub fn space(&mut self, space: u64) -> &mut Self {
-        self.space = Some(space);
-        self
+    pub fn new(new_account: solana_address::Address, space: u64) -> Self {
+        Self {
+            new_account,
+            space,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -117,11 +111,10 @@ impl AllocateBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
-        let accounts = Allocate {
-            new_account: self.new_account.expect("new_account is not set"),
-        };
+        let new_account = self.new_account;
+        let accounts = Allocate { new_account };
         let args = AllocateInstructionArgs {
-            space: self.space.clone().expect("space is not set"),
+            space: self.space.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -225,27 +218,18 @@ pub struct AllocateCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> AllocateCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        new_account: &'b solana_account_info::AccountInfo<'a>,
+        space: u64,
+    ) -> Self {
         let instruction = Box::new(AllocateCpiBuilderInstruction {
-            __program: program,
-            new_account: None,
-            space: None,
+            __program,
+            new_account,
+            space,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn new_account(
-        &mut self,
-        new_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.new_account = Some(new_account);
-        self
-    }
-    #[inline(always)]
-    pub fn space(&mut self, space: u64) -> &mut Self {
-        self.instruction.space = Some(space);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -282,15 +266,11 @@ impl<'a, 'b> AllocateCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = AllocateInstructionArgs {
-            space: self.instruction.space.clone().expect("space is not set"),
+            space: self.instruction.space.clone(),
         };
         let instruction = AllocateCpi {
             __program: self.instruction.__program,
-
-            new_account: self
-                .instruction
-                .new_account
-                .expect("new_account is not set"),
+            new_account: self.instruction.new_account,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -303,8 +283,8 @@ impl<'a, 'b> AllocateCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct AllocateCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    new_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    space: Option<u64>,
+    new_account: &'b solana_account_info::AccountInfo<'a>,
+    space: u64,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

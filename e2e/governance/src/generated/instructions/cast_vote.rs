@@ -184,111 +184,61 @@ impl CastVoteInstructionArgs {
 ///   10. `[]` realm_config_account
 ///   11. `[optional]` voter_weight_record
 ///   12. `[optional]` max_voter_weight_record
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct CastVoteBuilder {
-    realm_account: Option<solana_address::Address>,
-    governance_account: Option<solana_address::Address>,
-    proposal_account: Option<solana_address::Address>,
-    proposal_token_owner_record: Option<solana_address::Address>,
-    voter_token_owner_record: Option<solana_address::Address>,
-    governance_authority: Option<solana_address::Address>,
-    proposal_vote_record: Option<solana_address::Address>,
-    governing_token_mint: Option<solana_address::Address>,
-    payer: Option<solana_address::Address>,
+    realm_account: solana_address::Address,
+    governance_account: solana_address::Address,
+    proposal_account: solana_address::Address,
+    proposal_token_owner_record: solana_address::Address,
+    voter_token_owner_record: solana_address::Address,
+    governance_authority: solana_address::Address,
+    proposal_vote_record: solana_address::Address,
+    governing_token_mint: solana_address::Address,
+    payer: solana_address::Address,
     system_program: Option<solana_address::Address>,
-    realm_config_account: Option<solana_address::Address>,
+    realm_config_account: solana_address::Address,
     voter_weight_record: Option<solana_address::Address>,
     max_voter_weight_record: Option<solana_address::Address>,
-    vote: Option<Vote>,
+    vote: Vote,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl CastVoteBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    #[inline(always)]
-    pub fn realm_account(&mut self, realm_account: solana_address::Address) -> &mut Self {
-        self.realm_account = Some(realm_account);
-        self
-    }
-    #[inline(always)]
-    pub fn governance_account(&mut self, governance_account: solana_address::Address) -> &mut Self {
-        self.governance_account = Some(governance_account);
-        self
-    }
-    #[inline(always)]
-    pub fn proposal_account(&mut self, proposal_account: solana_address::Address) -> &mut Self {
-        self.proposal_account = Some(proposal_account);
-        self
-    }
-    /// TokenOwnerRecord of the Proposal owner
-    #[inline(always)]
-    pub fn proposal_token_owner_record(
-        &mut self,
+    pub fn new(
+        realm_account: solana_address::Address,
+        governance_account: solana_address::Address,
+        proposal_account: solana_address::Address,
         proposal_token_owner_record: solana_address::Address,
-    ) -> &mut Self {
-        self.proposal_token_owner_record = Some(proposal_token_owner_record);
-        self
-    }
-    /// TokenOwnerRecord of the voter. PDA seeds: ['governance',realm, vote_governing_token_mint, governing_token_owner]
-    #[inline(always)]
-    pub fn voter_token_owner_record(
-        &mut self,
         voter_token_owner_record: solana_address::Address,
-    ) -> &mut Self {
-        self.voter_token_owner_record = Some(voter_token_owner_record);
-        self
-    }
-    /// Governance Authority (Token Owner or Governance Delegate)
-    #[inline(always)]
-    pub fn governance_authority(
-        &mut self,
         governance_authority: solana_address::Address,
-    ) -> &mut Self {
-        self.governance_authority = Some(governance_authority);
-        self
-    }
-    /// Proposal VoteRecord account. PDA seeds: ['governance',proposal,token_owner_record]
-    #[inline(always)]
-    pub fn proposal_vote_record(
-        &mut self,
         proposal_vote_record: solana_address::Address,
-    ) -> &mut Self {
-        self.proposal_vote_record = Some(proposal_vote_record);
-        self
-    }
-    /// The Governing Token Mint which is used to cast the vote (vote_governing_token_mint).
-    ///     The voting token mint is the governing_token_mint of the Proposal for Approve, Deny and Abstain votes.
-    ///     For Veto vote the voting token mint is the mint of the opposite voting population.
-    ///     Council mint to veto Community proposals and Community mint to veto Council proposals
-    ///     Note: In the current version only Council veto is supported
-    #[inline(always)]
-    pub fn governing_token_mint(
-        &mut self,
         governing_token_mint: solana_address::Address,
-    ) -> &mut Self {
-        self.governing_token_mint = Some(governing_token_mint);
-        self
-    }
-    #[inline(always)]
-    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
-        self.payer = Some(payer);
-        self
+        payer: solana_address::Address,
+        realm_config_account: solana_address::Address,
+        vote: Vote,
+    ) -> Self {
+        Self {
+            realm_account,
+            governance_account,
+            proposal_account,
+            proposal_token_owner_record,
+            voter_token_owner_record,
+            governance_authority,
+            proposal_vote_record,
+            governing_token_mint,
+            payer,
+            system_program: None,
+            realm_config_account,
+            voter_weight_record: None,
+            max_voter_weight_record: None,
+            vote,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_address::Address) -> &mut Self {
         self.system_program = Some(system_program);
-        self
-    }
-    /// RealmConfig account. PDA seeds: ['realm-config', realm]
-    #[inline(always)]
-    pub fn realm_config_account(
-        &mut self,
-        realm_config_account: solana_address::Address,
-    ) -> &mut Self {
-        self.realm_config_account = Some(realm_config_account);
         self
     }
     /// `[optional account]`
@@ -311,11 +261,6 @@ impl CastVoteBuilder {
         self.max_voter_weight_record = max_voter_weight_record;
         self
     }
-    #[inline(always)]
-    pub fn vote(&mut self, vote: Vote) -> &mut Self {
-        self.vote = Some(vote);
-        self
-    }
     /// Add an additional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(&mut self, account: solana_instruction::AccountMeta) -> &mut Self {
@@ -333,39 +278,38 @@ impl CastVoteBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let realm_account = self.realm_account;
+        let governance_account = self.governance_account;
+        let proposal_account = self.proposal_account;
+        let proposal_token_owner_record = self.proposal_token_owner_record;
+        let voter_token_owner_record = self.voter_token_owner_record;
+        let governance_authority = self.governance_authority;
+        let proposal_vote_record = self.proposal_vote_record;
+        let governing_token_mint = self.governing_token_mint;
+        let payer = self.payer;
+        let system_program = self
+            .system_program
+            .unwrap_or(solana_address::address!("11111111111111111111111111111111"));
+        let realm_config_account = self.realm_config_account;
+        let voter_weight_record = self.voter_weight_record;
+        let max_voter_weight_record = self.max_voter_weight_record;
         let accounts = CastVote {
-            realm_account: self.realm_account.expect("realm_account is not set"),
-            governance_account: self
-                .governance_account
-                .expect("governance_account is not set"),
-            proposal_account: self.proposal_account.expect("proposal_account is not set"),
-            proposal_token_owner_record: self
-                .proposal_token_owner_record
-                .expect("proposal_token_owner_record is not set"),
-            voter_token_owner_record: self
-                .voter_token_owner_record
-                .expect("voter_token_owner_record is not set"),
-            governance_authority: self
-                .governance_authority
-                .expect("governance_authority is not set"),
-            proposal_vote_record: self
-                .proposal_vote_record
-                .expect("proposal_vote_record is not set"),
-            governing_token_mint: self
-                .governing_token_mint
-                .expect("governing_token_mint is not set"),
-            payer: self.payer.expect("payer is not set"),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
-            realm_config_account: self
-                .realm_config_account
-                .expect("realm_config_account is not set"),
-            voter_weight_record: self.voter_weight_record,
-            max_voter_weight_record: self.max_voter_weight_record,
+            realm_account,
+            governance_account,
+            proposal_account,
+            proposal_token_owner_record,
+            voter_token_owner_record,
+            governance_authority,
+            proposal_vote_record,
+            governing_token_mint,
+            payer,
+            system_program,
+            realm_config_account,
+            voter_weight_record,
+            max_voter_weight_record,
         };
         let args = CastVoteInstructionArgs {
-            vote: self.vote.clone().expect("vote is not set"),
+            vote: self.vote.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -627,121 +571,40 @@ pub struct CastVoteCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        realm_account: &'b solana_account_info::AccountInfo<'a>,
+        governance_account: &'b solana_account_info::AccountInfo<'a>,
+        proposal_account: &'b solana_account_info::AccountInfo<'a>,
+        proposal_token_owner_record: &'b solana_account_info::AccountInfo<'a>,
+        voter_token_owner_record: &'b solana_account_info::AccountInfo<'a>,
+        governance_authority: &'b solana_account_info::AccountInfo<'a>,
+        proposal_vote_record: &'b solana_account_info::AccountInfo<'a>,
+        governing_token_mint: &'b solana_account_info::AccountInfo<'a>,
+        payer: &'b solana_account_info::AccountInfo<'a>,
+        system_program: &'b solana_account_info::AccountInfo<'a>,
+        realm_config_account: &'b solana_account_info::AccountInfo<'a>,
+        vote: Vote,
+    ) -> Self {
         let instruction = Box::new(CastVoteCpiBuilderInstruction {
-            __program: program,
-            realm_account: None,
-            governance_account: None,
-            proposal_account: None,
-            proposal_token_owner_record: None,
-            voter_token_owner_record: None,
-            governance_authority: None,
-            proposal_vote_record: None,
-            governing_token_mint: None,
-            payer: None,
-            system_program: None,
-            realm_config_account: None,
+            __program,
+            realm_account,
+            governance_account,
+            proposal_account,
+            proposal_token_owner_record,
+            voter_token_owner_record,
+            governance_authority,
+            proposal_vote_record,
+            governing_token_mint,
+            payer,
+            system_program,
+            realm_config_account,
             voter_weight_record: None,
             max_voter_weight_record: None,
-            vote: None,
+            vote,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn realm_account(
-        &mut self,
-        realm_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.realm_account = Some(realm_account);
-        self
-    }
-    #[inline(always)]
-    pub fn governance_account(
-        &mut self,
-        governance_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governance_account = Some(governance_account);
-        self
-    }
-    #[inline(always)]
-    pub fn proposal_account(
-        &mut self,
-        proposal_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.proposal_account = Some(proposal_account);
-        self
-    }
-    /// TokenOwnerRecord of the Proposal owner
-    #[inline(always)]
-    pub fn proposal_token_owner_record(
-        &mut self,
-        proposal_token_owner_record: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.proposal_token_owner_record = Some(proposal_token_owner_record);
-        self
-    }
-    /// TokenOwnerRecord of the voter. PDA seeds: ['governance',realm, vote_governing_token_mint, governing_token_owner]
-    #[inline(always)]
-    pub fn voter_token_owner_record(
-        &mut self,
-        voter_token_owner_record: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.voter_token_owner_record = Some(voter_token_owner_record);
-        self
-    }
-    /// Governance Authority (Token Owner or Governance Delegate)
-    #[inline(always)]
-    pub fn governance_authority(
-        &mut self,
-        governance_authority: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governance_authority = Some(governance_authority);
-        self
-    }
-    /// Proposal VoteRecord account. PDA seeds: ['governance',proposal,token_owner_record]
-    #[inline(always)]
-    pub fn proposal_vote_record(
-        &mut self,
-        proposal_vote_record: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.proposal_vote_record = Some(proposal_vote_record);
-        self
-    }
-    /// The Governing Token Mint which is used to cast the vote (vote_governing_token_mint).
-    ///     The voting token mint is the governing_token_mint of the Proposal for Approve, Deny and Abstain votes.
-    ///     For Veto vote the voting token mint is the mint of the opposite voting population.
-    ///     Council mint to veto Community proposals and Community mint to veto Council proposals
-    ///     Note: In the current version only Council veto is supported
-    #[inline(always)]
-    pub fn governing_token_mint(
-        &mut self,
-        governing_token_mint: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governing_token_mint = Some(governing_token_mint);
-        self
-    }
-    #[inline(always)]
-    pub fn payer(&mut self, payer: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.payer = Some(payer);
-        self
-    }
-    #[inline(always)]
-    pub fn system_program(
-        &mut self,
-        system_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.system_program = Some(system_program);
-        self
-    }
-    /// RealmConfig account. PDA seeds: ['realm-config', realm]
-    #[inline(always)]
-    pub fn realm_config_account(
-        &mut self,
-        realm_config_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.realm_config_account = Some(realm_config_account);
-        self
     }
     /// `[optional account]`
     /// Optional Voter Weight Record
@@ -761,11 +624,6 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
         max_voter_weight_record: Option<&'b solana_account_info::AccountInfo<'a>>,
     ) -> &mut Self {
         self.instruction.max_voter_weight_record = max_voter_weight_record;
-        self
-    }
-    #[inline(always)]
-    pub fn vote(&mut self, vote: Vote) -> &mut Self {
-        self.instruction.vote = Some(vote);
         self
     }
     /// Add an additional account to the instruction.
@@ -803,65 +661,22 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = CastVoteInstructionArgs {
-            vote: self.instruction.vote.clone().expect("vote is not set"),
+            vote: self.instruction.vote.clone(),
         };
         let instruction = CastVoteCpi {
             __program: self.instruction.__program,
-
-            realm_account: self
-                .instruction
-                .realm_account
-                .expect("realm_account is not set"),
-
-            governance_account: self
-                .instruction
-                .governance_account
-                .expect("governance_account is not set"),
-
-            proposal_account: self
-                .instruction
-                .proposal_account
-                .expect("proposal_account is not set"),
-
-            proposal_token_owner_record: self
-                .instruction
-                .proposal_token_owner_record
-                .expect("proposal_token_owner_record is not set"),
-
-            voter_token_owner_record: self
-                .instruction
-                .voter_token_owner_record
-                .expect("voter_token_owner_record is not set"),
-
-            governance_authority: self
-                .instruction
-                .governance_authority
-                .expect("governance_authority is not set"),
-
-            proposal_vote_record: self
-                .instruction
-                .proposal_vote_record
-                .expect("proposal_vote_record is not set"),
-
-            governing_token_mint: self
-                .instruction
-                .governing_token_mint
-                .expect("governing_token_mint is not set"),
-
-            payer: self.instruction.payer.expect("payer is not set"),
-
-            system_program: self
-                .instruction
-                .system_program
-                .expect("system_program is not set"),
-
-            realm_config_account: self
-                .instruction
-                .realm_config_account
-                .expect("realm_config_account is not set"),
-
+            realm_account: self.instruction.realm_account,
+            governance_account: self.instruction.governance_account,
+            proposal_account: self.instruction.proposal_account,
+            proposal_token_owner_record: self.instruction.proposal_token_owner_record,
+            voter_token_owner_record: self.instruction.voter_token_owner_record,
+            governance_authority: self.instruction.governance_authority,
+            proposal_vote_record: self.instruction.proposal_vote_record,
+            governing_token_mint: self.instruction.governing_token_mint,
+            payer: self.instruction.payer,
+            system_program: self.instruction.system_program,
+            realm_config_account: self.instruction.realm_config_account,
             voter_weight_record: self.instruction.voter_weight_record,
-
             max_voter_weight_record: self.instruction.max_voter_weight_record,
             __args: args,
         };
@@ -875,20 +690,20 @@ impl<'a, 'b> CastVoteCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct CastVoteCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    realm_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    governance_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    proposal_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    proposal_token_owner_record: Option<&'b solana_account_info::AccountInfo<'a>>,
-    voter_token_owner_record: Option<&'b solana_account_info::AccountInfo<'a>>,
-    governance_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
-    proposal_vote_record: Option<&'b solana_account_info::AccountInfo<'a>>,
-    governing_token_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
-    payer: Option<&'b solana_account_info::AccountInfo<'a>>,
-    system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    realm_config_account: Option<&'b solana_account_info::AccountInfo<'a>>,
+    realm_account: &'b solana_account_info::AccountInfo<'a>,
+    governance_account: &'b solana_account_info::AccountInfo<'a>,
+    proposal_account: &'b solana_account_info::AccountInfo<'a>,
+    proposal_token_owner_record: &'b solana_account_info::AccountInfo<'a>,
+    voter_token_owner_record: &'b solana_account_info::AccountInfo<'a>,
+    governance_authority: &'b solana_account_info::AccountInfo<'a>,
+    proposal_vote_record: &'b solana_account_info::AccountInfo<'a>,
+    governing_token_mint: &'b solana_account_info::AccountInfo<'a>,
+    payer: &'b solana_account_info::AccountInfo<'a>,
+    system_program: &'b solana_account_info::AccountInfo<'a>,
+    realm_config_account: &'b solana_account_info::AccountInfo<'a>,
     voter_weight_record: Option<&'b solana_account_info::AccountInfo<'a>>,
     max_voter_weight_record: Option<&'b solana_account_info::AccountInfo<'a>>,
-    vote: Option<Vote>,
+    vote: Vote,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

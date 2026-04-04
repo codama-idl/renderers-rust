@@ -147,77 +147,48 @@ impl DepositGoverningTokensInstructionArgs {
 ///   7. `[optional]` system_program (default to `11111111111111111111111111111111`)
 ///   8. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 ///   9. `[]` realm_config_account
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct DepositGoverningTokensBuilder {
-    realm_account: Option<solana_address::Address>,
-    governing_token_holding_account: Option<solana_address::Address>,
-    governing_token_source_account: Option<solana_address::Address>,
-    governing_token_owner_account: Option<solana_address::Address>,
-    governing_token_source_account_authority: Option<solana_address::Address>,
-    token_owner_record: Option<solana_address::Address>,
-    payer: Option<solana_address::Address>,
+    realm_account: solana_address::Address,
+    governing_token_holding_account: solana_address::Address,
+    governing_token_source_account: solana_address::Address,
+    governing_token_owner_account: solana_address::Address,
+    governing_token_source_account_authority: solana_address::Address,
+    token_owner_record: solana_address::Address,
+    payer: solana_address::Address,
     system_program: Option<solana_address::Address>,
     token_program: Option<solana_address::Address>,
-    realm_config_account: Option<solana_address::Address>,
-    amount: Option<u64>,
+    realm_config_account: solana_address::Address,
+    amount: u64,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl DepositGoverningTokensBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    #[inline(always)]
-    pub fn realm_account(&mut self, realm_account: solana_address::Address) -> &mut Self {
-        self.realm_account = Some(realm_account);
-        self
-    }
-    /// seeds=['governance', realm, governing_token_mint]
-    #[inline(always)]
-    pub fn governing_token_holding_account(
-        &mut self,
+    pub fn new(
+        realm_account: solana_address::Address,
         governing_token_holding_account: solana_address::Address,
-    ) -> &mut Self {
-        self.governing_token_holding_account = Some(governing_token_holding_account);
-        self
-    }
-    /// It can either be spl-token TokenAccount or MintAccount. Tokens will be transferred or minted to the holding account
-    #[inline(always)]
-    pub fn governing_token_source_account(
-        &mut self,
         governing_token_source_account: solana_address::Address,
-    ) -> &mut Self {
-        self.governing_token_source_account = Some(governing_token_source_account);
-        self
-    }
-    #[inline(always)]
-    pub fn governing_token_owner_account(
-        &mut self,
         governing_token_owner_account: solana_address::Address,
-    ) -> &mut Self {
-        self.governing_token_owner_account = Some(governing_token_owner_account);
-        self
-    }
-    /// It should be owner for TokenAccount and mint_authority for MintAccount
-    #[inline(always)]
-    pub fn governing_token_source_account_authority(
-        &mut self,
         governing_token_source_account_authority: solana_address::Address,
-    ) -> &mut Self {
-        self.governing_token_source_account_authority =
-            Some(governing_token_source_account_authority);
-        self
-    }
-    /// seeds=['governance', realm, governing_token_mint, governing_token_owner]
-    #[inline(always)]
-    pub fn token_owner_record(&mut self, token_owner_record: solana_address::Address) -> &mut Self {
-        self.token_owner_record = Some(token_owner_record);
-        self
-    }
-    #[inline(always)]
-    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
-        self.payer = Some(payer);
-        self
+        token_owner_record: solana_address::Address,
+        payer: solana_address::Address,
+        realm_config_account: solana_address::Address,
+        amount: u64,
+    ) -> Self {
+        Self {
+            realm_account,
+            governing_token_holding_account,
+            governing_token_source_account,
+            governing_token_owner_account,
+            governing_token_source_account_authority,
+            token_owner_record,
+            payer,
+            system_program: None,
+            token_program: None,
+            realm_config_account,
+            amount,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
@@ -229,20 +200,6 @@ impl DepositGoverningTokensBuilder {
     #[inline(always)]
     pub fn token_program(&mut self, token_program: solana_address::Address) -> &mut Self {
         self.token_program = Some(token_program);
-        self
-    }
-    /// seeds=['realm-config', realm]
-    #[inline(always)]
-    pub fn realm_config_account(
-        &mut self,
-        realm_config_account: solana_address::Address,
-    ) -> &mut Self {
-        self.realm_config_account = Some(realm_config_account);
-        self
-    }
-    #[inline(always)]
-    pub fn amount(&mut self, amount: u64) -> &mut Self {
-        self.amount = Some(amount);
         self
     }
     /// Add an additional account to the instruction.
@@ -262,36 +219,35 @@ impl DepositGoverningTokensBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let realm_account = self.realm_account;
+        let governing_token_holding_account = self.governing_token_holding_account;
+        let governing_token_source_account = self.governing_token_source_account;
+        let governing_token_owner_account = self.governing_token_owner_account;
+        let governing_token_source_account_authority =
+            self.governing_token_source_account_authority;
+        let token_owner_record = self.token_owner_record;
+        let payer = self.payer;
+        let system_program = self
+            .system_program
+            .unwrap_or(solana_address::address!("11111111111111111111111111111111"));
+        let token_program = self.token_program.unwrap_or(solana_address::address!(
+            "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        ));
+        let realm_config_account = self.realm_config_account;
         let accounts = DepositGoverningTokens {
-            realm_account: self.realm_account.expect("realm_account is not set"),
-            governing_token_holding_account: self
-                .governing_token_holding_account
-                .expect("governing_token_holding_account is not set"),
-            governing_token_source_account: self
-                .governing_token_source_account
-                .expect("governing_token_source_account is not set"),
-            governing_token_owner_account: self
-                .governing_token_owner_account
-                .expect("governing_token_owner_account is not set"),
-            governing_token_source_account_authority: self
-                .governing_token_source_account_authority
-                .expect("governing_token_source_account_authority is not set"),
-            token_owner_record: self
-                .token_owner_record
-                .expect("token_owner_record is not set"),
-            payer: self.payer.expect("payer is not set"),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
-            token_program: self.token_program.unwrap_or(solana_address::address!(
-                "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-            )),
-            realm_config_account: self
-                .realm_config_account
-                .expect("realm_config_account is not set"),
+            realm_account,
+            governing_token_holding_account,
+            governing_token_source_account,
+            governing_token_owner_account,
+            governing_token_source_account_authority,
+            token_owner_record,
+            payer,
+            system_program,
+            token_program,
+            realm_config_account,
         };
         let args = DepositGoverningTokensInstructionArgs {
-            amount: self.amount.clone().expect("amount is not set"),
+            amount: self.amount.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -494,111 +450,36 @@ pub struct DepositGoverningTokensCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> DepositGoverningTokensCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        realm_account: &'b solana_account_info::AccountInfo<'a>,
+        governing_token_holding_account: &'b solana_account_info::AccountInfo<'a>,
+        governing_token_source_account: &'b solana_account_info::AccountInfo<'a>,
+        governing_token_owner_account: &'b solana_account_info::AccountInfo<'a>,
+        governing_token_source_account_authority: &'b solana_account_info::AccountInfo<'a>,
+        token_owner_record: &'b solana_account_info::AccountInfo<'a>,
+        payer: &'b solana_account_info::AccountInfo<'a>,
+        system_program: &'b solana_account_info::AccountInfo<'a>,
+        token_program: &'b solana_account_info::AccountInfo<'a>,
+        realm_config_account: &'b solana_account_info::AccountInfo<'a>,
+        amount: u64,
+    ) -> Self {
         let instruction = Box::new(DepositGoverningTokensCpiBuilderInstruction {
-            __program: program,
-            realm_account: None,
-            governing_token_holding_account: None,
-            governing_token_source_account: None,
-            governing_token_owner_account: None,
-            governing_token_source_account_authority: None,
-            token_owner_record: None,
-            payer: None,
-            system_program: None,
-            token_program: None,
-            realm_config_account: None,
-            amount: None,
+            __program,
+            realm_account,
+            governing_token_holding_account,
+            governing_token_source_account,
+            governing_token_owner_account,
+            governing_token_source_account_authority,
+            token_owner_record,
+            payer,
+            system_program,
+            token_program,
+            realm_config_account,
+            amount,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn realm_account(
-        &mut self,
-        realm_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.realm_account = Some(realm_account);
-        self
-    }
-    /// seeds=['governance', realm, governing_token_mint]
-    #[inline(always)]
-    pub fn governing_token_holding_account(
-        &mut self,
-        governing_token_holding_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governing_token_holding_account = Some(governing_token_holding_account);
-        self
-    }
-    /// It can either be spl-token TokenAccount or MintAccount. Tokens will be transferred or minted to the holding account
-    #[inline(always)]
-    pub fn governing_token_source_account(
-        &mut self,
-        governing_token_source_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governing_token_source_account = Some(governing_token_source_account);
-        self
-    }
-    #[inline(always)]
-    pub fn governing_token_owner_account(
-        &mut self,
-        governing_token_owner_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governing_token_owner_account = Some(governing_token_owner_account);
-        self
-    }
-    /// It should be owner for TokenAccount and mint_authority for MintAccount
-    #[inline(always)]
-    pub fn governing_token_source_account_authority(
-        &mut self,
-        governing_token_source_account_authority: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governing_token_source_account_authority =
-            Some(governing_token_source_account_authority);
-        self
-    }
-    /// seeds=['governance', realm, governing_token_mint, governing_token_owner]
-    #[inline(always)]
-    pub fn token_owner_record(
-        &mut self,
-        token_owner_record: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.token_owner_record = Some(token_owner_record);
-        self
-    }
-    #[inline(always)]
-    pub fn payer(&mut self, payer: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.payer = Some(payer);
-        self
-    }
-    #[inline(always)]
-    pub fn system_program(
-        &mut self,
-        system_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn token_program(
-        &mut self,
-        token_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.token_program = Some(token_program);
-        self
-    }
-    /// seeds=['realm-config', realm]
-    #[inline(always)]
-    pub fn realm_config_account(
-        &mut self,
-        realm_config_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.realm_config_account = Some(realm_config_account);
-        self
-    }
-    #[inline(always)]
-    pub fn amount(&mut self, amount: u64) -> &mut Self {
-        self.instruction.amount = Some(amount);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -635,57 +516,22 @@ impl<'a, 'b> DepositGoverningTokensCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = DepositGoverningTokensInstructionArgs {
-            amount: self.instruction.amount.clone().expect("amount is not set"),
+            amount: self.instruction.amount.clone(),
         };
         let instruction = DepositGoverningTokensCpi {
             __program: self.instruction.__program,
-
-            realm_account: self
-                .instruction
-                .realm_account
-                .expect("realm_account is not set"),
-
-            governing_token_holding_account: self
-                .instruction
-                .governing_token_holding_account
-                .expect("governing_token_holding_account is not set"),
-
-            governing_token_source_account: self
-                .instruction
-                .governing_token_source_account
-                .expect("governing_token_source_account is not set"),
-
-            governing_token_owner_account: self
-                .instruction
-                .governing_token_owner_account
-                .expect("governing_token_owner_account is not set"),
-
+            realm_account: self.instruction.realm_account,
+            governing_token_holding_account: self.instruction.governing_token_holding_account,
+            governing_token_source_account: self.instruction.governing_token_source_account,
+            governing_token_owner_account: self.instruction.governing_token_owner_account,
             governing_token_source_account_authority: self
                 .instruction
-                .governing_token_source_account_authority
-                .expect("governing_token_source_account_authority is not set"),
-
-            token_owner_record: self
-                .instruction
-                .token_owner_record
-                .expect("token_owner_record is not set"),
-
-            payer: self.instruction.payer.expect("payer is not set"),
-
-            system_program: self
-                .instruction
-                .system_program
-                .expect("system_program is not set"),
-
-            token_program: self
-                .instruction
-                .token_program
-                .expect("token_program is not set"),
-
-            realm_config_account: self
-                .instruction
-                .realm_config_account
-                .expect("realm_config_account is not set"),
+                .governing_token_source_account_authority,
+            token_owner_record: self.instruction.token_owner_record,
+            payer: self.instruction.payer,
+            system_program: self.instruction.system_program,
+            token_program: self.instruction.token_program,
+            realm_config_account: self.instruction.realm_config_account,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -698,17 +544,17 @@ impl<'a, 'b> DepositGoverningTokensCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct DepositGoverningTokensCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    realm_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    governing_token_holding_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    governing_token_source_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    governing_token_owner_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    governing_token_source_account_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
-    token_owner_record: Option<&'b solana_account_info::AccountInfo<'a>>,
-    payer: Option<&'b solana_account_info::AccountInfo<'a>>,
-    system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    token_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    realm_config_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    amount: Option<u64>,
+    realm_account: &'b solana_account_info::AccountInfo<'a>,
+    governing_token_holding_account: &'b solana_account_info::AccountInfo<'a>,
+    governing_token_source_account: &'b solana_account_info::AccountInfo<'a>,
+    governing_token_owner_account: &'b solana_account_info::AccountInfo<'a>,
+    governing_token_source_account_authority: &'b solana_account_info::AccountInfo<'a>,
+    token_owner_record: &'b solana_account_info::AccountInfo<'a>,
+    payer: &'b solana_account_info::AccountInfo<'a>,
+    system_program: &'b solana_account_info::AccountInfo<'a>,
+    token_program: &'b solana_account_info::AccountInfo<'a>,
+    realm_config_account: &'b solana_account_info::AccountInfo<'a>,
+    amount: u64,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

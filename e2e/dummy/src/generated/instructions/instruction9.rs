@@ -197,21 +197,16 @@ pub struct Instruction9CpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> Instruction9CpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        global_config: &'b solana_account_info::AccountInfo<'a>,
+    ) -> Self {
         let instruction = Box::new(Instruction9CpiBuilderInstruction {
-            __program: program,
-            global_config: None,
+            __program,
+            global_config,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn global_config(
-        &mut self,
-        global_config: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.global_config = Some(global_config);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -249,11 +244,7 @@ impl<'a, 'b> Instruction9CpiBuilder<'a, 'b> {
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let instruction = Instruction9Cpi {
             __program: self.instruction.__program,
-
-            global_config: self
-                .instruction
-                .global_config
-                .expect("global_config is not set"),
+            global_config: self.instruction.global_config,
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -265,7 +256,7 @@ impl<'a, 'b> Instruction9CpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct Instruction9CpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    global_config: Option<&'b solana_account_info::AccountInfo<'a>>,
+    global_config: &'b solana_account_info::AccountInfo<'a>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

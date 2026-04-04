@@ -84,39 +84,26 @@ impl Default for RemoveRequiredSignatoryInstructionData {
 ///   0. `[writable, signer]` governance_account
 ///   1. `[writable]` required_signatory_account
 ///   2. `[writable]` beneficiary_account
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct RemoveRequiredSignatoryBuilder {
-    governance_account: Option<solana_address::Address>,
-    required_signatory_account: Option<solana_address::Address>,
-    beneficiary_account: Option<solana_address::Address>,
+    governance_account: solana_address::Address,
+    required_signatory_account: solana_address::Address,
+    beneficiary_account: solana_address::Address,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl RemoveRequiredSignatoryBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    #[inline(always)]
-    pub fn governance_account(&mut self, governance_account: solana_address::Address) -> &mut Self {
-        self.governance_account = Some(governance_account);
-        self
-    }
-    #[inline(always)]
-    pub fn required_signatory_account(
-        &mut self,
+    pub fn new(
+        governance_account: solana_address::Address,
         required_signatory_account: solana_address::Address,
-    ) -> &mut Self {
-        self.required_signatory_account = Some(required_signatory_account);
-        self
-    }
-    /// Beneficiary Account which would receive lamports from the disposed RequiredSignatory Account
-    #[inline(always)]
-    pub fn beneficiary_account(
-        &mut self,
         beneficiary_account: solana_address::Address,
-    ) -> &mut Self {
-        self.beneficiary_account = Some(beneficiary_account);
-        self
+    ) -> Self {
+        Self {
+            governance_account,
+            required_signatory_account,
+            beneficiary_account,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -135,16 +122,13 @@ impl RemoveRequiredSignatoryBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let governance_account = self.governance_account;
+        let required_signatory_account = self.required_signatory_account;
+        let beneficiary_account = self.beneficiary_account;
         let accounts = RemoveRequiredSignatory {
-            governance_account: self
-                .governance_account
-                .expect("governance_account is not set"),
-            required_signatory_account: self
-                .required_signatory_account
-                .expect("required_signatory_account is not set"),
-            beneficiary_account: self
-                .beneficiary_account
-                .expect("beneficiary_account is not set"),
+            governance_account,
+            required_signatory_account,
+            beneficiary_account,
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
@@ -266,40 +250,20 @@ pub struct RemoveRequiredSignatoryCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> RemoveRequiredSignatoryCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        governance_account: &'b solana_account_info::AccountInfo<'a>,
+        required_signatory_account: &'b solana_account_info::AccountInfo<'a>,
+        beneficiary_account: &'b solana_account_info::AccountInfo<'a>,
+    ) -> Self {
         let instruction = Box::new(RemoveRequiredSignatoryCpiBuilderInstruction {
-            __program: program,
-            governance_account: None,
-            required_signatory_account: None,
-            beneficiary_account: None,
+            __program,
+            governance_account,
+            required_signatory_account,
+            beneficiary_account,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn governance_account(
-        &mut self,
-        governance_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governance_account = Some(governance_account);
-        self
-    }
-    #[inline(always)]
-    pub fn required_signatory_account(
-        &mut self,
-        required_signatory_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.required_signatory_account = Some(required_signatory_account);
-        self
-    }
-    /// Beneficiary Account which would receive lamports from the disposed RequiredSignatory Account
-    #[inline(always)]
-    pub fn beneficiary_account(
-        &mut self,
-        beneficiary_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.beneficiary_account = Some(beneficiary_account);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -337,21 +301,9 @@ impl<'a, 'b> RemoveRequiredSignatoryCpiBuilder<'a, 'b> {
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let instruction = RemoveRequiredSignatoryCpi {
             __program: self.instruction.__program,
-
-            governance_account: self
-                .instruction
-                .governance_account
-                .expect("governance_account is not set"),
-
-            required_signatory_account: self
-                .instruction
-                .required_signatory_account
-                .expect("required_signatory_account is not set"),
-
-            beneficiary_account: self
-                .instruction
-                .beneficiary_account
-                .expect("beneficiary_account is not set"),
+            governance_account: self.instruction.governance_account,
+            required_signatory_account: self.instruction.required_signatory_account,
+            beneficiary_account: self.instruction.beneficiary_account,
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -363,9 +315,9 @@ impl<'a, 'b> RemoveRequiredSignatoryCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct RemoveRequiredSignatoryCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    governance_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    required_signatory_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    beneficiary_account: Option<&'b solana_account_info::AccountInfo<'a>>,
+    governance_account: &'b solana_account_info::AccountInfo<'a>,
+    required_signatory_account: &'b solana_account_info::AccountInfo<'a>,
+    beneficiary_account: &'b solana_account_info::AccountInfo<'a>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

@@ -84,22 +84,25 @@ impl Default for AdvanceNonceAccountInstructionData {
 ///   0. `[writable]` nonce_account
 ///   1. `[optional]` recent_blockhashes_sysvar (default to `SysvarRecentB1ockHashes11111111111111111111`)
 ///   2. `[signer]` nonce_authority
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct AdvanceNonceAccountBuilder {
-    nonce_account: Option<solana_address::Address>,
+    nonce_account: solana_address::Address,
     recent_blockhashes_sysvar: Option<solana_address::Address>,
-    nonce_authority: Option<solana_address::Address>,
+    nonce_authority: solana_address::Address,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl AdvanceNonceAccountBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    #[inline(always)]
-    pub fn nonce_account(&mut self, nonce_account: solana_address::Address) -> &mut Self {
-        self.nonce_account = Some(nonce_account);
-        self
+    pub fn new(
+        nonce_account: solana_address::Address,
+        nonce_authority: solana_address::Address,
+    ) -> Self {
+        Self {
+            nonce_account,
+            recent_blockhashes_sysvar: None,
+            nonce_authority,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// `[optional account, default to 'SysvarRecentB1ockHashes11111111111111111111']`
     #[inline(always)]
@@ -108,11 +111,6 @@ impl AdvanceNonceAccountBuilder {
         recent_blockhashes_sysvar: solana_address::Address,
     ) -> &mut Self {
         self.recent_blockhashes_sysvar = Some(recent_blockhashes_sysvar);
-        self
-    }
-    #[inline(always)]
-    pub fn nonce_authority(&mut self, nonce_authority: solana_address::Address) -> &mut Self {
-        self.nonce_authority = Some(nonce_authority);
         self
     }
     /// Add an additional account to the instruction.
@@ -132,12 +130,17 @@ impl AdvanceNonceAccountBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let nonce_account = self.nonce_account;
+        let recent_blockhashes_sysvar =
+            self.recent_blockhashes_sysvar
+                .unwrap_or(solana_address::address!(
+                    "SysvarRecentB1ockHashes11111111111111111111"
+                ));
+        let nonce_authority = self.nonce_authority;
         let accounts = AdvanceNonceAccount {
-            nonce_account: self.nonce_account.expect("nonce_account is not set"),
-            recent_blockhashes_sysvar: self.recent_blockhashes_sysvar.unwrap_or(
-                solana_address::address!("SysvarRecentB1ockHashes11111111111111111111"),
-            ),
-            nonce_authority: self.nonce_authority.expect("nonce_authority is not set"),
+            nonce_account,
+            recent_blockhashes_sysvar,
+            nonce_authority,
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
@@ -259,39 +262,20 @@ pub struct AdvanceNonceAccountCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> AdvanceNonceAccountCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        nonce_account: &'b solana_account_info::AccountInfo<'a>,
+        recent_blockhashes_sysvar: &'b solana_account_info::AccountInfo<'a>,
+        nonce_authority: &'b solana_account_info::AccountInfo<'a>,
+    ) -> Self {
         let instruction = Box::new(AdvanceNonceAccountCpiBuilderInstruction {
-            __program: program,
-            nonce_account: None,
-            recent_blockhashes_sysvar: None,
-            nonce_authority: None,
+            __program,
+            nonce_account,
+            recent_blockhashes_sysvar,
+            nonce_authority,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn nonce_account(
-        &mut self,
-        nonce_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.nonce_account = Some(nonce_account);
-        self
-    }
-    #[inline(always)]
-    pub fn recent_blockhashes_sysvar(
-        &mut self,
-        recent_blockhashes_sysvar: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.recent_blockhashes_sysvar = Some(recent_blockhashes_sysvar);
-        self
-    }
-    #[inline(always)]
-    pub fn nonce_authority(
-        &mut self,
-        nonce_authority: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.nonce_authority = Some(nonce_authority);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -329,21 +313,9 @@ impl<'a, 'b> AdvanceNonceAccountCpiBuilder<'a, 'b> {
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let instruction = AdvanceNonceAccountCpi {
             __program: self.instruction.__program,
-
-            nonce_account: self
-                .instruction
-                .nonce_account
-                .expect("nonce_account is not set"),
-
-            recent_blockhashes_sysvar: self
-                .instruction
-                .recent_blockhashes_sysvar
-                .expect("recent_blockhashes_sysvar is not set"),
-
-            nonce_authority: self
-                .instruction
-                .nonce_authority
-                .expect("nonce_authority is not set"),
+            nonce_account: self.instruction.nonce_account,
+            recent_blockhashes_sysvar: self.instruction.recent_blockhashes_sysvar,
+            nonce_authority: self.instruction.nonce_authority,
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -355,9 +327,9 @@ impl<'a, 'b> AdvanceNonceAccountCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct AdvanceNonceAccountCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    nonce_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    recent_blockhashes_sysvar: Option<&'b solana_account_info::AccountInfo<'a>>,
-    nonce_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
+    nonce_account: &'b solana_account_info::AccountInfo<'a>,
+    recent_blockhashes_sysvar: &'b solana_account_info::AccountInfo<'a>,
+    nonce_authority: &'b solana_account_info::AccountInfo<'a>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

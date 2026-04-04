@@ -110,9 +110,9 @@ test('it auto-derives PDA accounts from pdaLinkNode defaults', () => {
     codeContains(content, [
         `unwrap_or_else(|| {`,
         `crate::pdas::find_record_pda(`,
-        `&self.realm.expect("realm is needed for record PDA")`,
-        `&self.mint.expect("mint is needed for record PDA")`,
-        `&self.owner.expect("owner is needed for record PDA")`,
+        `&self.realm,`,
+        `&self.mint,`,
+        `&self.owner,`,
         `.0`,
         `default to PDA derived from 'record'`,
     ]);
@@ -157,12 +157,9 @@ test('it passes argument seeds by value for non-Pubkey types', () => {
     const renderMap = visit(node, getRenderMapVisitor());
     const content = getFromRenderMap(renderMap, 'instructions/create_record.rs').content;
 
-    // Then we expect by-ref for the account seed and by-value for the argument seed.
-    codeContains(content, [
-        `crate::pdas::find_record_pda(`,
-        `&self.owner.expect("owner is needed for record PDA")`,
-        `self.label.clone().expect("label is needed for record PDA")`,
-    ]);
+    // Then we expect by-ref for the account seed (required, direct access)
+    // and by-value for the argument seed (required, direct clone).
+    codeContains(content, [`crate::pdas::find_record_pda(`, `&self.owner,`, `self.label.clone(),`]);
 });
 
 test('it resolves upstream account defaults as PDA seeds', () => {
@@ -206,9 +203,9 @@ test('it resolves upstream account defaults as PDA seeds', () => {
     // Then we expect the tokenProgram seed to use unwrap_or with its default.
     codeContains(content, [
         `crate::pdas::find_ata_pda(`,
-        `&self.owner.expect("owner is needed for ata PDA")`,
+        `&self.owner,`,
         `&self.token_program.unwrap_or(solana_address::address!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"))`,
-        `&self.mint.expect("mint is needed for ata PDA")`,
+        `&self.mint,`,
     ]);
 });
 
@@ -292,11 +289,8 @@ test('it passes Pubkey argument seeds by reference', () => {
     const renderMap = visit(node, getRenderMapVisitor());
     const content = getFromRenderMap(renderMap, 'instructions/create_record.rs').content;
 
-    // Then we expect the Pubkey argument seed to use by-ref.
-    codeContains(content, [
-        `&self.owner.expect("owner is needed for record PDA")`,
-        `&self.delegate.clone().expect("delegate is needed for record PDA")`,
-    ]);
+    // owner is required (direct), delegate is a required arg (direct clone).
+    codeContains(content, [`&self.owner,`, `&self.delegate.clone(),`]);
 });
 
 test('it handles argument/account name conflicts in PDA seeds', () => {
@@ -338,10 +332,8 @@ test('it handles argument/account name conflicts in PDA seeds', () => {
         visit(stringConflict, getRenderMapVisitor()),
         'instructions/create_record.rs',
     ).content;
-    codeContains(content1, [
-        `&self.owner.expect("owner is needed for record PDA")`,
-        `self.owner_arg.clone().expect("owner_arg is needed for record PDA")`,
-    ]);
+    // owner is required (direct), owner_arg is a required arg (direct clone).
+    codeContains(content1, [`&self.owner,`, `self.owner_arg.clone(),`]);
 
     // And a Pubkey argument that conflicts — should also get _arg suffix with by-ref.
     const pubkeyConflict = programNode({
@@ -381,10 +373,8 @@ test('it handles argument/account name conflicts in PDA seeds', () => {
         visit(pubkeyConflict, getRenderMapVisitor()),
         'instructions/create_record.rs',
     ).content;
-    codeContains(content2, [
-        `&self.delegate.expect("delegate is needed for record PDA")`,
-        `&self.delegate_arg.clone().expect("delegate_arg is needed for record PDA")`,
-    ]);
+    // delegate is required (direct), delegate_arg is a required arg (direct clone).
+    codeContains(content2, [`&self.delegate,`, `&self.delegate_arg.clone(),`]);
 });
 
 test('it handles argument defaults in PDA seeds', () => {
@@ -516,8 +506,8 @@ test('it extracts Pubkey from either-signer tuple for PDA seeds', () => {
     const renderMap = visit(node, getRenderMapVisitor());
     const content = getFromRenderMap(renderMap, 'instructions/create_record.rs').content;
 
-    // Then we expect the seed to extract the Pubkey from the tuple.
-    codeContains(content, [`.map(|(k, _)| k).expect("authority is needed for record PDA")`]);
+    // authority is required either-signer — direct .0 extraction, no expect.
+    codeContains(content, [`&self.authority.0,`]);
 });
 
 test('it extracts Pubkey from either-signer tuple for inline pdaNode seeds', () => {
@@ -557,8 +547,9 @@ test('it extracts Pubkey from either-signer tuple for inline pdaNode seeds', () 
     const renderMap = visit(node, getRenderMapVisitor());
     const content = getFromRenderMap(renderMap, 'instructions/create_record.rs').content;
 
-    // Then we expect the seed to extract the Pubkey from the tuple.
-    codeContains(content, [`.map(|(k, _)| k).expect("authority is needed for record PDA")`]);
+    // Then we expect the seed to extract the Pubkey from the (Pubkey, bool) tuple.
+    // authority is a required constructor arg, so the field is (Pubkey, bool) directly.
+    codeContains(content, [`self.authority.0.as_ref()`]);
 });
 
 test('it renders a builder that auto-derives inline pdaNode accounts', () => {
@@ -600,8 +591,11 @@ test('it renders a builder that auto-derives inline pdaNode accounts', () => {
     codeContains(content, [
         `unwrap_or_else(|| {`,
         `solana_address::Address::find_program_address(`,
+        // Constant seed rendered as byte array reference.
         /&\[109, 121, 95, 115, 101, 101, 100\]/,
-        `self.mint.expect("mint is needed for guard PDA").as_ref()`,
+        // Variable seed — mint is required, direct .as_ref().
+        `self.mint.as_ref()`,
+        // Uses default program ID.
         `&crate::TEST_PROGRAM_ID`,
         `.0`,
         `default to PDA derived from 'guard'`,
@@ -649,10 +643,7 @@ test('it renders inline pdaNode with argumentValueNode variable seed using type 
     const content = getFromRenderMap(renderMap, 'instructions/create_record.rs').content;
 
     // Then argument seeds use .to_string().as_ref() for string types (not bare .as_ref()).
-    codeContains(content, [
-        `self.mint.expect("mint is needed for record PDA").as_ref()`,
-        `self.label.clone().expect("label is needed for record PDA").to_string().as_ref()`,
-    ]);
+    codeContains(content, [`self.mint.as_ref()`, `self.label.clone().to_string().as_ref()`]);
 });
 
 test('it renders inline pdaNode with custom programId', () => {
@@ -746,10 +737,7 @@ test('it resolves upstream account defaults when used as inline PDA seeds', () =
         `self.token_program.unwrap_or(solana_address::address!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")).as_ref()`,
     ]);
     // And required accounts without defaults still use expect.
-    codeContains(content, [
-        `self.owner.expect("owner is needed for ata PDA").as_ref()`,
-        `self.mint.expect("mint is needed for ata PDA").as_ref()`,
-    ]);
+    codeContains(content, [`self.owner.as_ref()`, `self.mint.as_ref()`]);
 });
 
 test('it renders inline pdaNode with programIdValueNode constant seed', () => {
@@ -868,8 +856,8 @@ test('it resolves cascading PDA defaults via let bindings', () => {
     codeContains(content, [`let pool = self.pool.unwrap_or_else(|| {`, `find_pool_pda(`]);
     // And vault is also a let binding that references the local `pool`, not self.pool.
     codeContains(content, [`let vault = self.vault.unwrap_or_else(|| {`, `pool.as_ref()`]);
-    // And the struct literal uses the locals.
-    codeContains(content, [/Swap \{\s*mint:/]);
+    // And the struct literal uses shorthand field names.
+    codeContains(content, [/Swap \{\s*mint,/]);
     // Verify vault does NOT read self.pool (which would panic).
     expect(content).not.toContain('self.pool.expect');
 });
@@ -977,9 +965,9 @@ test('it handles argument/account name conflicts in inline pdaNode seeds', () =>
     const content = getFromRenderMap(renderMap, 'instructions/create_record.rs').content;
 
     // The account seed should reference self.owner (the account field).
-    codeContains(content, [`self.owner.expect("owner is needed for record PDA").as_ref()`]);
+    codeContains(content, [`self.owner.as_ref()`]);
     // The argument seed should reference self.owner_arg (the _arg suffixed field).
-    codeContains(content, [`self.owner_arg.clone().expect("owner_arg is needed for record PDA")`]);
+    codeContains(content, [`self.owner_arg.clone()`]);
 });
 
 test('it handles omitted-default argument seeds in inline pdaNode', () => {
@@ -1075,11 +1063,9 @@ test('it falls back to .expect() for both accounts in a circular PDA dependency'
     const renderMap = visit(node, getRenderMapVisitor());
     const content = getFromRenderMap(renderMap, 'instructions/circular.rs').content;
 
-    // Then BOTH accounts must fall back to .expect() — neither PDA can be resolved.
-    codeContains(content, [
-        'self.account_a.expect("account_a is not set")',
-        'self.account_b.expect("account_b is not set")',
-    ]);
+    // Then BOTH accounts lose PDA resolution and become required constructor params.
+    // They resolve via let-bindings with direct field access.
+    codeContains(content, ['let account_a = self.account_a', 'let account_b = self.account_b']);
     // No PDA derivation code should be emitted for either.
     codeDoesNotContains(content, ['find_program_address', 'unwrap_or_else']);
 });
@@ -1119,9 +1105,497 @@ test('it bails entire PDA resolution when a variable seed has no binding', () =>
     const renderMap = visit(node, getRenderMapVisitor());
     const content = getFromRenderMap(renderMap, 'instructions/deposit.rs').content;
 
-    // The account should fall back to .expect() — no PDA derivation with incomplete seeds.
-    codeContains(content, ['self.vault.expect("vault is not set")']);
-    codeDoesNotContains(content, ['find_program_address', 'unwrap_or_else']);
+    // PDA resolution fails — vault becomes a required constructor param.
+    // Resolved via let-binding with direct field access.
+    codeContains(content, ['let vault = self.vault']);
+    codeDoesNotContains(content, ['find_program_address', 'unwrap_or_else', '.expect(']);
+});
+
+test('it renders required args as constructor params', () => {
+    const node = programNode({
+        instructions: [
+            instructionNode({
+                accounts: [instructionAccountNode({ isSigner: false, isWritable: true, name: 'myAccount' })],
+                arguments: [instructionArgumentNode({ name: 'amount', type: numberTypeNode('u64') })],
+                name: 'myInstruction',
+            }),
+        ],
+        name: 'myProgram',
+        publicKey: 'Dummy11111111111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const code = getFromRenderMap(renderMap, 'instructions/my_instruction.rs').content;
+
+    codeContains(code, [
+        /pub struct MyInstructionBuilder \{[^}]*amount: u64,/,
+        /pub fn new\([^)]*amount: u64/,
+        `#[derive(Clone, Debug)]`,
+    ]);
+
+    codeDoesNotContains(code, [
+        `pub fn amount(&mut self`,
+        `expect("amount is not set")`,
+        `#[derive(Clone, Debug, Default)]`,
+    ]);
+});
+
+test('it renders required args as constructor params even without required accounts', () => {
+    const node = programNode({
+        instructions: [
+            instructionNode({
+                arguments: [instructionArgumentNode({ name: 'amount', type: numberTypeNode('u64') })],
+                name: 'myInstruction',
+            }),
+        ],
+        name: 'myProgram',
+        publicKey: 'Dummy11111111111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const code = getFromRenderMap(renderMap, 'instructions/my_instruction.rs').content;
+
+    codeContains(code, [`#[derive(Clone, Debug)]`, /pub fn new\([^)]*amount: u64/]);
+
+    codeDoesNotContains(code, [`#[derive(Clone, Debug, Default)]`, `Self::default()`]);
+});
+
+test('it renders required accounts as constructor params with PDA accounts staying optional', () => {
+    const node = programNode({
+        instructions: [
+            instructionNode({
+                accounts: [
+                    instructionAccountNode({ isOptional: false, isSigner: false, isWritable: false, name: 'realm' }),
+                    instructionAccountNode({ isOptional: false, isSigner: false, isWritable: false, name: 'mint' }),
+                    instructionAccountNode({
+                        defaultValue: pdaValueNode(pdaLinkNode('record'), [
+                            pdaSeedValueNode('realm', accountValueNode('realm')),
+                            pdaSeedValueNode('mint', accountValueNode('mint')),
+                        ]),
+                        isOptional: false,
+                        isSigner: false,
+                        isWritable: true,
+                        name: 'record',
+                    }),
+                ],
+                name: 'createRecord',
+            }),
+        ],
+        name: 'testProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const content = getFromRenderMap(renderMap, 'instructions/create_record.rs').content;
+
+    // Required accounts in new().
+    codeContains(content, [
+        `#[derive(Clone, Debug)]`,
+        /pub fn new\(\s*realm: solana_address::Address,\s*mint: solana_address::Address,/,
+    ]);
+
+    // PDA account is NOT in new(), stays Option.
+    codeContains(content, [/record: Option<solana_address::Address>/, `pub fn record(&mut self`]);
+
+    // Required accounts are bare types, not Option.
+    codeContains(content, [
+        /realm: solana_address::Address,\s*mint: solana_address::Address,\s*record: Option<solana_address::Address>/,
+    ]);
+
+    // No setters for required accounts.
+    codeDoesNotContains(content, [`pub fn realm(&mut self`, `pub fn mint(&mut self`]);
+});
+
+test('it renders required account as pdaLinkNode seed without expect', () => {
+    const node = programNode({
+        instructions: [
+            instructionNode({
+                accounts: [
+                    instructionAccountNode({ isOptional: false, isSigner: false, isWritable: false, name: 'owner' }),
+                    instructionAccountNode({
+                        defaultValue: pdaValueNode(pdaLinkNode('record'), [
+                            pdaSeedValueNode('owner', accountValueNode('owner')),
+                        ]),
+                        isOptional: false,
+                        isSigner: false,
+                        isWritable: true,
+                        name: 'record',
+                    }),
+                ],
+                name: 'createRecord',
+            }),
+        ],
+        name: 'testProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const content = getFromRenderMap(renderMap, 'instructions/create_record.rs').content;
+
+    // Required account used as PDA seed — direct access, no expect.
+    codeContains(content, [`&self.owner,`]);
+    codeDoesNotContains(content, [`self.owner.expect`]);
+});
+
+test('it renders required either-signer account as pdaLinkNode seed with .0 extraction', () => {
+    const node = programNode({
+        instructions: [
+            instructionNode({
+                accounts: [
+                    instructionAccountNode({
+                        isOptional: false,
+                        isSigner: 'either',
+                        isWritable: false,
+                        name: 'authority',
+                    }),
+                    instructionAccountNode({
+                        defaultValue: pdaValueNode(pdaLinkNode('record'), [
+                            pdaSeedValueNode('authority', accountValueNode('authority')),
+                        ]),
+                        isOptional: false,
+                        isSigner: false,
+                        isWritable: true,
+                        name: 'record',
+                    }),
+                ],
+                name: 'createRecord',
+            }),
+        ],
+        name: 'testProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const content = getFromRenderMap(renderMap, 'instructions/create_record.rs').content;
+
+    // Required either-signer: bare tuple type, new() param, .0 in seed.
+    codeContains(content, [
+        /authority: \(solana_address::Address, bool\),/,
+        /pub fn new\([^)]*authority: \(solana_address::Address, bool\)/,
+        `&self.authority.0,`,
+    ]);
+    codeDoesNotContains(content, [
+        `Option<(solana_address::Address, bool)>`,
+        `.map(|(k, _)| k).expect`,
+        `pub fn authority(&mut self`,
+    ]);
+});
+
+test('it renders required account as inline pdaNode seed without expect', () => {
+    const node = programNode({
+        instructions: [
+            instructionNode({
+                accounts: [
+                    instructionAccountNode({ isOptional: false, isSigner: false, isWritable: false, name: 'mint' }),
+                    instructionAccountNode({
+                        defaultValue: pdaValueNode(
+                            pdaNode({
+                                name: 'guard',
+                                seeds: [
+                                    constantPdaSeedNode(bytesTypeNode(), bytesValueNode('utf8', 'my_seed')),
+                                    variablePdaSeedNode('mint', publicKeyTypeNode()),
+                                ],
+                            }),
+                            [pdaSeedValueNode('mint', accountValueNode('mint'))],
+                        ),
+                        isOptional: false,
+                        isSigner: false,
+                        isWritable: true,
+                        name: 'guard',
+                    }),
+                ],
+                name: 'createGuard',
+            }),
+        ],
+        name: 'testProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const content = getFromRenderMap(renderMap, 'instructions/create_guard.rs').content;
+
+    // Required account as inline PDA seed — direct .as_ref(), no expect.
+    codeContains(content, [`self.mint.as_ref()`]);
+    codeDoesNotContains(content, [`self.mint.expect`]);
+});
+
+test('it renders required arg as pdaLinkNode seed without expect', () => {
+    const node = programNode({
+        instructions: [
+            instructionNode({
+                accounts: [
+                    instructionAccountNode({ isOptional: false, isSigner: true, isWritable: false, name: 'owner' }),
+                    instructionAccountNode({
+                        defaultValue: pdaValueNode(pdaLinkNode('record'), [
+                            pdaSeedValueNode('owner', accountValueNode('owner')),
+                            pdaSeedValueNode('label', argumentValueNode('label')),
+                        ]),
+                        isOptional: false,
+                        isSigner: false,
+                        isWritable: true,
+                        name: 'record',
+                    }),
+                ],
+                arguments: [instructionArgumentNode({ name: 'label', type: stringTypeNode('utf8') })],
+                name: 'createRecord',
+            }),
+        ],
+        name: 'testProgram',
+        pdas: [
+            pdaNode({
+                name: 'record',
+                seeds: [
+                    variablePdaSeedNode('owner', publicKeyTypeNode()),
+                    variablePdaSeedNode('label', stringTypeNode('utf8')),
+                ],
+            }),
+        ],
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const content = getFromRenderMap(renderMap, 'instructions/create_record.rs').content;
+
+    // Required arg in new().
+    codeContains(content, [/pub fn new\([^)]*label: TrailingStr/]);
+    // Required arg as PDA seed — no expect.
+    codeContains(content, [`self.label.clone(),`]);
+    codeDoesNotContains(content, [`self.label.clone().expect`]);
+});
+
+test('it renders mixed required accounts, PDA defaults, and publicKey defaults', () => {
+    const node = programNode({
+        instructions: [
+            instructionNode({
+                accounts: [
+                    instructionAccountNode({ isOptional: false, isSigner: true, isWritable: false, name: 'owner' }),
+                    instructionAccountNode({ isOptional: false, isSigner: false, isWritable: false, name: 'mint' }),
+                    instructionAccountNode({
+                        defaultValue: publicKeyValueNode('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
+                        isOptional: false,
+                        isSigner: false,
+                        isWritable: false,
+                        name: 'tokenProgram',
+                    }),
+                    instructionAccountNode({
+                        defaultValue: pdaValueNode(pdaLinkNode('ata'), [
+                            pdaSeedValueNode('owner', accountValueNode('owner')),
+                            pdaSeedValueNode('tokenProgram', accountValueNode('tokenProgram')),
+                            pdaSeedValueNode('mint', accountValueNode('mint')),
+                        ]),
+                        isOptional: false,
+                        isSigner: false,
+                        isWritable: true,
+                        name: 'ata',
+                    }),
+                ],
+                arguments: [instructionArgumentNode({ name: 'amount', type: numberTypeNode('u64') })],
+                name: 'createAta',
+            }),
+        ],
+        name: 'testProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const content = getFromRenderMap(renderMap, 'instructions/create_ata.rs').content;
+
+    // Required accounts and args in new().
+    codeContains(content, [
+        /pub fn new\(\s*owner: solana_address::Address,\s*mint: solana_address::Address,\s*amount: u64,/,
+        `#[derive(Clone, Debug)]`,
+    ]);
+
+    // publicKey default stays optional with setter.
+    codeContains(content, [
+        `pub fn token_program(&mut self`,
+        `unwrap_or(solana_address::address!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"))`,
+    ]);
+
+    // PDA account stays optional with setter.
+    codeContains(content, [`pub fn ata(&mut self`, /ata: Option<solana_address::Address>/]);
+
+    // Required accounts: no setters, no expect.
+    codeDoesNotContains(content, [
+        `pub fn owner(&mut self`,
+        `pub fn mint(&mut self`,
+        `pub fn amount(&mut self`,
+        `expect("owner is not set")`,
+        `expect("mint is not set")`,
+        `expect("amount is not set")`,
+    ]);
+
+    // PDA seed for required accounts uses direct access.
+    codeContains(content, [`&self.owner,`]);
+    // PDA seed for publicKey default uses unwrap_or.
+    codeContains(content, [
+        `&self.token_program.unwrap_or(solana_address::address!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"))`,
+    ]);
+    // PDA seed for required account 'mint' uses direct access.
+    codeContains(content, [`&self.mint,`]);
+});
+
+test('it renders programIdValueNode default account with unwrap_or program ID', () => {
+    const node = programNode({
+        instructions: [
+            instructionNode({
+                accounts: [
+                    instructionAccountNode({ isOptional: false, isSigner: false, isWritable: false, name: 'owner' }),
+                    instructionAccountNode({
+                        defaultValue: programIdValueNode(),
+                        isOptional: false,
+                        isSigner: false,
+                        isWritable: false,
+                        name: 'selfProgram',
+                    }),
+                ],
+                name: 'myInstruction',
+            }),
+        ],
+        name: 'testProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const content = getFromRenderMap(renderMap, 'instructions/my_instruction.rs').content;
+
+    // programIdValueNode account is builder-optional (Option in struct).
+    codeContains(content, [`self_program: Option<solana_address::Address>`, `pub fn self_program(&mut self`]);
+    // In struct literal, unwraps with program ID default.
+    codeContains(content, [`self.self_program.unwrap_or(crate::TEST_PROGRAM_ID)`]);
+    // Required account 'owner' is in new().
+    codeContains(content, [/pub fn new\([^)]*owner: solana_address::Address/]);
+    // programIdValueNode account is NOT in new().
+    codeDoesNotContains(content, [/pub fn new\([^)]*self_program/]);
+});
+
+test('it renders CPI builder with required accounts, args, and defaults', () => {
+    const node = programNode({
+        instructions: [
+            instructionNode({
+                accounts: [
+                    instructionAccountNode({ isOptional: false, isSigner: true, isWritable: false, name: 'owner' }),
+                    instructionAccountNode({
+                        defaultValue: publicKeyValueNode('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'),
+                        isOptional: false,
+                        isSigner: false,
+                        isWritable: false,
+                        name: 'tokenProgram',
+                    }),
+                    instructionAccountNode({
+                        defaultValue: programIdValueNode(),
+                        isOptional: false,
+                        isSigner: false,
+                        isWritable: false,
+                        name: 'selfProgram',
+                    }),
+                ],
+                arguments: [instructionArgumentNode({ name: 'amount', type: numberTypeNode('u64') })],
+                name: 'myInstruction',
+            }),
+        ],
+        name: 'testProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const content = getFromRenderMap(renderMap, 'instructions/my_instruction.rs').content;
+
+    const cpiSection = content.substring(content.indexOf('Instruction builder for `MyInstruction` via CPI'));
+
+    codeContains(cpiSection, [
+        /MyInstructionCpiBuilder<'a, 'b>/,
+        /pub fn new\(\s*__program: &'b solana_account_info::AccountInfo<'a>,\s*owner: &'b solana_account_info::AccountInfo<'a>,\s*token_program: &'b solana_account_info::AccountInfo<'a>,\s*amount: u64,/,
+    ]);
+    codeContains(cpiSection, [
+        /owner: &'b solana_account_info::AccountInfo<'a>,\s*token_program: &'b solana_account_info::AccountInfo<'a>,\s*self_program: Option<&'b solana_account_info::AccountInfo<'a>>,/,
+    ]);
+    codeContains(cpiSection, [/amount: u64,\s*\/\/\//]);
+    codeContains(cpiSection, [`self.instruction.self_program.unwrap_or(self.instruction.__program)`]);
+    codeContains(cpiSection, [/token_program: self\.instruction\.token_program,/]);
+    codeContains(cpiSection, [/\[signer\].*owner/, /\[optional\].*self_program/]);
+    codeDoesNotContains(cpiSection, [/\[optional\].*token_program/]);
+    codeDoesNotContains(cpiSection, [`pub fn token_program(`]);
+});
+
+test('it renders CPI builder with PDA-defaulted accounts as required constructor params', () => {
+    const node = programNode({
+        instructions: [
+            instructionNode({
+                accounts: [
+                    instructionAccountNode({ isOptional: false, isSigner: true, isWritable: false, name: 'owner' }),
+                    instructionAccountNode({ isOptional: false, isSigner: false, isWritable: false, name: 'mint' }),
+                    instructionAccountNode({
+                        defaultValue: pdaValueNode(pdaLinkNode('record'), [
+                            pdaSeedValueNode('owner', accountValueNode('owner')),
+                            pdaSeedValueNode('mint', accountValueNode('mint')),
+                        ]),
+                        isOptional: false,
+                        isSigner: false,
+                        isWritable: true,
+                        name: 'record',
+                    }),
+                    instructionAccountNode({
+                        defaultValue: programIdValueNode(),
+                        isOptional: false,
+                        isSigner: false,
+                        isWritable: false,
+                        name: 'selfProgram',
+                    }),
+                ],
+                name: 'createRecord',
+            }),
+        ],
+        name: 'testProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const content = getFromRenderMap(renderMap, 'instructions/create_record.rs').content;
+
+    const cpiSection = content.substring(content.indexOf('Instruction builder for `CreateRecord` via CPI'));
+
+    codeContains(cpiSection, [
+        /CreateRecordCpiBuilder<'a, 'b>/,
+        /pub fn new\(\s*__program: &'b solana_account_info::AccountInfo<'a>,\s*owner: &'b solana_account_info::AccountInfo<'a>,\s*mint: &'b solana_account_info::AccountInfo<'a>,\s*record: &'b solana_account_info::AccountInfo<'a>,/,
+    ]);
+    codeContains(cpiSection, [
+        /record: &'b solana_account_info::AccountInfo<'a>,\s*self_program: Option<&'b solana_account_info::AccountInfo<'a>>,/,
+    ]);
+    codeContains(cpiSection, [/record: self\.instruction\.record,/]);
+    codeContains(cpiSection, [`self.instruction.self_program.unwrap_or(self.instruction.__program)`]);
+    codeDoesNotContains(cpiSection, [`pub fn record(`]);
+    codeContains(cpiSection, [`pub fn self_program(`]);
+    codeDoesNotContains(cpiSection, [/\[optional\].*record/]);
+    codeContains(cpiSection, [/\[optional\].*self_program/]);
+
+    // Regular Builder still has record as optional (PDA auto-derived).
+    codeContains(content, [/pub struct CreateRecordBuilder \{[^}]*record: Option<solana_address::Address>/]);
+});
+
+test('it avoids CPI builder param name collision when instruction has an account named program', () => {
+    const node = programNode({
+        instructions: [
+            instructionNode({
+                accounts: [
+                    instructionAccountNode({ isOptional: false, isSigner: true, isWritable: false, name: 'user' }),
+                    instructionAccountNode({ isOptional: false, isSigner: false, isWritable: false, name: 'program' }),
+                ],
+                name: 'myInstruction',
+            }),
+        ],
+        name: 'testProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const content = getFromRenderMap(renderMap, 'instructions/my_instruction.rs').content;
+    const cpiSection = content.substring(content.indexOf('Instruction builder for `MyInstruction` via CPI'));
+
+    // CPI builder first param is __program (not program) to avoid collision.
+    codeContains(cpiSection, [/pub fn new\(\s*__program: &'b solana_account_info::AccountInfo<'a>,/]);
+    // The instruction account named 'program' is a separate param.
+    codeContains(cpiSection, [/program: &'b solana_account_info::AccountInfo<'a>,/]);
 });
 
 test('it uses unwrap_or with precomputed address for zero-variable-seed linked PDA', () => {

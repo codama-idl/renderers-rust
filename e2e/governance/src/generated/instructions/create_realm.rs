@@ -224,68 +224,59 @@ impl CreateRealmInstructionArgs {
 ///   12. `[optional]` max_community_voter_weight_addin
 ///   13. `[optional]` council_voter_weight_addin
 ///   14. `[optional]` max_council_voter_weight_addin
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct CreateRealmBuilder {
-    realm_account: Option<solana_address::Address>,
-    realm_authority: Option<solana_address::Address>,
-    community_token_mint: Option<solana_address::Address>,
-    community_token_holding_account: Option<solana_address::Address>,
-    payer: Option<solana_address::Address>,
+    realm_account: solana_address::Address,
+    realm_authority: solana_address::Address,
+    community_token_mint: solana_address::Address,
+    community_token_holding_account: solana_address::Address,
+    payer: solana_address::Address,
     system_program: Option<solana_address::Address>,
     token_program: Option<solana_address::Address>,
     rent: Option<solana_address::Address>,
     council_token_mint: Option<solana_address::Address>,
     council_token_holding_account: Option<solana_address::Address>,
-    realm_config: Option<solana_address::Address>,
+    realm_config: solana_address::Address,
     community_voter_weight_addin: Option<solana_address::Address>,
     max_community_voter_weight_addin: Option<solana_address::Address>,
     council_voter_weight_addin: Option<solana_address::Address>,
     max_council_voter_weight_addin: Option<solana_address::Address>,
-    name: Option<String>,
-    config_args: Option<RealmConfigParams>,
+    name: String,
+    config_args: RealmConfigParams,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl CreateRealmBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    /// Governance Realm account
-    #[inline(always)]
-    pub fn realm_account(&mut self, realm_account: solana_address::Address) -> &mut Self {
-        self.realm_account = Some(realm_account);
-        self
-    }
-    /// The authority of the Realm
-    #[inline(always)]
-    pub fn realm_authority(&mut self, realm_authority: solana_address::Address) -> &mut Self {
-        self.realm_authority = Some(realm_authority);
-        self
-    }
-    /// The mint address of the token to be used as the community mint
-    #[inline(always)]
-    pub fn community_token_mint(
-        &mut self,
+    pub fn new(
+        realm_account: solana_address::Address,
+        realm_authority: solana_address::Address,
         community_token_mint: solana_address::Address,
-    ) -> &mut Self {
-        self.community_token_mint = Some(community_token_mint);
-        self
-    }
-    /// The account to hold the community tokens.
-    ///     PDA seeds=['governance', realm, community_mint]
-    #[inline(always)]
-    pub fn community_token_holding_account(
-        &mut self,
         community_token_holding_account: solana_address::Address,
-    ) -> &mut Self {
-        self.community_token_holding_account = Some(community_token_holding_account);
-        self
-    }
-    /// the payer of this transaction
-    #[inline(always)]
-    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
-        self.payer = Some(payer);
-        self
+        payer: solana_address::Address,
+        realm_config: solana_address::Address,
+        name: String,
+        config_args: RealmConfigParams,
+    ) -> Self {
+        Self {
+            realm_account,
+            realm_authority,
+            community_token_mint,
+            community_token_holding_account,
+            payer,
+            system_program: None,
+            token_program: None,
+            rent: None,
+            council_token_mint: None,
+            council_token_holding_account: None,
+            realm_config,
+            community_voter_weight_addin: None,
+            max_community_voter_weight_addin: None,
+            council_voter_weight_addin: None,
+            max_council_voter_weight_addin: None,
+            name,
+            config_args,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
     /// System Program
@@ -330,12 +321,6 @@ impl CreateRealmBuilder {
         self.council_token_holding_account = council_token_holding_account;
         self
     }
-    /// Realm Config account
-    #[inline(always)]
-    pub fn realm_config(&mut self, realm_config: solana_address::Address) -> &mut Self {
-        self.realm_config = Some(realm_config);
-        self
-    }
     /// `[optional account]`
     /// Optional Community Voter Weight Addin Program Id
     #[inline(always)]
@@ -376,16 +361,6 @@ impl CreateRealmBuilder {
         self.max_council_voter_weight_addin = max_council_voter_weight_addin;
         self
     }
-    #[inline(always)]
-    pub fn name(&mut self, name: String) -> &mut Self {
-        self.name = Some(name);
-        self
-    }
-    #[inline(always)]
-    pub fn config_args(&mut self, config_args: RealmConfigParams) -> &mut Self {
-        self.config_args = Some(config_args);
-        self
-    }
     /// Add an additional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(&mut self, account: solana_instruction::AccountMeta) -> &mut Self {
@@ -403,36 +378,47 @@ impl CreateRealmBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let realm_account = self.realm_account;
+        let realm_authority = self.realm_authority;
+        let community_token_mint = self.community_token_mint;
+        let community_token_holding_account = self.community_token_holding_account;
+        let payer = self.payer;
+        let system_program = self
+            .system_program
+            .unwrap_or(solana_address::address!("11111111111111111111111111111111"));
+        let token_program = self.token_program.unwrap_or(solana_address::address!(
+            "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        ));
+        let rent = self.rent.unwrap_or(solana_address::address!(
+            "SysvarRent111111111111111111111111111111111"
+        ));
+        let council_token_mint = self.council_token_mint;
+        let council_token_holding_account = self.council_token_holding_account;
+        let realm_config = self.realm_config;
+        let community_voter_weight_addin = self.community_voter_weight_addin;
+        let max_community_voter_weight_addin = self.max_community_voter_weight_addin;
+        let council_voter_weight_addin = self.council_voter_weight_addin;
+        let max_council_voter_weight_addin = self.max_council_voter_weight_addin;
         let accounts = CreateRealm {
-            realm_account: self.realm_account.expect("realm_account is not set"),
-            realm_authority: self.realm_authority.expect("realm_authority is not set"),
-            community_token_mint: self
-                .community_token_mint
-                .expect("community_token_mint is not set"),
-            community_token_holding_account: self
-                .community_token_holding_account
-                .expect("community_token_holding_account is not set"),
-            payer: self.payer.expect("payer is not set"),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
-            token_program: self.token_program.unwrap_or(solana_address::address!(
-                "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-            )),
-            rent: self.rent.unwrap_or(solana_address::address!(
-                "SysvarRent111111111111111111111111111111111"
-            )),
-            council_token_mint: self.council_token_mint,
-            council_token_holding_account: self.council_token_holding_account,
-            realm_config: self.realm_config.expect("realm_config is not set"),
-            community_voter_weight_addin: self.community_voter_weight_addin,
-            max_community_voter_weight_addin: self.max_community_voter_weight_addin,
-            council_voter_weight_addin: self.council_voter_weight_addin,
-            max_council_voter_weight_addin: self.max_council_voter_weight_addin,
+            realm_account,
+            realm_authority,
+            community_token_mint,
+            community_token_holding_account,
+            payer,
+            system_program,
+            token_program,
+            rent,
+            council_token_mint,
+            council_token_holding_account,
+            realm_config,
+            community_voter_weight_addin,
+            max_community_voter_weight_addin,
+            council_voter_weight_addin,
+            max_council_voter_weight_addin,
         };
         let args = CreateRealmInstructionArgs {
-            name: self.name.clone().expect("name is not set"),
-            config_args: self.config_args.clone().expect("config_args is not set"),
+            name: self.name.clone(),
+            config_args: self.config_args.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -748,96 +734,42 @@ pub struct CreateRealmCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> CreateRealmCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        realm_account: &'b solana_account_info::AccountInfo<'a>,
+        realm_authority: &'b solana_account_info::AccountInfo<'a>,
+        community_token_mint: &'b solana_account_info::AccountInfo<'a>,
+        community_token_holding_account: &'b solana_account_info::AccountInfo<'a>,
+        payer: &'b solana_account_info::AccountInfo<'a>,
+        system_program: &'b solana_account_info::AccountInfo<'a>,
+        token_program: &'b solana_account_info::AccountInfo<'a>,
+        rent: &'b solana_account_info::AccountInfo<'a>,
+        realm_config: &'b solana_account_info::AccountInfo<'a>,
+        name: String,
+        config_args: RealmConfigParams,
+    ) -> Self {
         let instruction = Box::new(CreateRealmCpiBuilderInstruction {
-            __program: program,
-            realm_account: None,
-            realm_authority: None,
-            community_token_mint: None,
-            community_token_holding_account: None,
-            payer: None,
-            system_program: None,
-            token_program: None,
-            rent: None,
+            __program,
+            realm_account,
+            realm_authority,
+            community_token_mint,
+            community_token_holding_account,
+            payer,
+            system_program,
+            token_program,
+            rent,
             council_token_mint: None,
             council_token_holding_account: None,
-            realm_config: None,
+            realm_config,
             community_voter_weight_addin: None,
             max_community_voter_weight_addin: None,
             council_voter_weight_addin: None,
             max_council_voter_weight_addin: None,
-            name: None,
-            config_args: None,
+            name,
+            config_args,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// Governance Realm account
-    #[inline(always)]
-    pub fn realm_account(
-        &mut self,
-        realm_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.realm_account = Some(realm_account);
-        self
-    }
-    /// The authority of the Realm
-    #[inline(always)]
-    pub fn realm_authority(
-        &mut self,
-        realm_authority: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.realm_authority = Some(realm_authority);
-        self
-    }
-    /// The mint address of the token to be used as the community mint
-    #[inline(always)]
-    pub fn community_token_mint(
-        &mut self,
-        community_token_mint: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.community_token_mint = Some(community_token_mint);
-        self
-    }
-    /// The account to hold the community tokens.
-    ///     PDA seeds=['governance', realm, community_mint]
-    #[inline(always)]
-    pub fn community_token_holding_account(
-        &mut self,
-        community_token_holding_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.community_token_holding_account = Some(community_token_holding_account);
-        self
-    }
-    /// the payer of this transaction
-    #[inline(always)]
-    pub fn payer(&mut self, payer: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.payer = Some(payer);
-        self
-    }
-    /// System Program
-    #[inline(always)]
-    pub fn system_program(
-        &mut self,
-        system_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.system_program = Some(system_program);
-        self
-    }
-    /// SPL Token Program
-    #[inline(always)]
-    pub fn token_program(
-        &mut self,
-        token_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.token_program = Some(token_program);
-        self
-    }
-    /// SysVar Rent
-    #[inline(always)]
-    pub fn rent(&mut self, rent: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.rent = Some(rent);
-        self
     }
     /// `[optional account]`
     /// The mint address of the token to be used as the council mint
@@ -859,15 +791,6 @@ impl<'a, 'b> CreateRealmCpiBuilder<'a, 'b> {
         council_token_holding_account: Option<&'b solana_account_info::AccountInfo<'a>>,
     ) -> &mut Self {
         self.instruction.council_token_holding_account = council_token_holding_account;
-        self
-    }
-    /// Realm Config account
-    #[inline(always)]
-    pub fn realm_config(
-        &mut self,
-        realm_config: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.realm_config = Some(realm_config);
         self
     }
     /// `[optional account]`
@@ -910,16 +833,6 @@ impl<'a, 'b> CreateRealmCpiBuilder<'a, 'b> {
         self.instruction.max_council_voter_weight_addin = max_council_voter_weight_addin;
         self
     }
-    #[inline(always)]
-    pub fn name(&mut self, name: String) -> &mut Self {
-        self.instruction.name = Some(name);
-        self
-    }
-    #[inline(always)]
-    pub fn config_args(&mut self, config_args: RealmConfigParams) -> &mut Self {
-        self.instruction.config_args = Some(config_args);
-        self
-    }
     /// Add an additional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(
@@ -955,65 +868,25 @@ impl<'a, 'b> CreateRealmCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = CreateRealmInstructionArgs {
-            name: self.instruction.name.clone().expect("name is not set"),
-            config_args: self
-                .instruction
-                .config_args
-                .clone()
-                .expect("config_args is not set"),
+            name: self.instruction.name.clone(),
+            config_args: self.instruction.config_args.clone(),
         };
         let instruction = CreateRealmCpi {
             __program: self.instruction.__program,
-
-            realm_account: self
-                .instruction
-                .realm_account
-                .expect("realm_account is not set"),
-
-            realm_authority: self
-                .instruction
-                .realm_authority
-                .expect("realm_authority is not set"),
-
-            community_token_mint: self
-                .instruction
-                .community_token_mint
-                .expect("community_token_mint is not set"),
-
-            community_token_holding_account: self
-                .instruction
-                .community_token_holding_account
-                .expect("community_token_holding_account is not set"),
-
-            payer: self.instruction.payer.expect("payer is not set"),
-
-            system_program: self
-                .instruction
-                .system_program
-                .expect("system_program is not set"),
-
-            token_program: self
-                .instruction
-                .token_program
-                .expect("token_program is not set"),
-
-            rent: self.instruction.rent.expect("rent is not set"),
-
+            realm_account: self.instruction.realm_account,
+            realm_authority: self.instruction.realm_authority,
+            community_token_mint: self.instruction.community_token_mint,
+            community_token_holding_account: self.instruction.community_token_holding_account,
+            payer: self.instruction.payer,
+            system_program: self.instruction.system_program,
+            token_program: self.instruction.token_program,
+            rent: self.instruction.rent,
             council_token_mint: self.instruction.council_token_mint,
-
             council_token_holding_account: self.instruction.council_token_holding_account,
-
-            realm_config: self
-                .instruction
-                .realm_config
-                .expect("realm_config is not set"),
-
+            realm_config: self.instruction.realm_config,
             community_voter_weight_addin: self.instruction.community_voter_weight_addin,
-
             max_community_voter_weight_addin: self.instruction.max_community_voter_weight_addin,
-
             council_voter_weight_addin: self.instruction.council_voter_weight_addin,
-
             max_council_voter_weight_addin: self.instruction.max_council_voter_weight_addin,
             __args: args,
         };
@@ -1027,23 +900,23 @@ impl<'a, 'b> CreateRealmCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct CreateRealmCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    realm_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    realm_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
-    community_token_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
-    community_token_holding_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    payer: Option<&'b solana_account_info::AccountInfo<'a>>,
-    system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    token_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    rent: Option<&'b solana_account_info::AccountInfo<'a>>,
+    realm_account: &'b solana_account_info::AccountInfo<'a>,
+    realm_authority: &'b solana_account_info::AccountInfo<'a>,
+    community_token_mint: &'b solana_account_info::AccountInfo<'a>,
+    community_token_holding_account: &'b solana_account_info::AccountInfo<'a>,
+    payer: &'b solana_account_info::AccountInfo<'a>,
+    system_program: &'b solana_account_info::AccountInfo<'a>,
+    token_program: &'b solana_account_info::AccountInfo<'a>,
+    rent: &'b solana_account_info::AccountInfo<'a>,
     council_token_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
     council_token_holding_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    realm_config: Option<&'b solana_account_info::AccountInfo<'a>>,
+    realm_config: &'b solana_account_info::AccountInfo<'a>,
     community_voter_weight_addin: Option<&'b solana_account_info::AccountInfo<'a>>,
     max_community_voter_weight_addin: Option<&'b solana_account_info::AccountInfo<'a>>,
     council_voter_weight_addin: Option<&'b solana_account_info::AccountInfo<'a>>,
     max_council_voter_weight_addin: Option<&'b solana_account_info::AccountInfo<'a>>,
-    name: Option<String>,
-    config_args: Option<RealmConfigParams>,
+    name: String,
+    config_args: RealmConfigParams,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

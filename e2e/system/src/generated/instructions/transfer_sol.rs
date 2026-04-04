@@ -86,32 +86,26 @@ impl TransferSolInstructionArgs {
 ///
 ///   0. `[writable, signer]` source
 ///   1. `[writable]` destination
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct TransferSolBuilder {
-    source: Option<solana_address::Address>,
-    destination: Option<solana_address::Address>,
-    amount: Option<u64>,
+    source: solana_address::Address,
+    destination: solana_address::Address,
+    amount: u64,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl TransferSolBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    #[inline(always)]
-    pub fn source(&mut self, source: solana_address::Address) -> &mut Self {
-        self.source = Some(source);
-        self
-    }
-    #[inline(always)]
-    pub fn destination(&mut self, destination: solana_address::Address) -> &mut Self {
-        self.destination = Some(destination);
-        self
-    }
-    #[inline(always)]
-    pub fn amount(&mut self, amount: u64) -> &mut Self {
-        self.amount = Some(amount);
-        self
+    pub fn new(
+        source: solana_address::Address,
+        destination: solana_address::Address,
+        amount: u64,
+    ) -> Self {
+        Self {
+            source,
+            destination,
+            amount,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -130,12 +124,14 @@ impl TransferSolBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let source = self.source;
+        let destination = self.destination;
         let accounts = TransferSol {
-            source: self.source.expect("source is not set"),
-            destination: self.destination.expect("destination is not set"),
+            source,
+            destination,
         };
         let args = TransferSolInstructionArgs {
-            amount: self.amount.clone().expect("amount is not set"),
+            amount: self.amount.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -247,33 +243,20 @@ pub struct TransferSolCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> TransferSolCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        source: &'b solana_account_info::AccountInfo<'a>,
+        destination: &'b solana_account_info::AccountInfo<'a>,
+        amount: u64,
+    ) -> Self {
         let instruction = Box::new(TransferSolCpiBuilderInstruction {
-            __program: program,
-            source: None,
-            destination: None,
-            amount: None,
+            __program,
+            source,
+            destination,
+            amount,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn source(&mut self, source: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.source = Some(source);
-        self
-    }
-    #[inline(always)]
-    pub fn destination(
-        &mut self,
-        destination: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.destination = Some(destination);
-        self
-    }
-    #[inline(always)]
-    pub fn amount(&mut self, amount: u64) -> &mut Self {
-        self.instruction.amount = Some(amount);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -310,17 +293,12 @@ impl<'a, 'b> TransferSolCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = TransferSolInstructionArgs {
-            amount: self.instruction.amount.clone().expect("amount is not set"),
+            amount: self.instruction.amount.clone(),
         };
         let instruction = TransferSolCpi {
             __program: self.instruction.__program,
-
-            source: self.instruction.source.expect("source is not set"),
-
-            destination: self
-                .instruction
-                .destination
-                .expect("destination is not set"),
+            source: self.instruction.source,
+            destination: self.instruction.destination,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -333,9 +311,9 @@ impl<'a, 'b> TransferSolCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct TransferSolCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    source: Option<&'b solana_account_info::AccountInfo<'a>>,
-    destination: Option<&'b solana_account_info::AccountInfo<'a>>,
-    amount: Option<u64>,
+    source: &'b solana_account_info::AccountInfo<'a>,
+    destination: &'b solana_account_info::AccountInfo<'a>,
+    amount: u64,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

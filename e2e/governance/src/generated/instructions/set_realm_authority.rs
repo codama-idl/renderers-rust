@@ -109,28 +109,28 @@ impl SetRealmAuthorityInstructionArgs {
 ///   0. `[writable]` realm_account
 ///   1. `[signer]` realm_authority
 ///   2. `[optional]` new_realm_authority
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct SetRealmAuthorityBuilder {
-    realm_account: Option<solana_address::Address>,
-    realm_authority: Option<solana_address::Address>,
+    realm_account: solana_address::Address,
+    realm_authority: solana_address::Address,
     new_realm_authority: Option<solana_address::Address>,
-    action: Option<SetRealmAuthorityAction>,
+    action: SetRealmAuthorityAction,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl SetRealmAuthorityBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    #[inline(always)]
-    pub fn realm_account(&mut self, realm_account: solana_address::Address) -> &mut Self {
-        self.realm_account = Some(realm_account);
-        self
-    }
-    #[inline(always)]
-    pub fn realm_authority(&mut self, realm_authority: solana_address::Address) -> &mut Self {
-        self.realm_authority = Some(realm_authority);
-        self
+    pub fn new(
+        realm_account: solana_address::Address,
+        realm_authority: solana_address::Address,
+        action: SetRealmAuthorityAction,
+    ) -> Self {
+        Self {
+            realm_account,
+            realm_authority,
+            new_realm_authority: None,
+            action,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// `[optional account]`
     /// Must be one of the realm governances when set
@@ -140,11 +140,6 @@ impl SetRealmAuthorityBuilder {
         new_realm_authority: Option<solana_address::Address>,
     ) -> &mut Self {
         self.new_realm_authority = new_realm_authority;
-        self
-    }
-    #[inline(always)]
-    pub fn action(&mut self, action: SetRealmAuthorityAction) -> &mut Self {
-        self.action = Some(action);
         self
     }
     /// Add an additional account to the instruction.
@@ -164,13 +159,16 @@ impl SetRealmAuthorityBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let realm_account = self.realm_account;
+        let realm_authority = self.realm_authority;
+        let new_realm_authority = self.new_realm_authority;
         let accounts = SetRealmAuthority {
-            realm_account: self.realm_account.expect("realm_account is not set"),
-            realm_authority: self.realm_authority.expect("realm_authority is not set"),
-            new_realm_authority: self.new_realm_authority,
+            realm_account,
+            realm_authority,
+            new_realm_authority,
         };
         let args = SetRealmAuthorityInstructionArgs {
-            action: self.action.clone().expect("action is not set"),
+            action: self.action.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -307,32 +305,21 @@ pub struct SetRealmAuthorityCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> SetRealmAuthorityCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        realm_account: &'b solana_account_info::AccountInfo<'a>,
+        realm_authority: &'b solana_account_info::AccountInfo<'a>,
+        action: SetRealmAuthorityAction,
+    ) -> Self {
         let instruction = Box::new(SetRealmAuthorityCpiBuilderInstruction {
-            __program: program,
-            realm_account: None,
-            realm_authority: None,
+            __program,
+            realm_account,
+            realm_authority,
             new_realm_authority: None,
-            action: None,
+            action,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn realm_account(
-        &mut self,
-        realm_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.realm_account = Some(realm_account);
-        self
-    }
-    #[inline(always)]
-    pub fn realm_authority(
-        &mut self,
-        realm_authority: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.realm_authority = Some(realm_authority);
-        self
     }
     /// `[optional account]`
     /// Must be one of the realm governances when set
@@ -342,11 +329,6 @@ impl<'a, 'b> SetRealmAuthorityCpiBuilder<'a, 'b> {
         new_realm_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
     ) -> &mut Self {
         self.instruction.new_realm_authority = new_realm_authority;
-        self
-    }
-    #[inline(always)]
-    pub fn action(&mut self, action: SetRealmAuthorityAction) -> &mut Self {
-        self.instruction.action = Some(action);
         self
     }
     /// Add an additional account to the instruction.
@@ -384,21 +366,12 @@ impl<'a, 'b> SetRealmAuthorityCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = SetRealmAuthorityInstructionArgs {
-            action: self.instruction.action.clone().expect("action is not set"),
+            action: self.instruction.action.clone(),
         };
         let instruction = SetRealmAuthorityCpi {
             __program: self.instruction.__program,
-
-            realm_account: self
-                .instruction
-                .realm_account
-                .expect("realm_account is not set"),
-
-            realm_authority: self
-                .instruction
-                .realm_authority
-                .expect("realm_authority is not set"),
-
+            realm_account: self.instruction.realm_account,
+            realm_authority: self.instruction.realm_authority,
             new_realm_authority: self.instruction.new_realm_authority,
             __args: args,
         };
@@ -412,10 +385,10 @@ impl<'a, 'b> SetRealmAuthorityCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct SetRealmAuthorityCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    realm_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    realm_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
+    realm_account: &'b solana_account_info::AccountInfo<'a>,
+    realm_authority: &'b solana_account_info::AccountInfo<'a>,
     new_realm_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
-    action: Option<SetRealmAuthorityAction>,
+    action: SetRealmAuthorityAction,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

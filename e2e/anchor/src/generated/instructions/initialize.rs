@@ -100,20 +100,33 @@ impl Default for InitializeInstructionData {
 ///   3. `[writable, signer]` transfer_hook_authority
 ///   4. `[optional]` system_program (default to `11111111111111111111111111111111`)
 ///   5. `[writable, signer]` payer
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct InitializeBuilder {
     extra_metas_account: Option<solana_address::Address>,
-    guard: Option<solana_address::Address>,
-    mint: Option<solana_address::Address>,
-    transfer_hook_authority: Option<solana_address::Address>,
+    guard: solana_address::Address,
+    mint: solana_address::Address,
+    transfer_hook_authority: solana_address::Address,
     system_program: Option<solana_address::Address>,
-    payer: Option<solana_address::Address>,
+    payer: solana_address::Address,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl InitializeBuilder {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(
+        guard: solana_address::Address,
+        mint: solana_address::Address,
+        transfer_hook_authority: solana_address::Address,
+        payer: solana_address::Address,
+    ) -> Self {
+        Self {
+            extra_metas_account: None,
+            guard,
+            mint,
+            transfer_hook_authority,
+            system_program: None,
+            payer,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// `[optional account, default to PDA derived from 'extraMetasAccount']`
     #[inline(always)]
@@ -124,33 +137,10 @@ impl InitializeBuilder {
         self.extra_metas_account = Some(extra_metas_account);
         self
     }
-    #[inline(always)]
-    pub fn guard(&mut self, guard: solana_address::Address) -> &mut Self {
-        self.guard = Some(guard);
-        self
-    }
-    #[inline(always)]
-    pub fn mint(&mut self, mint: solana_address::Address) -> &mut Self {
-        self.mint = Some(mint);
-        self
-    }
-    #[inline(always)]
-    pub fn transfer_hook_authority(
-        &mut self,
-        transfer_hook_authority: solana_address::Address,
-    ) -> &mut Self {
-        self.transfer_hook_authority = Some(transfer_hook_authority);
-        self
-    }
     /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_address::Address) -> &mut Self {
         self.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
-        self.payer = Some(payer);
         self
     }
     /// Add an additional account to the instruction.
@@ -170,25 +160,23 @@ impl InitializeBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
-        let extra_metas_account = self.extra_metas_account.unwrap_or_else(|| {
-            crate::pdas::find_extra_metas_account_pda(
-                &self
-                    .mint
-                    .expect("mint is needed for extra_metas_account PDA"),
-            )
-            .0
-        });
+        let extra_metas_account = self
+            .extra_metas_account
+            .unwrap_or_else(|| crate::pdas::find_extra_metas_account_pda(&self.mint).0);
+        let guard = self.guard;
+        let mint = self.mint;
+        let transfer_hook_authority = self.transfer_hook_authority;
+        let system_program = self
+            .system_program
+            .unwrap_or(solana_address::address!("11111111111111111111111111111111"));
+        let payer = self.payer;
         let accounts = Initialize {
             extra_metas_account,
-            guard: self.guard.expect("guard is not set"),
-            mint: self.mint.expect("mint is not set"),
-            transfer_hook_authority: self
-                .transfer_hook_authority
-                .expect("transfer_hook_authority is not set"),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
-            payer: self.payer.expect("payer is not set"),
+            guard,
+            mint,
+            transfer_hook_authority,
+            system_program,
+            payer,
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
@@ -338,57 +326,26 @@ pub struct InitializeCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> InitializeCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        extra_metas_account: &'b solana_account_info::AccountInfo<'a>,
+        guard: &'b solana_account_info::AccountInfo<'a>,
+        mint: &'b solana_account_info::AccountInfo<'a>,
+        transfer_hook_authority: &'b solana_account_info::AccountInfo<'a>,
+        system_program: &'b solana_account_info::AccountInfo<'a>,
+        payer: &'b solana_account_info::AccountInfo<'a>,
+    ) -> Self {
         let instruction = Box::new(InitializeCpiBuilderInstruction {
-            __program: program,
-            extra_metas_account: None,
-            guard: None,
-            mint: None,
-            transfer_hook_authority: None,
-            system_program: None,
-            payer: None,
+            __program,
+            extra_metas_account,
+            guard,
+            mint,
+            transfer_hook_authority,
+            system_program,
+            payer,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn extra_metas_account(
-        &mut self,
-        extra_metas_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.extra_metas_account = Some(extra_metas_account);
-        self
-    }
-    #[inline(always)]
-    pub fn guard(&mut self, guard: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.guard = Some(guard);
-        self
-    }
-    #[inline(always)]
-    pub fn mint(&mut self, mint: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.mint = Some(mint);
-        self
-    }
-    #[inline(always)]
-    pub fn transfer_hook_authority(
-        &mut self,
-        transfer_hook_authority: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.transfer_hook_authority = Some(transfer_hook_authority);
-        self
-    }
-    #[inline(always)]
-    pub fn system_program(
-        &mut self,
-        system_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn payer(&mut self, payer: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.payer = Some(payer);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -426,27 +383,12 @@ impl<'a, 'b> InitializeCpiBuilder<'a, 'b> {
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let instruction = InitializeCpi {
             __program: self.instruction.__program,
-
-            extra_metas_account: self
-                .instruction
-                .extra_metas_account
-                .expect("extra_metas_account is not set"),
-
-            guard: self.instruction.guard.expect("guard is not set"),
-
-            mint: self.instruction.mint.expect("mint is not set"),
-
-            transfer_hook_authority: self
-                .instruction
-                .transfer_hook_authority
-                .expect("transfer_hook_authority is not set"),
-
-            system_program: self
-                .instruction
-                .system_program
-                .expect("system_program is not set"),
-
-            payer: self.instruction.payer.expect("payer is not set"),
+            extra_metas_account: self.instruction.extra_metas_account,
+            guard: self.instruction.guard,
+            mint: self.instruction.mint,
+            transfer_hook_authority: self.instruction.transfer_hook_authority,
+            system_program: self.instruction.system_program,
+            payer: self.instruction.payer,
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -458,12 +400,12 @@ impl<'a, 'b> InitializeCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct InitializeCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    extra_metas_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    guard: Option<&'b solana_account_info::AccountInfo<'a>>,
-    mint: Option<&'b solana_account_info::AccountInfo<'a>>,
-    transfer_hook_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
-    system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    payer: Option<&'b solana_account_info::AccountInfo<'a>>,
+    extra_metas_account: &'b solana_account_info::AccountInfo<'a>,
+    guard: &'b solana_account_info::AccountInfo<'a>,
+    mint: &'b solana_account_info::AccountInfo<'a>,
+    transfer_hook_authority: &'b solana_account_info::AccountInfo<'a>,
+    system_program: &'b solana_account_info::AccountInfo<'a>,
+    payer: &'b solana_account_info::AccountInfo<'a>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

@@ -138,65 +138,51 @@ impl InsertTransactionInstructionArgs {
 ///   5. `[signer]` payer
 ///   6. `[optional]` system_program (default to `11111111111111111111111111111111`)
 ///   7. `[optional]` rent (default to `SysvarRent111111111111111111111111111111111`)
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct InsertTransactionBuilder {
-    governance_account: Option<solana_address::Address>,
-    proposal_account: Option<solana_address::Address>,
-    token_owner_record: Option<solana_address::Address>,
-    governance_authority: Option<solana_address::Address>,
-    proposal_transaction_account: Option<solana_address::Address>,
-    payer: Option<solana_address::Address>,
+    governance_account: solana_address::Address,
+    proposal_account: solana_address::Address,
+    token_owner_record: solana_address::Address,
+    governance_authority: solana_address::Address,
+    proposal_transaction_account: solana_address::Address,
+    payer: solana_address::Address,
     system_program: Option<solana_address::Address>,
     rent: Option<solana_address::Address>,
-    option_index: Option<u8>,
-    index: Option<u16>,
-    hold_up_time: Option<u32>,
-    instructions: Option<Vec<InstructionData>>,
+    option_index: u8,
+    index: u16,
+    hold_up_time: u32,
+    instructions: Vec<InstructionData>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl InsertTransactionBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    #[inline(always)]
-    pub fn governance_account(&mut self, governance_account: solana_address::Address) -> &mut Self {
-        self.governance_account = Some(governance_account);
-        self
-    }
-    #[inline(always)]
-    pub fn proposal_account(&mut self, proposal_account: solana_address::Address) -> &mut Self {
-        self.proposal_account = Some(proposal_account);
-        self
-    }
-    /// TokenOwnerRecord account of the Proposal owner
-    #[inline(always)]
-    pub fn token_owner_record(&mut self, token_owner_record: solana_address::Address) -> &mut Self {
-        self.token_owner_record = Some(token_owner_record);
-        self
-    }
-    /// Governance Authority (Token Owner or Governance Delegate)
-    #[inline(always)]
-    pub fn governance_authority(
-        &mut self,
+    pub fn new(
+        governance_account: solana_address::Address,
+        proposal_account: solana_address::Address,
+        token_owner_record: solana_address::Address,
         governance_authority: solana_address::Address,
-    ) -> &mut Self {
-        self.governance_authority = Some(governance_authority);
-        self
-    }
-    /// ProposalTransaction, account. PDA seeds: ['governance', proposal, option_index, index]
-    #[inline(always)]
-    pub fn proposal_transaction_account(
-        &mut self,
         proposal_transaction_account: solana_address::Address,
-    ) -> &mut Self {
-        self.proposal_transaction_account = Some(proposal_transaction_account);
-        self
-    }
-    #[inline(always)]
-    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
-        self.payer = Some(payer);
-        self
+        payer: solana_address::Address,
+        option_index: u8,
+        index: u16,
+        hold_up_time: u32,
+        instructions: Vec<InstructionData>,
+    ) -> Self {
+        Self {
+            governance_account,
+            proposal_account,
+            token_owner_record,
+            governance_authority,
+            proposal_transaction_account,
+            payer,
+            system_program: None,
+            rent: None,
+            option_index,
+            index,
+            hold_up_time,
+            instructions,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
@@ -208,26 +194,6 @@ impl InsertTransactionBuilder {
     #[inline(always)]
     pub fn rent(&mut self, rent: solana_address::Address) -> &mut Self {
         self.rent = Some(rent);
-        self
-    }
-    #[inline(always)]
-    pub fn option_index(&mut self, option_index: u8) -> &mut Self {
-        self.option_index = Some(option_index);
-        self
-    }
-    #[inline(always)]
-    pub fn index(&mut self, index: u16) -> &mut Self {
-        self.index = Some(index);
-        self
-    }
-    #[inline(always)]
-    pub fn hold_up_time(&mut self, hold_up_time: u32) -> &mut Self {
-        self.hold_up_time = Some(hold_up_time);
-        self
-    }
-    #[inline(always)]
-    pub fn instructions(&mut self, instructions: Vec<InstructionData>) -> &mut Self {
-        self.instructions = Some(instructions);
         self
     }
     /// Add an additional account to the instruction.
@@ -247,33 +213,33 @@ impl InsertTransactionBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let governance_account = self.governance_account;
+        let proposal_account = self.proposal_account;
+        let token_owner_record = self.token_owner_record;
+        let governance_authority = self.governance_authority;
+        let proposal_transaction_account = self.proposal_transaction_account;
+        let payer = self.payer;
+        let system_program = self
+            .system_program
+            .unwrap_or(solana_address::address!("11111111111111111111111111111111"));
+        let rent = self.rent.unwrap_or(solana_address::address!(
+            "SysvarRent111111111111111111111111111111111"
+        ));
         let accounts = InsertTransaction {
-            governance_account: self
-                .governance_account
-                .expect("governance_account is not set"),
-            proposal_account: self.proposal_account.expect("proposal_account is not set"),
-            token_owner_record: self
-                .token_owner_record
-                .expect("token_owner_record is not set"),
-            governance_authority: self
-                .governance_authority
-                .expect("governance_authority is not set"),
-            proposal_transaction_account: self
-                .proposal_transaction_account
-                .expect("proposal_transaction_account is not set"),
-            payer: self.payer.expect("payer is not set"),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
-            rent: self.rent.unwrap_or(solana_address::address!(
-                "SysvarRent111111111111111111111111111111111"
-            )),
+            governance_account,
+            proposal_account,
+            token_owner_record,
+            governance_authority,
+            proposal_transaction_account,
+            payer,
+            system_program,
+            rent,
         };
         let args = InsertTransactionInstructionArgs {
-            option_index: self.option_index.clone().expect("option_index is not set"),
-            index: self.index.clone().expect("index is not set"),
-            hold_up_time: self.hold_up_time.clone().expect("hold_up_time is not set"),
-            instructions: self.instructions.clone().expect("instructions is not set"),
+            option_index: self.option_index.clone(),
+            index: self.index.clone(),
+            hold_up_time: self.hold_up_time.clone(),
+            instructions: self.instructions.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -456,105 +422,38 @@ pub struct InsertTransactionCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> InsertTransactionCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        governance_account: &'b solana_account_info::AccountInfo<'a>,
+        proposal_account: &'b solana_account_info::AccountInfo<'a>,
+        token_owner_record: &'b solana_account_info::AccountInfo<'a>,
+        governance_authority: &'b solana_account_info::AccountInfo<'a>,
+        proposal_transaction_account: &'b solana_account_info::AccountInfo<'a>,
+        payer: &'b solana_account_info::AccountInfo<'a>,
+        system_program: &'b solana_account_info::AccountInfo<'a>,
+        rent: &'b solana_account_info::AccountInfo<'a>,
+        option_index: u8,
+        index: u16,
+        hold_up_time: u32,
+        instructions: Vec<InstructionData>,
+    ) -> Self {
         let instruction = Box::new(InsertTransactionCpiBuilderInstruction {
-            __program: program,
-            governance_account: None,
-            proposal_account: None,
-            token_owner_record: None,
-            governance_authority: None,
-            proposal_transaction_account: None,
-            payer: None,
-            system_program: None,
-            rent: None,
-            option_index: None,
-            index: None,
-            hold_up_time: None,
-            instructions: None,
+            __program,
+            governance_account,
+            proposal_account,
+            token_owner_record,
+            governance_authority,
+            proposal_transaction_account,
+            payer,
+            system_program,
+            rent,
+            option_index,
+            index,
+            hold_up_time,
+            instructions,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn governance_account(
-        &mut self,
-        governance_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governance_account = Some(governance_account);
-        self
-    }
-    #[inline(always)]
-    pub fn proposal_account(
-        &mut self,
-        proposal_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.proposal_account = Some(proposal_account);
-        self
-    }
-    /// TokenOwnerRecord account of the Proposal owner
-    #[inline(always)]
-    pub fn token_owner_record(
-        &mut self,
-        token_owner_record: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.token_owner_record = Some(token_owner_record);
-        self
-    }
-    /// Governance Authority (Token Owner or Governance Delegate)
-    #[inline(always)]
-    pub fn governance_authority(
-        &mut self,
-        governance_authority: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governance_authority = Some(governance_authority);
-        self
-    }
-    /// ProposalTransaction, account. PDA seeds: ['governance', proposal, option_index, index]
-    #[inline(always)]
-    pub fn proposal_transaction_account(
-        &mut self,
-        proposal_transaction_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.proposal_transaction_account = Some(proposal_transaction_account);
-        self
-    }
-    #[inline(always)]
-    pub fn payer(&mut self, payer: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.payer = Some(payer);
-        self
-    }
-    #[inline(always)]
-    pub fn system_program(
-        &mut self,
-        system_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn rent(&mut self, rent: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.rent = Some(rent);
-        self
-    }
-    #[inline(always)]
-    pub fn option_index(&mut self, option_index: u8) -> &mut Self {
-        self.instruction.option_index = Some(option_index);
-        self
-    }
-    #[inline(always)]
-    pub fn index(&mut self, index: u16) -> &mut Self {
-        self.instruction.index = Some(index);
-        self
-    }
-    #[inline(always)]
-    pub fn hold_up_time(&mut self, hold_up_time: u32) -> &mut Self {
-        self.instruction.hold_up_time = Some(hold_up_time);
-        self
-    }
-    #[inline(always)]
-    pub fn instructions(&mut self, instructions: Vec<InstructionData>) -> &mut Self {
-        self.instruction.instructions = Some(instructions);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -591,59 +490,21 @@ impl<'a, 'b> InsertTransactionCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = InsertTransactionInstructionArgs {
-            option_index: self
-                .instruction
-                .option_index
-                .clone()
-                .expect("option_index is not set"),
-            index: self.instruction.index.clone().expect("index is not set"),
-            hold_up_time: self
-                .instruction
-                .hold_up_time
-                .clone()
-                .expect("hold_up_time is not set"),
-            instructions: self
-                .instruction
-                .instructions
-                .clone()
-                .expect("instructions is not set"),
+            option_index: self.instruction.option_index.clone(),
+            index: self.instruction.index.clone(),
+            hold_up_time: self.instruction.hold_up_time.clone(),
+            instructions: self.instruction.instructions.clone(),
         };
         let instruction = InsertTransactionCpi {
             __program: self.instruction.__program,
-
-            governance_account: self
-                .instruction
-                .governance_account
-                .expect("governance_account is not set"),
-
-            proposal_account: self
-                .instruction
-                .proposal_account
-                .expect("proposal_account is not set"),
-
-            token_owner_record: self
-                .instruction
-                .token_owner_record
-                .expect("token_owner_record is not set"),
-
-            governance_authority: self
-                .instruction
-                .governance_authority
-                .expect("governance_authority is not set"),
-
-            proposal_transaction_account: self
-                .instruction
-                .proposal_transaction_account
-                .expect("proposal_transaction_account is not set"),
-
-            payer: self.instruction.payer.expect("payer is not set"),
-
-            system_program: self
-                .instruction
-                .system_program
-                .expect("system_program is not set"),
-
-            rent: self.instruction.rent.expect("rent is not set"),
+            governance_account: self.instruction.governance_account,
+            proposal_account: self.instruction.proposal_account,
+            token_owner_record: self.instruction.token_owner_record,
+            governance_authority: self.instruction.governance_authority,
+            proposal_transaction_account: self.instruction.proposal_transaction_account,
+            payer: self.instruction.payer,
+            system_program: self.instruction.system_program,
+            rent: self.instruction.rent,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -656,18 +517,18 @@ impl<'a, 'b> InsertTransactionCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct InsertTransactionCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    governance_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    proposal_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    token_owner_record: Option<&'b solana_account_info::AccountInfo<'a>>,
-    governance_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
-    proposal_transaction_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    payer: Option<&'b solana_account_info::AccountInfo<'a>>,
-    system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    rent: Option<&'b solana_account_info::AccountInfo<'a>>,
-    option_index: Option<u8>,
-    index: Option<u16>,
-    hold_up_time: Option<u32>,
-    instructions: Option<Vec<InstructionData>>,
+    governance_account: &'b solana_account_info::AccountInfo<'a>,
+    proposal_account: &'b solana_account_info::AccountInfo<'a>,
+    token_owner_record: &'b solana_account_info::AccountInfo<'a>,
+    governance_authority: &'b solana_account_info::AccountInfo<'a>,
+    proposal_transaction_account: &'b solana_account_info::AccountInfo<'a>,
+    payer: &'b solana_account_info::AccountInfo<'a>,
+    system_program: &'b solana_account_info::AccountInfo<'a>,
+    rent: &'b solana_account_info::AccountInfo<'a>,
+    option_index: u8,
+    index: u16,
+    hold_up_time: u32,
+    instructions: Vec<InstructionData>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

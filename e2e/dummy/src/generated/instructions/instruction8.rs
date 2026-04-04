@@ -77,22 +77,22 @@ impl Default for Instruction8InstructionData {
 ///   0. `[]` mint
 ///   1. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 ///   2. `[writable, optional]` derived_account (default to PDA derived from 'derivedAccount')
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct Instruction8Builder {
-    mint: Option<solana_address::Address>,
+    mint: solana_address::Address,
     token_program: Option<solana_address::Address>,
     derived_account: Option<solana_address::Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl Instruction8Builder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    #[inline(always)]
-    pub fn mint(&mut self, mint: solana_address::Address) -> &mut Self {
-        self.mint = Some(mint);
-        self
+    pub fn new(mint: solana_address::Address) -> Self {
+        Self {
+            mint,
+            token_program: None,
+            derived_account: None,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
     #[inline(always)]
@@ -123,9 +123,13 @@ impl Instruction8Builder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let mint = self.mint;
+        let token_program = self.token_program.unwrap_or(solana_address::address!(
+            "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        ));
         let derived_account = self.derived_account.unwrap_or_else(|| {
             crate::pdas::find_derived_account_pda(
-                &self.mint.expect("mint is needed for derived_account PDA"),
+                &self.mint,
                 &self.token_program.unwrap_or(solana_address::address!(
                     "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
                 )),
@@ -133,10 +137,8 @@ impl Instruction8Builder {
             .0
         });
         let accounts = Instruction8 {
-            mint: self.mint.expect("mint is not set"),
-            token_program: self.token_program.unwrap_or(solana_address::address!(
-                "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-            )),
+            mint,
+            token_program,
             derived_account,
         };
 
@@ -257,36 +259,20 @@ pub struct Instruction8CpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> Instruction8CpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        mint: &'b solana_account_info::AccountInfo<'a>,
+        token_program: &'b solana_account_info::AccountInfo<'a>,
+        derived_account: &'b solana_account_info::AccountInfo<'a>,
+    ) -> Self {
         let instruction = Box::new(Instruction8CpiBuilderInstruction {
-            __program: program,
-            mint: None,
-            token_program: None,
-            derived_account: None,
+            __program,
+            mint,
+            token_program,
+            derived_account,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn mint(&mut self, mint: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.mint = Some(mint);
-        self
-    }
-    #[inline(always)]
-    pub fn token_program(
-        &mut self,
-        token_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.token_program = Some(token_program);
-        self
-    }
-    #[inline(always)]
-    pub fn derived_account(
-        &mut self,
-        derived_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.derived_account = Some(derived_account);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -324,18 +310,9 @@ impl<'a, 'b> Instruction8CpiBuilder<'a, 'b> {
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let instruction = Instruction8Cpi {
             __program: self.instruction.__program,
-
-            mint: self.instruction.mint.expect("mint is not set"),
-
-            token_program: self
-                .instruction
-                .token_program
-                .expect("token_program is not set"),
-
-            derived_account: self
-                .instruction
-                .derived_account
-                .expect("derived_account is not set"),
+            mint: self.instruction.mint,
+            token_program: self.instruction.token_program,
+            derived_account: self.instruction.derived_account,
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -347,9 +324,9 @@ impl<'a, 'b> Instruction8CpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct Instruction8CpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    mint: Option<&'b solana_account_info::AccountInfo<'a>>,
-    token_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    derived_account: Option<&'b solana_account_info::AccountInfo<'a>>,
+    mint: &'b solana_account_info::AccountInfo<'a>,
+    token_program: &'b solana_account_info::AccountInfo<'a>,
+    derived_account: &'b solana_account_info::AccountInfo<'a>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

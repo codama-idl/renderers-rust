@@ -70,20 +70,18 @@ impl Default for UpgradeNonceAccountInstructionData {
 /// ### Accounts:
 ///
 ///   0. `[writable]` nonce_account
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct UpgradeNonceAccountBuilder {
-    nonce_account: Option<solana_address::Address>,
+    nonce_account: solana_address::Address,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl UpgradeNonceAccountBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    #[inline(always)]
-    pub fn nonce_account(&mut self, nonce_account: solana_address::Address) -> &mut Self {
-        self.nonce_account = Some(nonce_account);
-        self
+    pub fn new(nonce_account: solana_address::Address) -> Self {
+        Self {
+            nonce_account,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -102,9 +100,8 @@ impl UpgradeNonceAccountBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
-        let accounts = UpgradeNonceAccount {
-            nonce_account: self.nonce_account.expect("nonce_account is not set"),
-        };
+        let nonce_account = self.nonce_account;
+        let accounts = UpgradeNonceAccount { nonce_account };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
     }
@@ -203,21 +200,16 @@ pub struct UpgradeNonceAccountCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> UpgradeNonceAccountCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        nonce_account: &'b solana_account_info::AccountInfo<'a>,
+    ) -> Self {
         let instruction = Box::new(UpgradeNonceAccountCpiBuilderInstruction {
-            __program: program,
-            nonce_account: None,
+            __program,
+            nonce_account,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn nonce_account(
-        &mut self,
-        nonce_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.nonce_account = Some(nonce_account);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -255,11 +247,7 @@ impl<'a, 'b> UpgradeNonceAccountCpiBuilder<'a, 'b> {
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let instruction = UpgradeNonceAccountCpi {
             __program: self.instruction.__program,
-
-            nonce_account: self
-                .instruction
-                .nonce_account
-                .expect("nonce_account is not set"),
+            nonce_account: self.instruction.nonce_account,
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -271,7 +259,7 @@ impl<'a, 'b> UpgradeNonceAccountCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct UpgradeNonceAccountCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    nonce_account: Option<&'b solana_account_info::AccountInfo<'a>>,
+    nonce_account: &'b solana_account_info::AccountInfo<'a>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

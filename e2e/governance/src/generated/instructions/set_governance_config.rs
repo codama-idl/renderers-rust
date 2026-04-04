@@ -89,27 +89,20 @@ impl SetGovernanceConfigInstructionArgs {
 /// ### Accounts:
 ///
 ///   0. `[writable, signer]` governance_account
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct SetGovernanceConfigBuilder {
-    governance_account: Option<solana_address::Address>,
-    config: Option<GovernanceConfig>,
+    governance_account: solana_address::Address,
+    config: GovernanceConfig,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl SetGovernanceConfigBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    /// The governance account the config is for
-    #[inline(always)]
-    pub fn governance_account(&mut self, governance_account: solana_address::Address) -> &mut Self {
-        self.governance_account = Some(governance_account);
-        self
-    }
-    #[inline(always)]
-    pub fn config(&mut self, config: GovernanceConfig) -> &mut Self {
-        self.config = Some(config);
-        self
+    pub fn new(governance_account: solana_address::Address, config: GovernanceConfig) -> Self {
+        Self {
+            governance_account,
+            config,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -128,13 +121,10 @@ impl SetGovernanceConfigBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
-        let accounts = SetGovernanceConfig {
-            governance_account: self
-                .governance_account
-                .expect("governance_account is not set"),
-        };
+        let governance_account = self.governance_account;
+        let accounts = SetGovernanceConfig { governance_account };
         let args = SetGovernanceConfigInstructionArgs {
-            config: self.config.clone().expect("config is not set"),
+            config: self.config.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -241,28 +231,18 @@ pub struct SetGovernanceConfigCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> SetGovernanceConfigCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        governance_account: &'b solana_account_info::AccountInfo<'a>,
+        config: GovernanceConfig,
+    ) -> Self {
         let instruction = Box::new(SetGovernanceConfigCpiBuilderInstruction {
-            __program: program,
-            governance_account: None,
-            config: None,
+            __program,
+            governance_account,
+            config,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// The governance account the config is for
-    #[inline(always)]
-    pub fn governance_account(
-        &mut self,
-        governance_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governance_account = Some(governance_account);
-        self
-    }
-    #[inline(always)]
-    pub fn config(&mut self, config: GovernanceConfig) -> &mut Self {
-        self.instruction.config = Some(config);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -299,15 +279,11 @@ impl<'a, 'b> SetGovernanceConfigCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = SetGovernanceConfigInstructionArgs {
-            config: self.instruction.config.clone().expect("config is not set"),
+            config: self.instruction.config.clone(),
         };
         let instruction = SetGovernanceConfigCpi {
             __program: self.instruction.__program,
-
-            governance_account: self
-                .instruction
-                .governance_account
-                .expect("governance_account is not set"),
+            governance_account: self.instruction.governance_account,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -320,8 +296,8 @@ impl<'a, 'b> SetGovernanceConfigCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct SetGovernanceConfigCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    governance_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    config: Option<GovernanceConfig>,
+    governance_account: &'b solana_account_info::AccountInfo<'a>,
+    config: GovernanceConfig,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

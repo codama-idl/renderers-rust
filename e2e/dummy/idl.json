@@ -252,6 +252,34 @@
             }
           ],
           "arguments": []
+        },
+        {
+          "kind": "instructionNode",
+          "name": "instruction10",
+          "optionalAccountStrategy": "programId",
+          "docs": ["Testing programIdValueNode account default"],
+          "accounts": [
+            {
+              "kind": "instructionAccountNode",
+              "name": "owner",
+              "isWritable": false,
+              "isSigner": true,
+              "isOptional": false,
+              "docs": []
+            },
+            {
+              "kind": "instructionAccountNode",
+              "name": "selfProgram",
+              "isWritable": false,
+              "isSigner": false,
+              "isOptional": false,
+              "docs": [],
+              "defaultValue": {
+                "kind": "programIdValueNode"
+              }
+            }
+          ],
+          "arguments": []
         }
       ],
       "definedTypes": [],

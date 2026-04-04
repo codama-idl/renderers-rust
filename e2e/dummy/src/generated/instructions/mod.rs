@@ -6,6 +6,7 @@
 //!
 
 pub(crate) mod r#instruction1;
+pub(crate) mod r#instruction10;
 pub(crate) mod r#instruction2;
 pub(crate) mod r#instruction3;
 pub(crate) mod r#instruction4;
@@ -16,6 +17,7 @@ pub(crate) mod r#instruction8;
 pub(crate) mod r#instruction9;
 
 pub use self::r#instruction1::*;
+pub use self::r#instruction10::*;
 pub use self::r#instruction2::*;
 pub use self::r#instruction3::*;
 pub use self::r#instruction4::*;

@@ -84,35 +84,26 @@ impl Default for ExecuteTransactionInstructionData {
 ///   0. `[]` governance_account
 ///   1. `[writable]` proposal_account
 ///   2. `[writable]` proposal_transaction_account
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct ExecuteTransactionBuilder {
-    governance_account: Option<solana_address::Address>,
-    proposal_account: Option<solana_address::Address>,
-    proposal_transaction_account: Option<solana_address::Address>,
+    governance_account: solana_address::Address,
+    proposal_account: solana_address::Address,
+    proposal_transaction_account: solana_address::Address,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl ExecuteTransactionBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    #[inline(always)]
-    pub fn governance_account(&mut self, governance_account: solana_address::Address) -> &mut Self {
-        self.governance_account = Some(governance_account);
-        self
-    }
-    #[inline(always)]
-    pub fn proposal_account(&mut self, proposal_account: solana_address::Address) -> &mut Self {
-        self.proposal_account = Some(proposal_account);
-        self
-    }
-    #[inline(always)]
-    pub fn proposal_transaction_account(
-        &mut self,
+    pub fn new(
+        governance_account: solana_address::Address,
+        proposal_account: solana_address::Address,
         proposal_transaction_account: solana_address::Address,
-    ) -> &mut Self {
-        self.proposal_transaction_account = Some(proposal_transaction_account);
-        self
+    ) -> Self {
+        Self {
+            governance_account,
+            proposal_account,
+            proposal_transaction_account,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -131,14 +122,13 @@ impl ExecuteTransactionBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let governance_account = self.governance_account;
+        let proposal_account = self.proposal_account;
+        let proposal_transaction_account = self.proposal_transaction_account;
         let accounts = ExecuteTransaction {
-            governance_account: self
-                .governance_account
-                .expect("governance_account is not set"),
-            proposal_account: self.proposal_account.expect("proposal_account is not set"),
-            proposal_transaction_account: self
-                .proposal_transaction_account
-                .expect("proposal_transaction_account is not set"),
+            governance_account,
+            proposal_account,
+            proposal_transaction_account,
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
@@ -260,39 +250,20 @@ pub struct ExecuteTransactionCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> ExecuteTransactionCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        governance_account: &'b solana_account_info::AccountInfo<'a>,
+        proposal_account: &'b solana_account_info::AccountInfo<'a>,
+        proposal_transaction_account: &'b solana_account_info::AccountInfo<'a>,
+    ) -> Self {
         let instruction = Box::new(ExecuteTransactionCpiBuilderInstruction {
-            __program: program,
-            governance_account: None,
-            proposal_account: None,
-            proposal_transaction_account: None,
+            __program,
+            governance_account,
+            proposal_account,
+            proposal_transaction_account,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn governance_account(
-        &mut self,
-        governance_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governance_account = Some(governance_account);
-        self
-    }
-    #[inline(always)]
-    pub fn proposal_account(
-        &mut self,
-        proposal_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.proposal_account = Some(proposal_account);
-        self
-    }
-    #[inline(always)]
-    pub fn proposal_transaction_account(
-        &mut self,
-        proposal_transaction_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.proposal_transaction_account = Some(proposal_transaction_account);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -330,21 +301,9 @@ impl<'a, 'b> ExecuteTransactionCpiBuilder<'a, 'b> {
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let instruction = ExecuteTransactionCpi {
             __program: self.instruction.__program,
-
-            governance_account: self
-                .instruction
-                .governance_account
-                .expect("governance_account is not set"),
-
-            proposal_account: self
-                .instruction
-                .proposal_account
-                .expect("proposal_account is not set"),
-
-            proposal_transaction_account: self
-                .instruction
-                .proposal_transaction_account
-                .expect("proposal_transaction_account is not set"),
+            governance_account: self.instruction.governance_account,
+            proposal_account: self.instruction.proposal_account,
+            proposal_transaction_account: self.instruction.proposal_transaction_account,
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -356,9 +315,9 @@ impl<'a, 'b> ExecuteTransactionCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct ExecuteTransactionCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    governance_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    proposal_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    proposal_transaction_account: Option<&'b solana_account_info::AccountInfo<'a>>,
+    governance_account: &'b solana_account_info::AccountInfo<'a>,
+    proposal_account: &'b solana_account_info::AccountInfo<'a>,
+    proposal_transaction_account: &'b solana_account_info::AccountInfo<'a>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

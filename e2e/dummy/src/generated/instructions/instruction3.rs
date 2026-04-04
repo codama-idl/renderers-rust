@@ -165,9 +165,9 @@ pub struct Instruction3CpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> Instruction3CpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(__program: &'b solana_account_info::AccountInfo<'a>) -> Self {
         let instruction = Box::new(Instruction3CpiBuilderInstruction {
-            __program: program,
+            __program,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }

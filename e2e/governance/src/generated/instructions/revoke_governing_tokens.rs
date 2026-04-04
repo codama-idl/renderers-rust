@@ -129,79 +129,45 @@ impl RevokeGoverningTokensInstructionArgs {
 ///   4. `[signer]` governing_token_mint_authority_or_token_owner
 ///   5. `[]` realm_config_account
 ///   6. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct RevokeGoverningTokensBuilder {
-    realm_account: Option<solana_address::Address>,
-    governing_token_holding_account: Option<solana_address::Address>,
-    token_owner_record: Option<solana_address::Address>,
-    governing_token_mint: Option<solana_address::Address>,
-    governing_token_mint_authority_or_token_owner: Option<solana_address::Address>,
-    realm_config_account: Option<solana_address::Address>,
+    realm_account: solana_address::Address,
+    governing_token_holding_account: solana_address::Address,
+    token_owner_record: solana_address::Address,
+    governing_token_mint: solana_address::Address,
+    governing_token_mint_authority_or_token_owner: solana_address::Address,
+    realm_config_account: solana_address::Address,
     token_program: Option<solana_address::Address>,
-    amount: Option<u64>,
+    amount: u64,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl RevokeGoverningTokensBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    #[inline(always)]
-    pub fn realm_account(&mut self, realm_account: solana_address::Address) -> &mut Self {
-        self.realm_account = Some(realm_account);
-        self
-    }
-    /// seeds=['governance', realm, governing_token_mint]
-    #[inline(always)]
-    pub fn governing_token_holding_account(
-        &mut self,
+    pub fn new(
+        realm_account: solana_address::Address,
         governing_token_holding_account: solana_address::Address,
-    ) -> &mut Self {
-        self.governing_token_holding_account = Some(governing_token_holding_account);
-        self
-    }
-    /// seeds=['governance', realm, governing_token_mint, governing_token_owner]
-    #[inline(always)]
-    pub fn token_owner_record(&mut self, token_owner_record: solana_address::Address) -> &mut Self {
-        self.token_owner_record = Some(token_owner_record);
-        self
-    }
-    #[inline(always)]
-    pub fn governing_token_mint(
-        &mut self,
+        token_owner_record: solana_address::Address,
         governing_token_mint: solana_address::Address,
-    ) -> &mut Self {
-        self.governing_token_mint = Some(governing_token_mint);
-        self
-    }
-    /// GoverningTokenMint mint_authority
-    #[inline(always)]
-    pub fn governing_token_mint_authority_or_token_owner(
-        &mut self,
         governing_token_mint_authority_or_token_owner: solana_address::Address,
-    ) -> &mut Self {
-        self.governing_token_mint_authority_or_token_owner =
-            Some(governing_token_mint_authority_or_token_owner);
-        self
-    }
-    /// seeds=['realm-config', realm]
-    #[inline(always)]
-    pub fn realm_config_account(
-        &mut self,
         realm_config_account: solana_address::Address,
-    ) -> &mut Self {
-        self.realm_config_account = Some(realm_config_account);
-        self
+        amount: u64,
+    ) -> Self {
+        Self {
+            realm_account,
+            governing_token_holding_account,
+            token_owner_record,
+            governing_token_mint,
+            governing_token_mint_authority_or_token_owner,
+            realm_config_account,
+            token_program: None,
+            amount,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
     #[inline(always)]
     pub fn token_program(&mut self, token_program: solana_address::Address) -> &mut Self {
         self.token_program = Some(token_program);
-        self
-    }
-    #[inline(always)]
-    pub fn amount(&mut self, amount: u64) -> &mut Self {
-        self.amount = Some(amount);
         self
     }
     /// Add an additional account to the instruction.
@@ -221,29 +187,27 @@ impl RevokeGoverningTokensBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let realm_account = self.realm_account;
+        let governing_token_holding_account = self.governing_token_holding_account;
+        let token_owner_record = self.token_owner_record;
+        let governing_token_mint = self.governing_token_mint;
+        let governing_token_mint_authority_or_token_owner =
+            self.governing_token_mint_authority_or_token_owner;
+        let realm_config_account = self.realm_config_account;
+        let token_program = self.token_program.unwrap_or(solana_address::address!(
+            "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        ));
         let accounts = RevokeGoverningTokens {
-            realm_account: self.realm_account.expect("realm_account is not set"),
-            governing_token_holding_account: self
-                .governing_token_holding_account
-                .expect("governing_token_holding_account is not set"),
-            token_owner_record: self
-                .token_owner_record
-                .expect("token_owner_record is not set"),
-            governing_token_mint: self
-                .governing_token_mint
-                .expect("governing_token_mint is not set"),
-            governing_token_mint_authority_or_token_owner: self
-                .governing_token_mint_authority_or_token_owner
-                .expect("governing_token_mint_authority_or_token_owner is not set"),
-            realm_config_account: self
-                .realm_config_account
-                .expect("realm_config_account is not set"),
-            token_program: self.token_program.unwrap_or(solana_address::address!(
-                "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-            )),
+            realm_account,
+            governing_token_holding_account,
+            token_owner_record,
+            governing_token_mint,
+            governing_token_mint_authority_or_token_owner,
+            realm_config_account,
+            token_program,
         };
         let args = RevokeGoverningTokensInstructionArgs {
-            amount: self.amount.clone().expect("amount is not set"),
+            amount: self.amount.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -416,87 +380,30 @@ pub struct RevokeGoverningTokensCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> RevokeGoverningTokensCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        realm_account: &'b solana_account_info::AccountInfo<'a>,
+        governing_token_holding_account: &'b solana_account_info::AccountInfo<'a>,
+        token_owner_record: &'b solana_account_info::AccountInfo<'a>,
+        governing_token_mint: &'b solana_account_info::AccountInfo<'a>,
+        governing_token_mint_authority_or_token_owner: &'b solana_account_info::AccountInfo<'a>,
+        realm_config_account: &'b solana_account_info::AccountInfo<'a>,
+        token_program: &'b solana_account_info::AccountInfo<'a>,
+        amount: u64,
+    ) -> Self {
         let instruction = Box::new(RevokeGoverningTokensCpiBuilderInstruction {
-            __program: program,
-            realm_account: None,
-            governing_token_holding_account: None,
-            token_owner_record: None,
-            governing_token_mint: None,
-            governing_token_mint_authority_or_token_owner: None,
-            realm_config_account: None,
-            token_program: None,
-            amount: None,
+            __program,
+            realm_account,
+            governing_token_holding_account,
+            token_owner_record,
+            governing_token_mint,
+            governing_token_mint_authority_or_token_owner,
+            realm_config_account,
+            token_program,
+            amount,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn realm_account(
-        &mut self,
-        realm_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.realm_account = Some(realm_account);
-        self
-    }
-    /// seeds=['governance', realm, governing_token_mint]
-    #[inline(always)]
-    pub fn governing_token_holding_account(
-        &mut self,
-        governing_token_holding_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governing_token_holding_account = Some(governing_token_holding_account);
-        self
-    }
-    /// seeds=['governance', realm, governing_token_mint, governing_token_owner]
-    #[inline(always)]
-    pub fn token_owner_record(
-        &mut self,
-        token_owner_record: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.token_owner_record = Some(token_owner_record);
-        self
-    }
-    #[inline(always)]
-    pub fn governing_token_mint(
-        &mut self,
-        governing_token_mint: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governing_token_mint = Some(governing_token_mint);
-        self
-    }
-    /// GoverningTokenMint mint_authority
-    #[inline(always)]
-    pub fn governing_token_mint_authority_or_token_owner(
-        &mut self,
-        governing_token_mint_authority_or_token_owner: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction
-            .governing_token_mint_authority_or_token_owner =
-            Some(governing_token_mint_authority_or_token_owner);
-        self
-    }
-    /// seeds=['realm-config', realm]
-    #[inline(always)]
-    pub fn realm_config_account(
-        &mut self,
-        realm_config_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.realm_config_account = Some(realm_config_account);
-        self
-    }
-    #[inline(always)]
-    pub fn token_program(
-        &mut self,
-        token_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.token_program = Some(token_program);
-        self
-    }
-    #[inline(always)]
-    pub fn amount(&mut self, amount: u64) -> &mut Self {
-        self.instruction.amount = Some(amount);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -533,45 +440,19 @@ impl<'a, 'b> RevokeGoverningTokensCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = RevokeGoverningTokensInstructionArgs {
-            amount: self.instruction.amount.clone().expect("amount is not set"),
+            amount: self.instruction.amount.clone(),
         };
         let instruction = RevokeGoverningTokensCpi {
             __program: self.instruction.__program,
-
-            realm_account: self
-                .instruction
-                .realm_account
-                .expect("realm_account is not set"),
-
-            governing_token_holding_account: self
-                .instruction
-                .governing_token_holding_account
-                .expect("governing_token_holding_account is not set"),
-
-            token_owner_record: self
-                .instruction
-                .token_owner_record
-                .expect("token_owner_record is not set"),
-
-            governing_token_mint: self
-                .instruction
-                .governing_token_mint
-                .expect("governing_token_mint is not set"),
-
+            realm_account: self.instruction.realm_account,
+            governing_token_holding_account: self.instruction.governing_token_holding_account,
+            token_owner_record: self.instruction.token_owner_record,
+            governing_token_mint: self.instruction.governing_token_mint,
             governing_token_mint_authority_or_token_owner: self
                 .instruction
-                .governing_token_mint_authority_or_token_owner
-                .expect("governing_token_mint_authority_or_token_owner is not set"),
-
-            realm_config_account: self
-                .instruction
-                .realm_config_account
-                .expect("realm_config_account is not set"),
-
-            token_program: self
-                .instruction
-                .token_program
-                .expect("token_program is not set"),
+                .governing_token_mint_authority_or_token_owner,
+            realm_config_account: self.instruction.realm_config_account,
+            token_program: self.instruction.token_program,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -584,14 +465,14 @@ impl<'a, 'b> RevokeGoverningTokensCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct RevokeGoverningTokensCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    realm_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    governing_token_holding_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    token_owner_record: Option<&'b solana_account_info::AccountInfo<'a>>,
-    governing_token_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
-    governing_token_mint_authority_or_token_owner: Option<&'b solana_account_info::AccountInfo<'a>>,
-    realm_config_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    token_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    amount: Option<u64>,
+    realm_account: &'b solana_account_info::AccountInfo<'a>,
+    governing_token_holding_account: &'b solana_account_info::AccountInfo<'a>,
+    token_owner_record: &'b solana_account_info::AccountInfo<'a>,
+    governing_token_mint: &'b solana_account_info::AccountInfo<'a>,
+    governing_token_mint_authority_or_token_owner: &'b solana_account_info::AccountInfo<'a>,
+    realm_config_account: &'b solana_account_info::AccountInfo<'a>,
+    token_program: &'b solana_account_info::AccountInfo<'a>,
+    amount: u64,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

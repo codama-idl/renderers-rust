@@ -82,37 +82,26 @@ impl Default for CompleteProposalInstructionData {
 ///   0. `[writable]` proposal_account
 ///   1. `[]` token_owner_record
 ///   2. `[signer]` complete_proposal_authority
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct CompleteProposalBuilder {
-    proposal_account: Option<solana_address::Address>,
-    token_owner_record: Option<solana_address::Address>,
-    complete_proposal_authority: Option<solana_address::Address>,
+    proposal_account: solana_address::Address,
+    token_owner_record: solana_address::Address,
+    complete_proposal_authority: solana_address::Address,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl CompleteProposalBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    #[inline(always)]
-    pub fn proposal_account(&mut self, proposal_account: solana_address::Address) -> &mut Self {
-        self.proposal_account = Some(proposal_account);
-        self
-    }
-    /// TokenOwnerRecord account of the Proposal owner
-    #[inline(always)]
-    pub fn token_owner_record(&mut self, token_owner_record: solana_address::Address) -> &mut Self {
-        self.token_owner_record = Some(token_owner_record);
-        self
-    }
-    /// Token Owner or Delegate
-    #[inline(always)]
-    pub fn complete_proposal_authority(
-        &mut self,
+    pub fn new(
+        proposal_account: solana_address::Address,
+        token_owner_record: solana_address::Address,
         complete_proposal_authority: solana_address::Address,
-    ) -> &mut Self {
-        self.complete_proposal_authority = Some(complete_proposal_authority);
-        self
+    ) -> Self {
+        Self {
+            proposal_account,
+            token_owner_record,
+            complete_proposal_authority,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -131,14 +120,13 @@ impl CompleteProposalBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let proposal_account = self.proposal_account;
+        let token_owner_record = self.token_owner_record;
+        let complete_proposal_authority = self.complete_proposal_authority;
         let accounts = CompleteProposal {
-            proposal_account: self.proposal_account.expect("proposal_account is not set"),
-            token_owner_record: self
-                .token_owner_record
-                .expect("token_owner_record is not set"),
-            complete_proposal_authority: self
-                .complete_proposal_authority
-                .expect("complete_proposal_authority is not set"),
+            proposal_account,
+            token_owner_record,
+            complete_proposal_authority,
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
@@ -258,41 +246,20 @@ pub struct CompleteProposalCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> CompleteProposalCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        proposal_account: &'b solana_account_info::AccountInfo<'a>,
+        token_owner_record: &'b solana_account_info::AccountInfo<'a>,
+        complete_proposal_authority: &'b solana_account_info::AccountInfo<'a>,
+    ) -> Self {
         let instruction = Box::new(CompleteProposalCpiBuilderInstruction {
-            __program: program,
-            proposal_account: None,
-            token_owner_record: None,
-            complete_proposal_authority: None,
+            __program,
+            proposal_account,
+            token_owner_record,
+            complete_proposal_authority,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn proposal_account(
-        &mut self,
-        proposal_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.proposal_account = Some(proposal_account);
-        self
-    }
-    /// TokenOwnerRecord account of the Proposal owner
-    #[inline(always)]
-    pub fn token_owner_record(
-        &mut self,
-        token_owner_record: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.token_owner_record = Some(token_owner_record);
-        self
-    }
-    /// Token Owner or Delegate
-    #[inline(always)]
-    pub fn complete_proposal_authority(
-        &mut self,
-        complete_proposal_authority: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.complete_proposal_authority = Some(complete_proposal_authority);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -330,21 +297,9 @@ impl<'a, 'b> CompleteProposalCpiBuilder<'a, 'b> {
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let instruction = CompleteProposalCpi {
             __program: self.instruction.__program,
-
-            proposal_account: self
-                .instruction
-                .proposal_account
-                .expect("proposal_account is not set"),
-
-            token_owner_record: self
-                .instruction
-                .token_owner_record
-                .expect("token_owner_record is not set"),
-
-            complete_proposal_authority: self
-                .instruction
-                .complete_proposal_authority
-                .expect("complete_proposal_authority is not set"),
+            proposal_account: self.instruction.proposal_account,
+            token_owner_record: self.instruction.token_owner_record,
+            complete_proposal_authority: self.instruction.complete_proposal_authority,
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -356,9 +311,9 @@ impl<'a, 'b> CompleteProposalCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct CompleteProposalCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    proposal_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    token_owner_record: Option<&'b solana_account_info::AccountInfo<'a>>,
-    complete_proposal_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
+    proposal_account: &'b solana_account_info::AccountInfo<'a>,
+    token_owner_record: &'b solana_account_info::AccountInfo<'a>,
+    complete_proposal_authority: &'b solana_account_info::AccountInfo<'a>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

@@ -132,61 +132,39 @@ impl Default for RelinquishVoteInstructionData {
 ///   5. `[]` governing_token_mint
 ///   6. `[signer, optional]` governance_authority
 ///   7. `[writable, optional]` beneficiary_account
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct RelinquishVoteBuilder {
-    realm_account: Option<solana_address::Address>,
-    governance_account: Option<solana_address::Address>,
-    proposal_account: Option<solana_address::Address>,
-    token_owner_record: Option<solana_address::Address>,
-    proposal_vote_record: Option<solana_address::Address>,
-    governing_token_mint: Option<solana_address::Address>,
+    realm_account: solana_address::Address,
+    governance_account: solana_address::Address,
+    proposal_account: solana_address::Address,
+    token_owner_record: solana_address::Address,
+    proposal_vote_record: solana_address::Address,
+    governing_token_mint: solana_address::Address,
     governance_authority: Option<solana_address::Address>,
     beneficiary_account: Option<solana_address::Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl RelinquishVoteBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    #[inline(always)]
-    pub fn realm_account(&mut self, realm_account: solana_address::Address) -> &mut Self {
-        self.realm_account = Some(realm_account);
-        self
-    }
-    #[inline(always)]
-    pub fn governance_account(&mut self, governance_account: solana_address::Address) -> &mut Self {
-        self.governance_account = Some(governance_account);
-        self
-    }
-    #[inline(always)]
-    pub fn proposal_account(&mut self, proposal_account: solana_address::Address) -> &mut Self {
-        self.proposal_account = Some(proposal_account);
-        self
-    }
-    /// TokenOwnerRecord account. PDA seeds: ['governance',realm, vote_governing_token_mint, governing_token_owner]
-    #[inline(always)]
-    pub fn token_owner_record(&mut self, token_owner_record: solana_address::Address) -> &mut Self {
-        self.token_owner_record = Some(token_owner_record);
-        self
-    }
-    /// Proposal VoteRecord account. PDA seeds: ['governance',proposal, token_owner_record]
-    #[inline(always)]
-    pub fn proposal_vote_record(
-        &mut self,
+    pub fn new(
+        realm_account: solana_address::Address,
+        governance_account: solana_address::Address,
+        proposal_account: solana_address::Address,
+        token_owner_record: solana_address::Address,
         proposal_vote_record: solana_address::Address,
-    ) -> &mut Self {
-        self.proposal_vote_record = Some(proposal_vote_record);
-        self
-    }
-    /// The Governing Token Mint which was used to cast the vote (vote_governing_token_mint)
-    #[inline(always)]
-    pub fn governing_token_mint(
-        &mut self,
         governing_token_mint: solana_address::Address,
-    ) -> &mut Self {
-        self.governing_token_mint = Some(governing_token_mint);
-        self
+    ) -> Self {
+        Self {
+            realm_account,
+            governance_account,
+            proposal_account,
+            token_owner_record,
+            proposal_vote_record,
+            governing_token_mint,
+            governance_authority: None,
+            beneficiary_account: None,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// `[optional account]`
     #[inline(always)]
@@ -225,23 +203,23 @@ impl RelinquishVoteBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let realm_account = self.realm_account;
+        let governance_account = self.governance_account;
+        let proposal_account = self.proposal_account;
+        let token_owner_record = self.token_owner_record;
+        let proposal_vote_record = self.proposal_vote_record;
+        let governing_token_mint = self.governing_token_mint;
+        let governance_authority = self.governance_authority;
+        let beneficiary_account = self.beneficiary_account;
         let accounts = RelinquishVote {
-            realm_account: self.realm_account.expect("realm_account is not set"),
-            governance_account: self
-                .governance_account
-                .expect("governance_account is not set"),
-            proposal_account: self.proposal_account.expect("proposal_account is not set"),
-            token_owner_record: self
-                .token_owner_record
-                .expect("token_owner_record is not set"),
-            proposal_vote_record: self
-                .proposal_vote_record
-                .expect("proposal_vote_record is not set"),
-            governing_token_mint: self
-                .governing_token_mint
-                .expect("governing_token_mint is not set"),
-            governance_authority: self.governance_authority,
-            beneficiary_account: self.beneficiary_account,
+            realm_account,
+            governance_account,
+            proposal_account,
+            token_owner_record,
+            proposal_vote_record,
+            governing_token_mint,
+            governance_authority,
+            beneficiary_account,
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
@@ -436,71 +414,28 @@ pub struct RelinquishVoteCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> RelinquishVoteCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        realm_account: &'b solana_account_info::AccountInfo<'a>,
+        governance_account: &'b solana_account_info::AccountInfo<'a>,
+        proposal_account: &'b solana_account_info::AccountInfo<'a>,
+        token_owner_record: &'b solana_account_info::AccountInfo<'a>,
+        proposal_vote_record: &'b solana_account_info::AccountInfo<'a>,
+        governing_token_mint: &'b solana_account_info::AccountInfo<'a>,
+    ) -> Self {
         let instruction = Box::new(RelinquishVoteCpiBuilderInstruction {
-            __program: program,
-            realm_account: None,
-            governance_account: None,
-            proposal_account: None,
-            token_owner_record: None,
-            proposal_vote_record: None,
-            governing_token_mint: None,
+            __program,
+            realm_account,
+            governance_account,
+            proposal_account,
+            token_owner_record,
+            proposal_vote_record,
+            governing_token_mint,
             governance_authority: None,
             beneficiary_account: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn realm_account(
-        &mut self,
-        realm_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.realm_account = Some(realm_account);
-        self
-    }
-    #[inline(always)]
-    pub fn governance_account(
-        &mut self,
-        governance_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governance_account = Some(governance_account);
-        self
-    }
-    #[inline(always)]
-    pub fn proposal_account(
-        &mut self,
-        proposal_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.proposal_account = Some(proposal_account);
-        self
-    }
-    /// TokenOwnerRecord account. PDA seeds: ['governance',realm, vote_governing_token_mint, governing_token_owner]
-    #[inline(always)]
-    pub fn token_owner_record(
-        &mut self,
-        token_owner_record: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.token_owner_record = Some(token_owner_record);
-        self
-    }
-    /// Proposal VoteRecord account. PDA seeds: ['governance',proposal, token_owner_record]
-    #[inline(always)]
-    pub fn proposal_vote_record(
-        &mut self,
-        proposal_vote_record: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.proposal_vote_record = Some(proposal_vote_record);
-        self
-    }
-    /// The Governing Token Mint which was used to cast the vote (vote_governing_token_mint)
-    #[inline(always)]
-    pub fn governing_token_mint(
-        &mut self,
-        governing_token_mint: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governing_token_mint = Some(governing_token_mint);
-        self
     }
     /// `[optional account]`
     #[inline(always)]
@@ -558,39 +493,13 @@ impl<'a, 'b> RelinquishVoteCpiBuilder<'a, 'b> {
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let instruction = RelinquishVoteCpi {
             __program: self.instruction.__program,
-
-            realm_account: self
-                .instruction
-                .realm_account
-                .expect("realm_account is not set"),
-
-            governance_account: self
-                .instruction
-                .governance_account
-                .expect("governance_account is not set"),
-
-            proposal_account: self
-                .instruction
-                .proposal_account
-                .expect("proposal_account is not set"),
-
-            token_owner_record: self
-                .instruction
-                .token_owner_record
-                .expect("token_owner_record is not set"),
-
-            proposal_vote_record: self
-                .instruction
-                .proposal_vote_record
-                .expect("proposal_vote_record is not set"),
-
-            governing_token_mint: self
-                .instruction
-                .governing_token_mint
-                .expect("governing_token_mint is not set"),
-
+            realm_account: self.instruction.realm_account,
+            governance_account: self.instruction.governance_account,
+            proposal_account: self.instruction.proposal_account,
+            token_owner_record: self.instruction.token_owner_record,
+            proposal_vote_record: self.instruction.proposal_vote_record,
+            governing_token_mint: self.instruction.governing_token_mint,
             governance_authority: self.instruction.governance_authority,
-
             beneficiary_account: self.instruction.beneficiary_account,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -603,12 +512,12 @@ impl<'a, 'b> RelinquishVoteCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct RelinquishVoteCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    realm_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    governance_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    proposal_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    token_owner_record: Option<&'b solana_account_info::AccountInfo<'a>>,
-    proposal_vote_record: Option<&'b solana_account_info::AccountInfo<'a>>,
-    governing_token_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
+    realm_account: &'b solana_account_info::AccountInfo<'a>,
+    governance_account: &'b solana_account_info::AccountInfo<'a>,
+    proposal_account: &'b solana_account_info::AccountInfo<'a>,
+    token_owner_record: &'b solana_account_info::AccountInfo<'a>,
+    proposal_vote_record: &'b solana_account_info::AccountInfo<'a>,
+    governing_token_mint: &'b solana_account_info::AccountInfo<'a>,
     governance_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
     beneficiary_account: Option<&'b solana_account_info::AccountInfo<'a>>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.

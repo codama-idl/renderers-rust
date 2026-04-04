@@ -276,30 +276,68 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                         .mergeWith(discriminatorConstants.imports)
                         .remove(`generatedInstructions::${pascalCase(node.name)}`);
 
+                    // Accounts that are optional in the builder (have defaults or are IDL-optional).
+                    const builderOptionalAccounts = new Set(
+                        node.accounts
+                            .filter(
+                                account =>
+                                    account.isOptional ||
+                                    (account.defaultValue != null &&
+                                        (isNode(account.defaultValue, ['publicKeyValueNode', 'programIdValueNode']) ||
+                                            account.defaultValue.kind === 'pdaValueNode')),
+                            )
+                            .map(a => a.name),
+                    );
+                    // CPI can't derive AccountInfo from PDA/publicKey defaults.
+                    const cpiBuilderOptionalAccounts = new Set(
+                        node.accounts
+                            .filter(
+                                account =>
+                                    account.isOptional ||
+                                    (account.defaultValue != null &&
+                                        isNode(account.defaultValue, ['programIdValueNode'])),
+                            )
+                            .map(a => a.name),
+                    );
+                    const hasRequiredAccounts = node.accounts.some(a => !builderOptionalAccounts.has(a.name));
+                    const hasRequiredArgs = instructionArgs.some(
+                        arg => !arg.default && !arg.optional && !arg.innerOptionType,
+                    );
+                    const requiredArgNames = instructionArgs
+                        .filter(arg => !arg.default && !arg.optional && !arg.innerOptionType)
+                        .map(arg => snakeCase(arg.name));
+
                     // Resolve PDA defaults and topologically sort accounts by dependency.
                     const resolvedAccounts = resolveInstructionPdaDefaults({
                         accounts: node.accounts,
                         accountsAndArgsConflicts,
+                        builderOptionalAccounts,
                         getImportFrom,
                         imports,
                         instructionArguments: node.arguments,
                         instructionName: node.name,
                         linkables,
                         program,
+                        requiredArgNames,
                         stack,
                     });
 
                     return createRenderMap(`instructions/${snakeCase(node.name)}.rs`, {
                         content: render('instructionsPage.njk', {
                             accountsAndArgsConflicts,
+                            builderOptionalAccounts: [...builderOptionalAccounts],
+                            cpiBuilderOptionalAccounts: [...cpiBuilderOptionalAccounts],
                             dataTraits: dataTraits.render,
                             discriminatorConstants: discriminatorConstants.render,
                             hasArgs,
                             hasOptional,
+                            hasRequiredAccounts,
+                            hasRequiredArgs,
                             imports: imports.toString(dependencyMap),
                             instruction: node,
                             instructionArgs,
                             program,
+                            requiredArgNames,
                             resolvedAccounts,
                             typeManifest,
                         }),
@@ -501,23 +539,27 @@ type ResolvedAccount = InstructionAccountNode & {
 function resolveInstructionPdaDefaults(ctx: {
     accounts: readonly InstructionAccountNode[];
     accountsAndArgsConflicts: string[];
+    builderOptionalAccounts: Set<string>;
     getImportFrom: GetImportFromFunction;
     imports: ImportMap;
     instructionArguments: readonly InstructionArgumentNode[];
     instructionName: string;
     linkables: LinkableDictionary;
     program: ProgramNode;
+    requiredArgNames: string[];
     stack: NodeStack;
 }): ResolvedAccount[] {
     const {
         accounts,
         accountsAndArgsConflicts,
+        builderOptionalAccounts,
         getImportFrom,
         imports,
         instructionArguments,
         instructionName,
         linkables,
         program,
+        requiredArgNames,
         stack,
     } = ctx;
 
@@ -592,11 +634,19 @@ function resolveInstructionPdaDefaults(ctx: {
                 if (isNode(seedValue, 'accountValueNode')) {
                     const refName = snakeCase(seedValue.name);
                     const isEither = eitherSignerAccounts.has(seedValue.name);
-                    const eitherExtract = isEither ? '.map(|(k, _)| k)' : '';
+                    const isOptional = builderOptionalAccounts.has(seedValue.name);
+                    const eitherExtract = isEither ? (isOptional ? '.map(|(k, _)| k)' : '.0') : '';
 
                     if (pdaDefaultedNames.has(seedValue.name)) {
                         accountDeps.push(seedValue.name);
                         renderedSeeds.push({ kind: 'accountRef', rawName: refName, render: `&${refName}` });
+                    } else if (!isOptional) {
+                        // Required account — direct field access, no Option unwrap.
+                        renderedSeeds.push({
+                            kind: 'accountRef',
+                            rawName: refName,
+                            render: `&self.${refName}${eitherExtract}`,
+                        });
                     } else {
                         const defaultExpr = accountDefaults[seedValue.name];
                         let render: string;
@@ -612,6 +662,7 @@ function resolveInstructionPdaDefaults(ctx: {
                         ? `${seedValue.name}_arg`
                         : seedValue.name;
                     const fieldName = snakeCase(argFieldName);
+                    const isRequiredArg = requiredArgNames.includes(fieldName);
 
                     const arg = instructionArguments.find(a => a.name === seedValue.name);
                     let argDefault: { isOmitted: boolean; value: string } | null = null;
@@ -635,6 +686,12 @@ function resolveInstructionPdaDefaults(ctx: {
                         renderedSeeds.push({
                             kind: 'argumentRef',
                             render: `${isByRef ? '&' : ''}${argDefault.value}`,
+                        });
+                    } else if (isRequiredArg) {
+                        // Required arg — direct field access, no Option unwrap.
+                        renderedSeeds.push({
+                            kind: 'argumentRef',
+                            render: `${isByRef ? '&' : ''}self.${fieldName}.clone()`,
                         });
                     } else {
                         renderedSeeds.push({
@@ -679,7 +736,8 @@ function resolveInstructionPdaDefaults(ctx: {
                 if (isNode(seedValue, 'accountValueNode')) {
                     const refName = snakeCase(seedValue.name);
                     const isEither = eitherSignerAccounts.has(seedValue.name);
-                    const eitherExtract = isEither ? '.map(|(k, _)| k)' : '';
+                    const isOptional = builderOptionalAccounts.has(seedValue.name);
+                    const eitherExtract = isEither ? (isOptional ? '.map(|(k, _)| k)' : '.0') : '';
                     const defaultExpr = accountDefaults[seedValue.name];
 
                     if (pdaDefaultedNames.has(seedValue.name)) {
@@ -689,6 +747,9 @@ function resolveInstructionPdaDefaults(ctx: {
                     let valueExpr: string;
                     if (pdaDefaultedNames.has(seedValue.name)) {
                         valueExpr = refName;
+                    } else if (!isOptional) {
+                        // Required account — direct field access.
+                        valueExpr = `self.${refName}${eitherExtract}`;
                     } else if (defaultExpr) {
                         valueExpr = `self.${refName}${eitherExtract}.unwrap_or(${defaultExpr})`;
                     } else {
@@ -711,6 +772,7 @@ function resolveInstructionPdaDefaults(ctx: {
                         ? `${seedValue.name}_arg`
                         : seedValue.name;
                     const fieldName = snakeCase(argFieldName);
+                    const isRequiredArg = requiredArgNames.includes(fieldName);
 
                     const arg = instructionArguments.find(a => a.name === seedValue.name);
                     let argDefault: { isOmitted: boolean; value: string } | null = null;
@@ -728,6 +790,19 @@ function resolveInstructionPdaDefaults(ctx: {
                             renderedSeeds.push({
                                 kind: 'argumentRef',
                                 render: `${argDefault.value}.to_string().as_ref()`,
+                            });
+                        }
+                    } else if (isRequiredArg) {
+                        // Required arg — direct field access, no Option unwrap.
+                        const valueExpr = `self.${fieldName}.clone()`;
+                        if (resolvedType.kind === 'publicKeyTypeNode') {
+                            renderedSeeds.push({ kind: 'argumentRef', render: `${valueExpr}.as_ref()` });
+                        } else if (resolvedType.kind === 'bytesTypeNode') {
+                            renderedSeeds.push({ kind: 'argumentRef', render: `&${valueExpr}` });
+                        } else {
+                            renderedSeeds.push({
+                                kind: 'argumentRef',
+                                render: `${valueExpr}.to_string().as_ref()`,
                             });
                         }
                     } else {

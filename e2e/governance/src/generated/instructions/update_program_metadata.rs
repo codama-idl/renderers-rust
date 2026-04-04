@@ -84,31 +84,25 @@ impl Default for UpdateProgramMetadataInstructionData {
 ///   0. `[writable]` program_metadata_account
 ///   1. `[signer]` payer
 ///   2. `[optional]` system_program (default to `11111111111111111111111111111111`)
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct UpdateProgramMetadataBuilder {
-    program_metadata_account: Option<solana_address::Address>,
-    payer: Option<solana_address::Address>,
+    program_metadata_account: solana_address::Address,
+    payer: solana_address::Address,
     system_program: Option<solana_address::Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl UpdateProgramMetadataBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    /// seeds=['metadata']
-    #[inline(always)]
-    pub fn program_metadata_account(
-        &mut self,
+    pub fn new(
         program_metadata_account: solana_address::Address,
-    ) -> &mut Self {
-        self.program_metadata_account = Some(program_metadata_account);
-        self
-    }
-    #[inline(always)]
-    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
-        self.payer = Some(payer);
-        self
+        payer: solana_address::Address,
+    ) -> Self {
+        Self {
+            program_metadata_account,
+            payer,
+            system_program: None,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
@@ -133,14 +127,15 @@ impl UpdateProgramMetadataBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let program_metadata_account = self.program_metadata_account;
+        let payer = self.payer;
+        let system_program = self
+            .system_program
+            .unwrap_or(solana_address::address!("11111111111111111111111111111111"));
         let accounts = UpdateProgramMetadata {
-            program_metadata_account: self
-                .program_metadata_account
-                .expect("program_metadata_account is not set"),
-            payer: self.payer.expect("payer is not set"),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
+            program_metadata_account,
+            payer,
+            system_program,
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
@@ -263,37 +258,20 @@ pub struct UpdateProgramMetadataCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> UpdateProgramMetadataCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        program_metadata_account: &'b solana_account_info::AccountInfo<'a>,
+        payer: &'b solana_account_info::AccountInfo<'a>,
+        system_program: &'b solana_account_info::AccountInfo<'a>,
+    ) -> Self {
         let instruction = Box::new(UpdateProgramMetadataCpiBuilderInstruction {
-            __program: program,
-            program_metadata_account: None,
-            payer: None,
-            system_program: None,
+            __program,
+            program_metadata_account,
+            payer,
+            system_program,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// seeds=['metadata']
-    #[inline(always)]
-    pub fn program_metadata_account(
-        &mut self,
-        program_metadata_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.program_metadata_account = Some(program_metadata_account);
-        self
-    }
-    #[inline(always)]
-    pub fn payer(&mut self, payer: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.payer = Some(payer);
-        self
-    }
-    #[inline(always)]
-    pub fn system_program(
-        &mut self,
-        system_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.system_program = Some(system_program);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -331,18 +309,9 @@ impl<'a, 'b> UpdateProgramMetadataCpiBuilder<'a, 'b> {
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let instruction = UpdateProgramMetadataCpi {
             __program: self.instruction.__program,
-
-            program_metadata_account: self
-                .instruction
-                .program_metadata_account
-                .expect("program_metadata_account is not set"),
-
-            payer: self.instruction.payer.expect("payer is not set"),
-
-            system_program: self
-                .instruction
-                .system_program
-                .expect("system_program is not set"),
+            program_metadata_account: self.instruction.program_metadata_account,
+            payer: self.instruction.payer,
+            system_program: self.instruction.system_program,
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -354,9 +323,9 @@ impl<'a, 'b> UpdateProgramMetadataCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct UpdateProgramMetadataCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    program_metadata_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    payer: Option<&'b solana_account_info::AccountInfo<'a>>,
-    system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
+    program_metadata_account: &'b solana_account_info::AccountInfo<'a>,
+    payer: &'b solana_account_info::AccountInfo<'a>,
+    system_program: &'b solana_account_info::AccountInfo<'a>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

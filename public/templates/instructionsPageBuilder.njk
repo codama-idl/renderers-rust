@@ -16,67 +16,113 @@
   {% if account.isSigner %}
     {% set modifiers = modifiers + ', signer' if modifiers.length > 0 else 'signer' %}
   {% endif %}
-  {% if account.isOptional or account.defaultValue.kind === 'publicKeyValueNode' or (account.defaultValue.kind === 'pdaValueNode' and account.name in pdaResolved) %}
+  {% set isBuilderOptional = account.name in builderOptionalAccounts %}
+  {% if isBuilderOptional %}
     {% set modifiers = modifiers + ', optional' if modifiers.length > 0 else 'optional' %}
   {% endif %}
   {{ '///   ' + loop.index0 + '. `[' + modifiers + ']` ' + account.name | snakeCase }}
   {{- " (default to `" + account.defaultValue.publicKey + "`)" if account.defaultValue.kind === 'publicKeyValueNode' }}
   {{- " (default to PDA derived from '" + account.defaultValue.pda.name + "')" if account.defaultValue.kind === 'pdaValueNode' and account.name in pdaResolved }}
 {% endfor %}
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug{{ ', Default' if not hasRequiredAccounts and not hasRequiredArgs }})]
 pub struct {{ instruction.name | pascalCase }}Builder {
   {% for account in instruction.accounts %}
+    {% set isBuilderOptional = account.name in builderOptionalAccounts %}
     {% if account.isSigner === 'either' %}
-      {{ account.name | snakeCase }}: Option<(solana_address::Address, bool)>,
+      {{ account.name | snakeCase }}: {{ 'Option<(solana_address::Address, bool)>' if isBuilderOptional else '(solana_address::Address, bool)' }},
     {% else %}
-      {{ account.name | snakeCase }}: Option<solana_address::Address>,
+      {{ account.name | snakeCase }}: {{ 'Option<solana_address::Address>' if isBuilderOptional else 'solana_address::Address' }},
     {% endif %}
   {% endfor %}
   {% for arg in instructionArgs %}
     {% if not arg.default %}
-      {{ arg.name | snakeCase }}: {{ arg.type if arg.innerOptionType else 'Option<' + arg.type + '>' }},
+      {% set isArgOptional = arg.optional or arg.innerOptionType %}
+      {% if isArgOptional %}
+        {{ arg.name | snakeCase }}: {{ arg.type if arg.innerOptionType else 'Option<' + arg.type + '>' }},
+      {% else %}
+        {{ arg.name | snakeCase }}: {{ arg.type }},
+      {% endif %}
     {% endif %}
   {% endfor %}
   __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl {{ instruction.name | pascalCase }}Builder {
-  pub fn new() -> Self {
-    Self::default()
-  }
-  {% for account in instruction.accounts %}
-    {% if account.isOptional %}
-      {{ '/// `[optional account]`\n' -}}
-    {% elif account.defaultValue.kind === 'publicKeyValueNode' %}
-      {{ "/// `[optional account, default to '" + account.defaultValue.publicKey + "']`\n" -}}
-    {% elif account.defaultValue.kind === 'pdaValueNode' and account.name in pdaResolved %}
-      {{ "/// `[optional account, default to PDA derived from '" + account.defaultValue.pda.name + "']`\n" -}}
-    {% endif %}
-    {{- macros.docblock(account.docs) -}}
-    #[inline(always)]
-    pub fn {{ account.name | snakeCase }}(&mut self, {{ account.name | snakeCase }}: {{ 'Option<solana_address::Address>' if account.isOptional else 'solana_address::Address' }}{{ ', as_signer: bool' if account.isSigner === 'either' }}) -> &mut Self {
-      {% if account.isOptional %}
-        {% if account.isSigner === 'either' %}
-          if let Some({{ account.name | snakeCase }}) = {{ account.name | snakeCase }} {
-            self.{{ account.name | snakeCase }} = Some(({{ account.name | snakeCase }}, as_signer));
-          } else {
-            self.{{ account.name | snakeCase }} = None;
-          }
-        {% else %}
-          self.{{ account.name | snakeCase }} = {{ account.name | snakeCase }};
+  {% if hasRequiredAccounts or hasRequiredArgs %}
+    pub fn new(
+      {% for account in instruction.accounts %}
+        {% set isBuilderOptional = account.name in builderOptionalAccounts %}
+        {% if not isBuilderOptional %}
+          {{ account.name | snakeCase }}: {{ '(solana_address::Address, bool)' if account.isSigner === 'either' else 'solana_address::Address' }},
         {% endif %}
-      {% else %}
-        {% if account.isSigner === 'either' %}
-          self.{{ account.name | snakeCase }} = Some(({{ account.name | snakeCase }}, as_signer));
-        {% else %}
-          self.{{ account.name | snakeCase }} = Some({{ account.name | snakeCase }});
+      {% endfor %}
+      {% for arg in instructionArgs %}
+        {% if not arg.default and not arg.optional and not arg.innerOptionType %}
+          {{ arg.name | snakeCase }}: {{ arg.type }},
         {% endif %}
-      {% endif %}
-      self
+      {% endfor %}
+    ) -> Self {
+      Self {
+        {% for account in instruction.accounts %}
+          {% set isBuilderOptional = account.name in builderOptionalAccounts %}
+          {% if isBuilderOptional %}
+            {{ account.name | snakeCase }}: None,
+          {% else %}
+            {{ account.name | snakeCase }},
+          {% endif %}
+        {% endfor %}
+        {% for arg in instructionArgs %}
+          {% if not arg.default %}
+            {% if not arg.optional and not arg.innerOptionType %}
+              {{ arg.name | snakeCase }},
+            {% else %}
+              {{ arg.name | snakeCase }}: None,
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+        __remaining_accounts: Vec::new(),
+      }
     }
+  {% else %}
+    pub fn new() -> Self {
+      Self::default()
+    }
+  {% endif %}
+  {% for account in instruction.accounts %}
+    {% set isBuilderOptional = account.name in builderOptionalAccounts %}
+    {% if isBuilderOptional %}
+      {% if account.isOptional %}
+        {{ '/// `[optional account]`\n' -}}
+      {% else %}
+        {{ "/// `[optional account, default to '" + account.defaultValue.publicKey + "']`\n" if account.defaultValue.kind === 'publicKeyValueNode' -}}
+        {{ "/// `[optional account, default to PDA derived from '" + account.defaultValue.pda.name + "']`\n" if account.defaultValue.kind === 'pdaValueNode' and account.name in pdaResolved -}}
+      {% endif %}
+      {{- macros.docblock(account.docs) -}}
+      #[inline(always)]
+      pub fn {{ account.name | snakeCase }}(&mut self, {{ account.name | snakeCase }}: {{ 'Option<solana_address::Address>' if account.isOptional else 'solana_address::Address' }}{{ ', as_signer: bool' if account.isSigner === 'either' }}) -> &mut Self {
+        {% if account.isOptional %}
+          {% if account.isSigner === 'either' %}
+            if let Some({{ account.name | snakeCase }}) = {{ account.name | snakeCase }} {
+              self.{{ account.name | snakeCase }} = Some(({{ account.name | snakeCase }}, as_signer));
+            } else {
+              self.{{ account.name | snakeCase }} = None;
+            }
+          {% else %}
+            self.{{ account.name | snakeCase }} = {{ account.name | snakeCase }};
+          {% endif %}
+        {% else %}
+          {% if account.isSigner === 'either' %}
+            self.{{ account.name | snakeCase }} = Some(({{ account.name | snakeCase }}, as_signer));
+          {% else %}
+            self.{{ account.name | snakeCase }} = Some({{ account.name | snakeCase }});
+          {% endif %}
+        {% endif %}
+        self
+      }
+    {% endif %}
   {% endfor %}
   {% for arg in instructionArgs %}
-    {% if not arg.default %}
+    {% if not arg.default and (arg.optional or arg.innerOptionType) %}
       {{ '/// `[optional argument]`\n' if arg.innerOptionType }}
       {{- "/// `[optional argument, defaults to '" + arg.value + "']`\n" if not arg.innerOptionType and arg.value -}}
       {{- macros.docblock(arg.docs) -}}
@@ -135,21 +181,19 @@ impl {{ instruction.name | pascalCase }}Builder {
           {% endif %}
     });
         {% endif %}
+      {% elif account.isOptional %}
+    let {{ account.name | snakeCase }} = self.{{ account.name | snakeCase }};
+      {% elif account.defaultValue.kind === 'programIdValueNode' %}
+    let {{ account.name | snakeCase }} = self.{{ account.name | snakeCase }}.unwrap_or(crate::{{ program.name | snakeCase | upper }}_ID);
+      {% elif account.defaultValue.kind === 'publicKeyValueNode' %}
+    let {{ account.name | snakeCase }} = self.{{ account.name | snakeCase }}.unwrap_or(solana_address::address!("{{ account.defaultValue.publicKey }}"));
+      {% else %}
+    let {{ account.name | snakeCase }} = self.{{ account.name | snakeCase }};
       {% endif %}
     {% endfor %}
     let accounts = {{ instruction.name | pascalCase }} {
         {% for account in instruction.accounts %}
-          {% if account.isOptional %}
-            {{ account.name | snakeCase }}: self.{{ account.name | snakeCase }},
-          {% elif account.defaultValue.kind === 'programId' %}
-            {{ account.name | snakeCase }}: self.{{ account.name | snakeCase }},
-          {% elif account.defaultValue.kind === 'publicKeyValueNode' %}
-            {{ account.name | snakeCase }}: self.{{ account.name | snakeCase }}.unwrap_or(solana_address::address!("{{ account.defaultValue.publicKey }}")),
-          {% elif account.name in pdaResolved %}
             {{ account.name | snakeCase }},
-          {% else %}
-            {{ account.name | snakeCase }}: self.{{ account.name | snakeCase }}.expect("{{ account.name | snakeCase }} is not set"),
-          {% endif %}
         {% endfor %}
     };
     {% if hasArgs %}
@@ -162,8 +206,10 @@ impl {{ instruction.name | pascalCase }}Builder {
               {% else %}
                 {{ arg.name | snakeCase }}: self.{{ arg.name | snakeCase }}.clone(){{ '.unwrap_or(' + arg.value + ')' if arg.value else '.expect(\"' + arg.name | snakeCase + ' is not set\")' }},
               {% endif %}
+            {% elif arg.innerOptionType %}
+              {{ arg.name | snakeCase }}: self.{{ arg.name | snakeCase }}.clone(),
             {% else %}
-              {{ arg.name | snakeCase }}: self.{{ arg.name | snakeCase }}.clone(){{ '.expect(\"' + arg.name | snakeCase + ' is not set\")' if not arg.innerOptionType }},
+              {{ arg.name | snakeCase }}: self.{{ arg.name | snakeCase }}.clone(),
             {% endif %}
           {% endif %}
         {% endfor %}

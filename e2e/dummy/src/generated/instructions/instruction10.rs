@@ -7,36 +7,38 @@
 
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
-use solana_address::Address;
-
-pub const ASSIGN_DISCRIMINATOR: u32 = 1;
 
 /// Accounts.
 #[derive(Debug)]
-pub struct Assign {
-    pub account: solana_address::Address,
+pub struct Instruction10 {
+    pub owner: solana_address::Address,
+
+    pub self_program: solana_address::Address,
 }
 
-impl Assign {
-    pub fn instruction(&self, args: AssignInstructionArgs) -> solana_instruction::Instruction {
-        self.instruction_with_remaining_accounts(args, &[])
+impl Instruction10 {
+    pub fn instruction(&self) -> solana_instruction::Instruction {
+        self.instruction_with_remaining_accounts(&[])
     }
     #[allow(clippy::arithmetic_side_effects)]
     #[allow(clippy::vec_init_then_push)]
     pub fn instruction_with_remaining_accounts(
         &self,
-        args: AssignInstructionArgs,
         remaining_accounts: &[solana_instruction::AccountMeta],
     ) -> solana_instruction::Instruction {
-        let mut accounts = Vec::with_capacity(1 + remaining_accounts.len());
-        accounts.push(solana_instruction::AccountMeta::new(self.account, true));
+        let mut accounts = Vec::with_capacity(2 + remaining_accounts.len());
+        accounts.push(solana_instruction::AccountMeta::new_readonly(
+            self.owner, true,
+        ));
+        accounts.push(solana_instruction::AccountMeta::new_readonly(
+            self.self_program,
+            false,
+        ));
         accounts.extend_from_slice(remaining_accounts);
-        let mut data = AssignInstructionData::new().try_to_vec().unwrap();
-        let mut args = args.try_to_vec().unwrap();
-        data.append(&mut args);
+        let data = Instruction10InstructionData::new().try_to_vec().unwrap();
 
         solana_instruction::Instruction {
-            program_id: crate::SYSTEM_ID,
+            program_id: crate::DUMMY_ID,
             accounts,
             data,
         }
@@ -44,13 +46,11 @@ impl Assign {
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-pub struct AssignInstructionData {
-    discriminator: u32,
-}
+pub struct Instruction10InstructionData {}
 
-impl AssignInstructionData {
+impl Instruction10InstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 1 }
+        Self {}
     }
 
     pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
@@ -58,42 +58,37 @@ impl AssignInstructionData {
     }
 }
 
-impl Default for AssignInstructionData {
+impl Default for Instruction10InstructionData {
     fn default() -> Self {
         Self::new()
     }
 }
 
-#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
-pub struct AssignInstructionArgs {
-    pub program_address: Address,
-}
-
-impl AssignInstructionArgs {
-    pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
-        borsh::to_vec(self)
-    }
-}
-
-/// Instruction builder for `Assign`.
+/// Instruction builder for `Instruction10`.
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` account
+///   0. `[signer]` owner
+///   1. `[optional]` self_program
 #[derive(Clone, Debug)]
-pub struct AssignBuilder {
-    account: solana_address::Address,
-    program_address: Address,
+pub struct Instruction10Builder {
+    owner: solana_address::Address,
+    self_program: Option<solana_address::Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
-impl AssignBuilder {
-    pub fn new(account: solana_address::Address, program_address: Address) -> Self {
+impl Instruction10Builder {
+    pub fn new(owner: solana_address::Address) -> Self {
         Self {
-            account,
-            program_address,
+            owner,
+            self_program: None,
             __remaining_accounts: Vec::new(),
         }
+    }
+    #[inline(always)]
+    pub fn self_program(&mut self, self_program: solana_address::Address) -> &mut Self {
+        self.self_program = Some(self_program);
+        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -112,41 +107,43 @@ impl AssignBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
-        let account = self.account;
-        let accounts = Assign { account };
-        let args = AssignInstructionArgs {
-            program_address: self.program_address.clone(),
+        let owner = self.owner;
+        let self_program = self.self_program.unwrap_or(crate::DUMMY_ID);
+        let accounts = Instruction10 {
+            owner,
+            self_program,
         };
 
-        accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
+        accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
     }
 }
 
-/// `assign` CPI accounts.
-pub struct AssignCpiAccounts<'a, 'b> {
-    pub account: &'b solana_account_info::AccountInfo<'a>,
+/// `instruction10` CPI accounts.
+pub struct Instruction10CpiAccounts<'a, 'b> {
+    pub owner: &'b solana_account_info::AccountInfo<'a>,
+
+    pub self_program: &'b solana_account_info::AccountInfo<'a>,
 }
 
-/// `assign` CPI instruction.
-pub struct AssignCpi<'a, 'b> {
+/// `instruction10` CPI instruction.
+pub struct Instruction10Cpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_account_info::AccountInfo<'a>,
 
-    pub account: &'b solana_account_info::AccountInfo<'a>,
-    /// The arguments for the instruction.
-    pub __args: AssignInstructionArgs,
+    pub owner: &'b solana_account_info::AccountInfo<'a>,
+
+    pub self_program: &'b solana_account_info::AccountInfo<'a>,
 }
 
-impl<'a, 'b> AssignCpi<'a, 'b> {
+impl<'a, 'b> Instruction10Cpi<'a, 'b> {
     pub fn new(
         program: &'b solana_account_info::AccountInfo<'a>,
-        accounts: AssignCpiAccounts<'a, 'b>,
-        args: AssignInstructionArgs,
+        accounts: Instruction10CpiAccounts<'a, 'b>,
     ) -> Self {
         Self {
             __program: program,
-            account: accounts.account,
-            __args: args,
+            owner: accounts.owner,
+            self_program: accounts.self_program,
         }
     }
     #[inline(always)]
@@ -172,10 +169,14 @@ impl<'a, 'b> AssignCpi<'a, 'b> {
         signers_seeds: &[&[&[u8]]],
         remaining_accounts: &[(&'b solana_account_info::AccountInfo<'a>, bool, bool)],
     ) -> solana_program_error::ProgramResult {
-        let mut accounts = Vec::with_capacity(1 + remaining_accounts.len());
-        accounts.push(solana_instruction::AccountMeta::new(
-            *self.account.key,
+        let mut accounts = Vec::with_capacity(2 + remaining_accounts.len());
+        accounts.push(solana_instruction::AccountMeta::new_readonly(
+            *self.owner.key,
             true,
+        ));
+        accounts.push(solana_instruction::AccountMeta::new_readonly(
+            *self.self_program.key,
+            false,
         ));
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_instruction::AccountMeta {
@@ -184,18 +185,17 @@ impl<'a, 'b> AssignCpi<'a, 'b> {
                 is_writable: remaining_account.2,
             })
         });
-        let mut data = AssignInstructionData::new().try_to_vec().unwrap();
-        let mut args = self.__args.try_to_vec().unwrap();
-        data.append(&mut args);
+        let data = Instruction10InstructionData::new().try_to_vec().unwrap();
 
         let instruction = solana_instruction::Instruction {
-            program_id: crate::SYSTEM_ID,
+            program_id: crate::DUMMY_ID,
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(2 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(3 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
-        account_infos.push(self.account.clone());
+        account_infos.push(self.owner.clone());
+        account_infos.push(self.self_program.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -208,29 +208,37 @@ impl<'a, 'b> AssignCpi<'a, 'b> {
     }
 }
 
-/// Instruction builder for `Assign` via CPI.
+/// Instruction builder for `Instruction10` via CPI.
 ///
 /// ### Accounts:
 ///
-///   0. `[writable, signer]` account
+///   0. `[signer]` owner
+///   1. `[optional]` self_program
 #[derive(Clone, Debug)]
-pub struct AssignCpiBuilder<'a, 'b> {
-    instruction: Box<AssignCpiBuilderInstruction<'a, 'b>>,
+pub struct Instruction10CpiBuilder<'a, 'b> {
+    instruction: Box<Instruction10CpiBuilderInstruction<'a, 'b>>,
 }
 
-impl<'a, 'b> AssignCpiBuilder<'a, 'b> {
+impl<'a, 'b> Instruction10CpiBuilder<'a, 'b> {
     pub fn new(
         __program: &'b solana_account_info::AccountInfo<'a>,
-        account: &'b solana_account_info::AccountInfo<'a>,
-        program_address: Address,
+        owner: &'b solana_account_info::AccountInfo<'a>,
     ) -> Self {
-        let instruction = Box::new(AssignCpiBuilderInstruction {
+        let instruction = Box::new(Instruction10CpiBuilderInstruction {
             __program,
-            account,
-            program_address,
+            owner,
+            self_program: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
+    }
+    #[inline(always)]
+    pub fn self_program(
+        &mut self,
+        self_program: &'b solana_account_info::AccountInfo<'a>,
+    ) -> &mut Self {
+        self.instruction.self_program = Some(self_program);
+        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -266,13 +274,13 @@ impl<'a, 'b> AssignCpiBuilder<'a, 'b> {
     #[allow(clippy::clone_on_copy)]
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
-        let args = AssignInstructionArgs {
-            program_address: self.instruction.program_address.clone(),
-        };
-        let instruction = AssignCpi {
+        let instruction = Instruction10Cpi {
             __program: self.instruction.__program,
-            account: self.instruction.account,
-            __args: args,
+            owner: self.instruction.owner,
+            self_program: self
+                .instruction
+                .self_program
+                .unwrap_or(self.instruction.__program),
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -282,10 +290,10 @@ impl<'a, 'b> AssignCpiBuilder<'a, 'b> {
 }
 
 #[derive(Clone, Debug)]
-struct AssignCpiBuilderInstruction<'a, 'b> {
+struct Instruction10CpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    account: &'b solana_account_info::AccountInfo<'a>,
-    program_address: Address,
+    owner: &'b solana_account_info::AccountInfo<'a>,
+    self_program: Option<&'b solana_account_info::AccountInfo<'a>>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

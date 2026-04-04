@@ -91,38 +91,28 @@ impl Default for CreateNativeTreasuryInstructionData {
 ///   1. `[writable]` native_treasury_account
 ///   2. `[signer]` payer
 ///   3. `[optional]` system_program (default to `11111111111111111111111111111111`)
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct CreateNativeTreasuryBuilder {
-    governance_account: Option<solana_address::Address>,
-    native_treasury_account: Option<solana_address::Address>,
-    payer: Option<solana_address::Address>,
+    governance_account: solana_address::Address,
+    native_treasury_account: solana_address::Address,
+    payer: solana_address::Address,
     system_program: Option<solana_address::Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl CreateNativeTreasuryBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    /// Governance account the treasury account is for
-    #[inline(always)]
-    pub fn governance_account(&mut self, governance_account: solana_address::Address) -> &mut Self {
-        self.governance_account = Some(governance_account);
-        self
-    }
-    /// seeds=['native-treasury', governance]
-    #[inline(always)]
-    pub fn native_treasury_account(
-        &mut self,
+    pub fn new(
+        governance_account: solana_address::Address,
         native_treasury_account: solana_address::Address,
-    ) -> &mut Self {
-        self.native_treasury_account = Some(native_treasury_account);
-        self
-    }
-    #[inline(always)]
-    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
-        self.payer = Some(payer);
-        self
+        payer: solana_address::Address,
+    ) -> Self {
+        Self {
+            governance_account,
+            native_treasury_account,
+            payer,
+            system_program: None,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
@@ -147,17 +137,17 @@ impl CreateNativeTreasuryBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let governance_account = self.governance_account;
+        let native_treasury_account = self.native_treasury_account;
+        let payer = self.payer;
+        let system_program = self
+            .system_program
+            .unwrap_or(solana_address::address!("11111111111111111111111111111111"));
         let accounts = CreateNativeTreasury {
-            governance_account: self
-                .governance_account
-                .expect("governance_account is not set"),
-            native_treasury_account: self
-                .native_treasury_account
-                .expect("native_treasury_account is not set"),
-            payer: self.payer.expect("payer is not set"),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
+            governance_account,
+            native_treasury_account,
+            payer,
+            system_program,
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
@@ -291,47 +281,22 @@ pub struct CreateNativeTreasuryCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> CreateNativeTreasuryCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        governance_account: &'b solana_account_info::AccountInfo<'a>,
+        native_treasury_account: &'b solana_account_info::AccountInfo<'a>,
+        payer: &'b solana_account_info::AccountInfo<'a>,
+        system_program: &'b solana_account_info::AccountInfo<'a>,
+    ) -> Self {
         let instruction = Box::new(CreateNativeTreasuryCpiBuilderInstruction {
-            __program: program,
-            governance_account: None,
-            native_treasury_account: None,
-            payer: None,
-            system_program: None,
+            __program,
+            governance_account,
+            native_treasury_account,
+            payer,
+            system_program,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// Governance account the treasury account is for
-    #[inline(always)]
-    pub fn governance_account(
-        &mut self,
-        governance_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governance_account = Some(governance_account);
-        self
-    }
-    /// seeds=['native-treasury', governance]
-    #[inline(always)]
-    pub fn native_treasury_account(
-        &mut self,
-        native_treasury_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.native_treasury_account = Some(native_treasury_account);
-        self
-    }
-    #[inline(always)]
-    pub fn payer(&mut self, payer: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.payer = Some(payer);
-        self
-    }
-    #[inline(always)]
-    pub fn system_program(
-        &mut self,
-        system_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.system_program = Some(system_program);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -369,23 +334,10 @@ impl<'a, 'b> CreateNativeTreasuryCpiBuilder<'a, 'b> {
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let instruction = CreateNativeTreasuryCpi {
             __program: self.instruction.__program,
-
-            governance_account: self
-                .instruction
-                .governance_account
-                .expect("governance_account is not set"),
-
-            native_treasury_account: self
-                .instruction
-                .native_treasury_account
-                .expect("native_treasury_account is not set"),
-
-            payer: self.instruction.payer.expect("payer is not set"),
-
-            system_program: self
-                .instruction
-                .system_program
-                .expect("system_program is not set"),
+            governance_account: self.instruction.governance_account,
+            native_treasury_account: self.instruction.native_treasury_account,
+            payer: self.instruction.payer,
+            system_program: self.instruction.system_program,
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -397,10 +349,10 @@ impl<'a, 'b> CreateNativeTreasuryCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct CreateNativeTreasuryCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    governance_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    native_treasury_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    payer: Option<&'b solana_account_info::AccountInfo<'a>>,
-    system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
+    governance_account: &'b solana_account_info::AccountInfo<'a>,
+    native_treasury_account: &'b solana_account_info::AccountInfo<'a>,
+    payer: &'b solana_account_info::AccountInfo<'a>,
+    system_program: &'b solana_account_info::AccountInfo<'a>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

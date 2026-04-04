@@ -61,20 +61,18 @@ impl Default for Instruction6InstructionData {
 /// ### Accounts:
 ///
 ///   0. `[writable]` my_account
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct Instruction6Builder {
-    my_account: Option<solana_address::Address>,
+    my_account: solana_address::Address,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl Instruction6Builder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    #[inline(always)]
-    pub fn my_account(&mut self, my_account: solana_address::Address) -> &mut Self {
-        self.my_account = Some(my_account);
-        self
+    pub fn new(my_account: solana_address::Address) -> Self {
+        Self {
+            my_account,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -93,9 +91,8 @@ impl Instruction6Builder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
-        let accounts = Instruction6 {
-            my_account: self.my_account.expect("my_account is not set"),
-        };
+        let my_account = self.my_account;
+        let accounts = Instruction6 { my_account };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
     }
@@ -192,21 +189,16 @@ pub struct Instruction6CpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> Instruction6CpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        my_account: &'b solana_account_info::AccountInfo<'a>,
+    ) -> Self {
         let instruction = Box::new(Instruction6CpiBuilderInstruction {
-            __program: program,
-            my_account: None,
+            __program,
+            my_account,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn my_account(
-        &mut self,
-        my_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.my_account = Some(my_account);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -244,8 +236,7 @@ impl<'a, 'b> Instruction6CpiBuilder<'a, 'b> {
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let instruction = Instruction6Cpi {
             __program: self.instruction.__program,
-
-            my_account: self.instruction.my_account.expect("my_account is not set"),
+            my_account: self.instruction.my_account,
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -257,7 +248,7 @@ impl<'a, 'b> Instruction6CpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct Instruction6CpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    my_account: Option<&'b solana_account_info::AccountInfo<'a>>,
+    my_account: &'b solana_account_info::AccountInfo<'a>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

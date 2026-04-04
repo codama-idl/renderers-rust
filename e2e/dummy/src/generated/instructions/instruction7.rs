@@ -101,9 +101,8 @@ impl Instruction7Builder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
-        let accounts = Instruction7 {
-            my_account: self.my_account,
-        };
+        let my_account = self.my_account;
+        let accounts = Instruction7 { my_account };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
     }
@@ -206,9 +205,9 @@ pub struct Instruction7CpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> Instruction7CpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(__program: &'b solana_account_info::AccountInfo<'a>) -> Self {
         let instruction = Box::new(Instruction7CpiBuilderInstruction {
-            __program: program,
+            __program,
             my_account: None,
             __remaining_accounts: Vec::new(),
         });
@@ -259,7 +258,6 @@ impl<'a, 'b> Instruction7CpiBuilder<'a, 'b> {
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let instruction = Instruction7Cpi {
             __program: self.instruction.__program,
-
             my_account: self.instruction.my_account,
         };
         instruction.invoke_signed_with_remaining_accounts(

@@ -121,66 +121,42 @@ impl AddSignatoryInstructionArgs {
 ///   3. `[writable]` signatory_record_account
 ///   4. `[signer]` payer
 ///   5. `[optional]` system_program (default to `11111111111111111111111111111111`)
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct AddSignatoryBuilder {
-    proposal_account: Option<solana_address::Address>,
-    token_owner_record: Option<solana_address::Address>,
-    governance_authority: Option<solana_address::Address>,
-    signatory_record_account: Option<solana_address::Address>,
-    payer: Option<solana_address::Address>,
+    proposal_account: solana_address::Address,
+    token_owner_record: solana_address::Address,
+    governance_authority: solana_address::Address,
+    signatory_record_account: solana_address::Address,
+    payer: solana_address::Address,
     system_program: Option<solana_address::Address>,
-    signatory: Option<Address>,
+    signatory: Address,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl AddSignatoryBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    /// Proposal Account associated with the governance
-    #[inline(always)]
-    pub fn proposal_account(&mut self, proposal_account: solana_address::Address) -> &mut Self {
-        self.proposal_account = Some(proposal_account);
-        self
-    }
-    /// TokenOwnerRecord account of the Proposal owner
-    #[inline(always)]
-    pub fn token_owner_record(&mut self, token_owner_record: solana_address::Address) -> &mut Self {
-        self.token_owner_record = Some(token_owner_record);
-        self
-    }
-    /// Governance Authority (Token Owner or Governance Delegate)
-    #[inline(always)]
-    pub fn governance_authority(
-        &mut self,
+    pub fn new(
+        proposal_account: solana_address::Address,
+        token_owner_record: solana_address::Address,
         governance_authority: solana_address::Address,
-    ) -> &mut Self {
-        self.governance_authority = Some(governance_authority);
-        self
-    }
-    /// Signatory Record Account
-    #[inline(always)]
-    pub fn signatory_record_account(
-        &mut self,
         signatory_record_account: solana_address::Address,
-    ) -> &mut Self {
-        self.signatory_record_account = Some(signatory_record_account);
-        self
-    }
-    #[inline(always)]
-    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
-        self.payer = Some(payer);
-        self
+        payer: solana_address::Address,
+        signatory: Address,
+    ) -> Self {
+        Self {
+            proposal_account,
+            token_owner_record,
+            governance_authority,
+            signatory_record_account,
+            payer,
+            system_program: None,
+            signatory,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_address::Address) -> &mut Self {
         self.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn signatory(&mut self, signatory: Address) -> &mut Self {
-        self.signatory = Some(signatory);
         self
     }
     /// Add an additional account to the instruction.
@@ -200,24 +176,24 @@ impl AddSignatoryBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let proposal_account = self.proposal_account;
+        let token_owner_record = self.token_owner_record;
+        let governance_authority = self.governance_authority;
+        let signatory_record_account = self.signatory_record_account;
+        let payer = self.payer;
+        let system_program = self
+            .system_program
+            .unwrap_or(solana_address::address!("11111111111111111111111111111111"));
         let accounts = AddSignatory {
-            proposal_account: self.proposal_account.expect("proposal_account is not set"),
-            token_owner_record: self
-                .token_owner_record
-                .expect("token_owner_record is not set"),
-            governance_authority: self
-                .governance_authority
-                .expect("governance_authority is not set"),
-            signatory_record_account: self
-                .signatory_record_account
-                .expect("signatory_record_account is not set"),
-            payer: self.payer.expect("payer is not set"),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
+            proposal_account,
+            token_owner_record,
+            governance_authority,
+            signatory_record_account,
+            payer,
+            system_program,
         };
         let args = AddSignatoryInstructionArgs {
-            signatory: self.signatory.clone().expect("signatory is not set"),
+            signatory: self.signatory.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -377,73 +353,28 @@ pub struct AddSignatoryCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> AddSignatoryCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        proposal_account: &'b solana_account_info::AccountInfo<'a>,
+        token_owner_record: &'b solana_account_info::AccountInfo<'a>,
+        governance_authority: &'b solana_account_info::AccountInfo<'a>,
+        signatory_record_account: &'b solana_account_info::AccountInfo<'a>,
+        payer: &'b solana_account_info::AccountInfo<'a>,
+        system_program: &'b solana_account_info::AccountInfo<'a>,
+        signatory: Address,
+    ) -> Self {
         let instruction = Box::new(AddSignatoryCpiBuilderInstruction {
-            __program: program,
-            proposal_account: None,
-            token_owner_record: None,
-            governance_authority: None,
-            signatory_record_account: None,
-            payer: None,
-            system_program: None,
-            signatory: None,
+            __program,
+            proposal_account,
+            token_owner_record,
+            governance_authority,
+            signatory_record_account,
+            payer,
+            system_program,
+            signatory,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// Proposal Account associated with the governance
-    #[inline(always)]
-    pub fn proposal_account(
-        &mut self,
-        proposal_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.proposal_account = Some(proposal_account);
-        self
-    }
-    /// TokenOwnerRecord account of the Proposal owner
-    #[inline(always)]
-    pub fn token_owner_record(
-        &mut self,
-        token_owner_record: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.token_owner_record = Some(token_owner_record);
-        self
-    }
-    /// Governance Authority (Token Owner or Governance Delegate)
-    #[inline(always)]
-    pub fn governance_authority(
-        &mut self,
-        governance_authority: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governance_authority = Some(governance_authority);
-        self
-    }
-    /// Signatory Record Account
-    #[inline(always)]
-    pub fn signatory_record_account(
-        &mut self,
-        signatory_record_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.signatory_record_account = Some(signatory_record_account);
-        self
-    }
-    #[inline(always)]
-    pub fn payer(&mut self, payer: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.payer = Some(payer);
-        self
-    }
-    #[inline(always)]
-    pub fn system_program(
-        &mut self,
-        system_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn signatory(&mut self, signatory: Address) -> &mut Self {
-        self.instruction.signatory = Some(signatory);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -480,41 +411,16 @@ impl<'a, 'b> AddSignatoryCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = AddSignatoryInstructionArgs {
-            signatory: self
-                .instruction
-                .signatory
-                .clone()
-                .expect("signatory is not set"),
+            signatory: self.instruction.signatory.clone(),
         };
         let instruction = AddSignatoryCpi {
             __program: self.instruction.__program,
-
-            proposal_account: self
-                .instruction
-                .proposal_account
-                .expect("proposal_account is not set"),
-
-            token_owner_record: self
-                .instruction
-                .token_owner_record
-                .expect("token_owner_record is not set"),
-
-            governance_authority: self
-                .instruction
-                .governance_authority
-                .expect("governance_authority is not set"),
-
-            signatory_record_account: self
-                .instruction
-                .signatory_record_account
-                .expect("signatory_record_account is not set"),
-
-            payer: self.instruction.payer.expect("payer is not set"),
-
-            system_program: self
-                .instruction
-                .system_program
-                .expect("system_program is not set"),
+            proposal_account: self.instruction.proposal_account,
+            token_owner_record: self.instruction.token_owner_record,
+            governance_authority: self.instruction.governance_authority,
+            signatory_record_account: self.instruction.signatory_record_account,
+            payer: self.instruction.payer,
+            system_program: self.instruction.system_program,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -527,13 +433,13 @@ impl<'a, 'b> AddSignatoryCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct AddSignatoryCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    proposal_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    token_owner_record: Option<&'b solana_account_info::AccountInfo<'a>>,
-    governance_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
-    signatory_record_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    payer: Option<&'b solana_account_info::AccountInfo<'a>>,
-    system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    signatory: Option<Address>,
+    proposal_account: &'b solana_account_info::AccountInfo<'a>,
+    token_owner_record: &'b solana_account_info::AccountInfo<'a>,
+    governance_authority: &'b solana_account_info::AccountInfo<'a>,
+    signatory_record_account: &'b solana_account_info::AccountInfo<'a>,
+    payer: &'b solana_account_info::AccountInfo<'a>,
+    system_program: &'b solana_account_info::AccountInfo<'a>,
+    signatory: Address,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

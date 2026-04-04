@@ -96,31 +96,25 @@ impl SetGovernanceDelegateInstructionArgs {
 ///
 ///   0. `[signer]` current_delegate_or_owner
 ///   1. `[writable]` token_owner_record
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct SetGovernanceDelegateBuilder {
-    current_delegate_or_owner: Option<solana_address::Address>,
-    token_owner_record: Option<solana_address::Address>,
+    current_delegate_or_owner: solana_address::Address,
+    token_owner_record: solana_address::Address,
     new_governance_delegate: Option<Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl SetGovernanceDelegateBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    /// Current governance delegate or governing token owner
-    #[inline(always)]
-    pub fn current_delegate_or_owner(
-        &mut self,
+    pub fn new(
         current_delegate_or_owner: solana_address::Address,
-    ) -> &mut Self {
-        self.current_delegate_or_owner = Some(current_delegate_or_owner);
-        self
-    }
-    #[inline(always)]
-    pub fn token_owner_record(&mut self, token_owner_record: solana_address::Address) -> &mut Self {
-        self.token_owner_record = Some(token_owner_record);
-        self
+        token_owner_record: solana_address::Address,
+    ) -> Self {
+        Self {
+            current_delegate_or_owner,
+            token_owner_record,
+            new_governance_delegate: None,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// `[optional argument]`
     #[inline(always)]
@@ -145,13 +139,11 @@ impl SetGovernanceDelegateBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let current_delegate_or_owner = self.current_delegate_or_owner;
+        let token_owner_record = self.token_owner_record;
         let accounts = SetGovernanceDelegate {
-            current_delegate_or_owner: self
-                .current_delegate_or_owner
-                .expect("current_delegate_or_owner is not set"),
-            token_owner_record: self
-                .token_owner_record
-                .expect("token_owner_record is not set"),
+            current_delegate_or_owner,
+            token_owner_record,
         };
         let args = SetGovernanceDelegateInstructionArgs {
             new_governance_delegate: self.new_governance_delegate.clone(),
@@ -272,32 +264,19 @@ pub struct SetGovernanceDelegateCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> SetGovernanceDelegateCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        current_delegate_or_owner: &'b solana_account_info::AccountInfo<'a>,
+        token_owner_record: &'b solana_account_info::AccountInfo<'a>,
+    ) -> Self {
         let instruction = Box::new(SetGovernanceDelegateCpiBuilderInstruction {
-            __program: program,
-            current_delegate_or_owner: None,
-            token_owner_record: None,
+            __program,
+            current_delegate_or_owner,
+            token_owner_record,
             new_governance_delegate: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// Current governance delegate or governing token owner
-    #[inline(always)]
-    pub fn current_delegate_or_owner(
-        &mut self,
-        current_delegate_or_owner: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.current_delegate_or_owner = Some(current_delegate_or_owner);
-        self
-    }
-    #[inline(always)]
-    pub fn token_owner_record(
-        &mut self,
-        token_owner_record: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.token_owner_record = Some(token_owner_record);
-        self
     }
     /// `[optional argument]`
     #[inline(always)]
@@ -344,16 +323,8 @@ impl<'a, 'b> SetGovernanceDelegateCpiBuilder<'a, 'b> {
         };
         let instruction = SetGovernanceDelegateCpi {
             __program: self.instruction.__program,
-
-            current_delegate_or_owner: self
-                .instruction
-                .current_delegate_or_owner
-                .expect("current_delegate_or_owner is not set"),
-
-            token_owner_record: self
-                .instruction
-                .token_owner_record
-                .expect("token_owner_record is not set"),
+            current_delegate_or_owner: self.instruction.current_delegate_or_owner,
+            token_owner_record: self.instruction.token_owner_record,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -366,8 +337,8 @@ impl<'a, 'b> SetGovernanceDelegateCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct SetGovernanceDelegateCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    current_delegate_or_owner: Option<&'b solana_account_info::AccountInfo<'a>>,
-    token_owner_record: Option<&'b solana_account_info::AccountInfo<'a>>,
+    current_delegate_or_owner: &'b solana_account_info::AccountInfo<'a>,
+    token_owner_record: &'b solana_account_info::AccountInfo<'a>,
     new_governance_delegate: Option<Address>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,

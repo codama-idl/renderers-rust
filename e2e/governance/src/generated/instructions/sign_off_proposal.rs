@@ -98,48 +98,32 @@ impl Default for SignOffProposalInstructionData {
 ///   2. `[writable]` proposal_account
 ///   3. `[signer]` signatory_account
 ///   4. `[writable]` token_owner_record
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct SignOffProposalBuilder {
-    realm_account: Option<solana_address::Address>,
-    governance_account: Option<solana_address::Address>,
-    proposal_account: Option<solana_address::Address>,
-    signatory_account: Option<solana_address::Address>,
-    token_owner_record: Option<solana_address::Address>,
+    realm_account: solana_address::Address,
+    governance_account: solana_address::Address,
+    proposal_account: solana_address::Address,
+    signatory_account: solana_address::Address,
+    token_owner_record: solana_address::Address,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl SignOffProposalBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    #[inline(always)]
-    pub fn realm_account(&mut self, realm_account: solana_address::Address) -> &mut Self {
-        self.realm_account = Some(realm_account);
-        self
-    }
-    #[inline(always)]
-    pub fn governance_account(&mut self, governance_account: solana_address::Address) -> &mut Self {
-        self.governance_account = Some(governance_account);
-        self
-    }
-    #[inline(always)]
-    pub fn proposal_account(&mut self, proposal_account: solana_address::Address) -> &mut Self {
-        self.proposal_account = Some(proposal_account);
-        self
-    }
-    /// Signatory account signing off the Proposal.
-    ///     Or Proposal owner if the owner hasn't appointed any signatories
-    #[inline(always)]
-    pub fn signatory_account(&mut self, signatory_account: solana_address::Address) -> &mut Self {
-        self.signatory_account = Some(signatory_account);
-        self
-    }
-    /// TokenOwnerRecord for the Proposal owner, required when the owner signs off the Proposal.
-    ///         Or `[writable]` SignatoryRecord account, required when non owner signs off the Proposal
-    #[inline(always)]
-    pub fn token_owner_record(&mut self, token_owner_record: solana_address::Address) -> &mut Self {
-        self.token_owner_record = Some(token_owner_record);
-        self
+    pub fn new(
+        realm_account: solana_address::Address,
+        governance_account: solana_address::Address,
+        proposal_account: solana_address::Address,
+        signatory_account: solana_address::Address,
+        token_owner_record: solana_address::Address,
+    ) -> Self {
+        Self {
+            realm_account,
+            governance_account,
+            proposal_account,
+            signatory_account,
+            token_owner_record,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -158,18 +142,17 @@ impl SignOffProposalBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let realm_account = self.realm_account;
+        let governance_account = self.governance_account;
+        let proposal_account = self.proposal_account;
+        let signatory_account = self.signatory_account;
+        let token_owner_record = self.token_owner_record;
         let accounts = SignOffProposal {
-            realm_account: self.realm_account.expect("realm_account is not set"),
-            governance_account: self
-                .governance_account
-                .expect("governance_account is not set"),
-            proposal_account: self.proposal_account.expect("proposal_account is not set"),
-            signatory_account: self
-                .signatory_account
-                .expect("signatory_account is not set"),
-            token_owner_record: self
-                .token_owner_record
-                .expect("token_owner_record is not set"),
+            realm_account,
+            governance_account,
+            proposal_account,
+            signatory_account,
+            token_owner_record,
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
@@ -315,61 +298,24 @@ pub struct SignOffProposalCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> SignOffProposalCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        realm_account: &'b solana_account_info::AccountInfo<'a>,
+        governance_account: &'b solana_account_info::AccountInfo<'a>,
+        proposal_account: &'b solana_account_info::AccountInfo<'a>,
+        signatory_account: &'b solana_account_info::AccountInfo<'a>,
+        token_owner_record: &'b solana_account_info::AccountInfo<'a>,
+    ) -> Self {
         let instruction = Box::new(SignOffProposalCpiBuilderInstruction {
-            __program: program,
-            realm_account: None,
-            governance_account: None,
-            proposal_account: None,
-            signatory_account: None,
-            token_owner_record: None,
+            __program,
+            realm_account,
+            governance_account,
+            proposal_account,
+            signatory_account,
+            token_owner_record,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn realm_account(
-        &mut self,
-        realm_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.realm_account = Some(realm_account);
-        self
-    }
-    #[inline(always)]
-    pub fn governance_account(
-        &mut self,
-        governance_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.governance_account = Some(governance_account);
-        self
-    }
-    #[inline(always)]
-    pub fn proposal_account(
-        &mut self,
-        proposal_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.proposal_account = Some(proposal_account);
-        self
-    }
-    /// Signatory account signing off the Proposal.
-    ///     Or Proposal owner if the owner hasn't appointed any signatories
-    #[inline(always)]
-    pub fn signatory_account(
-        &mut self,
-        signatory_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.signatory_account = Some(signatory_account);
-        self
-    }
-    /// TokenOwnerRecord for the Proposal owner, required when the owner signs off the Proposal.
-    ///         Or `[writable]` SignatoryRecord account, required when non owner signs off the Proposal
-    #[inline(always)]
-    pub fn token_owner_record(
-        &mut self,
-        token_owner_record: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.token_owner_record = Some(token_owner_record);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -407,31 +353,11 @@ impl<'a, 'b> SignOffProposalCpiBuilder<'a, 'b> {
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let instruction = SignOffProposalCpi {
             __program: self.instruction.__program,
-
-            realm_account: self
-                .instruction
-                .realm_account
-                .expect("realm_account is not set"),
-
-            governance_account: self
-                .instruction
-                .governance_account
-                .expect("governance_account is not set"),
-
-            proposal_account: self
-                .instruction
-                .proposal_account
-                .expect("proposal_account is not set"),
-
-            signatory_account: self
-                .instruction
-                .signatory_account
-                .expect("signatory_account is not set"),
-
-            token_owner_record: self
-                .instruction
-                .token_owner_record
-                .expect("token_owner_record is not set"),
+            realm_account: self.instruction.realm_account,
+            governance_account: self.instruction.governance_account,
+            proposal_account: self.instruction.proposal_account,
+            signatory_account: self.instruction.signatory_account,
+            token_owner_record: self.instruction.token_owner_record,
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -443,11 +369,11 @@ impl<'a, 'b> SignOffProposalCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct SignOffProposalCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    realm_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    governance_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    proposal_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    signatory_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    token_owner_record: Option<&'b solana_account_info::AccountInfo<'a>>,
+    realm_account: &'b solana_account_info::AccountInfo<'a>,
+    governance_account: &'b solana_account_info::AccountInfo<'a>,
+    proposal_account: &'b solana_account_info::AccountInfo<'a>,
+    signatory_account: &'b solana_account_info::AccountInfo<'a>,
+    token_owner_record: &'b solana_account_info::AccountInfo<'a>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

@@ -74,20 +74,18 @@ impl Instruction4InstructionArgs {
 ///
 /// ### Accounts:
 ///
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct Instruction4Builder {
-    my_argument: Option<u64>,
+    my_argument: u64,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl Instruction4Builder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    #[inline(always)]
-    pub fn my_argument(&mut self, my_argument: u64) -> &mut Self {
-        self.my_argument = Some(my_argument);
-        self
+    pub fn new(my_argument: u64) -> Self {
+        Self {
+            my_argument,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -108,7 +106,7 @@ impl Instruction4Builder {
     pub fn instruction(&self) -> solana_instruction::Instruction {
         let accounts = Instruction4 {};
         let args = Instruction4InstructionArgs {
-            my_argument: self.my_argument.clone().expect("my_argument is not set"),
+            my_argument: self.my_argument.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -197,18 +195,13 @@ pub struct Instruction4CpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> Instruction4CpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(__program: &'b solana_account_info::AccountInfo<'a>, my_argument: u64) -> Self {
         let instruction = Box::new(Instruction4CpiBuilderInstruction {
-            __program: program,
-            my_argument: None,
+            __program,
+            my_argument,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn my_argument(&mut self, my_argument: u64) -> &mut Self {
-        self.instruction.my_argument = Some(my_argument);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -245,11 +238,7 @@ impl<'a, 'b> Instruction4CpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = Instruction4InstructionArgs {
-            my_argument: self
-                .instruction
-                .my_argument
-                .clone()
-                .expect("my_argument is not set"),
+            my_argument: self.instruction.my_argument.clone(),
         };
         let instruction = Instruction4Cpi {
             __program: self.instruction.__program,
@@ -265,7 +254,7 @@ impl<'a, 'b> Instruction4CpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct Instruction4CpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    my_argument: Option<u64>,
+    my_argument: u64,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

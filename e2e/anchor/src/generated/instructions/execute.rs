@@ -124,45 +124,39 @@ impl ExecuteInstructionArgs {
 ///   4. `[optional]` extra_metas_account (default to PDA derived from 'extraMetasAccount')
 ///   5. `[]` guard
 ///   6. `[optional]` instruction_sysvar_account (default to `Sysvar1nstructions1111111111111111111111111`)
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct ExecuteBuilder {
-    source_account: Option<solana_address::Address>,
-    mint: Option<solana_address::Address>,
-    destination_account: Option<solana_address::Address>,
-    owner_delegate: Option<solana_address::Address>,
+    source_account: solana_address::Address,
+    mint: solana_address::Address,
+    destination_account: solana_address::Address,
+    owner_delegate: solana_address::Address,
     extra_metas_account: Option<solana_address::Address>,
-    guard: Option<solana_address::Address>,
+    guard: solana_address::Address,
     instruction_sysvar_account: Option<solana_address::Address>,
-    amount: Option<u64>,
+    amount: u64,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl ExecuteBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    #[inline(always)]
-    pub fn source_account(&mut self, source_account: solana_address::Address) -> &mut Self {
-        self.source_account = Some(source_account);
-        self
-    }
-    #[inline(always)]
-    pub fn mint(&mut self, mint: solana_address::Address) -> &mut Self {
-        self.mint = Some(mint);
-        self
-    }
-    #[inline(always)]
-    pub fn destination_account(
-        &mut self,
+    pub fn new(
+        source_account: solana_address::Address,
+        mint: solana_address::Address,
         destination_account: solana_address::Address,
-    ) -> &mut Self {
-        self.destination_account = Some(destination_account);
-        self
-    }
-    #[inline(always)]
-    pub fn owner_delegate(&mut self, owner_delegate: solana_address::Address) -> &mut Self {
-        self.owner_delegate = Some(owner_delegate);
-        self
+        owner_delegate: solana_address::Address,
+        guard: solana_address::Address,
+        amount: u64,
+    ) -> Self {
+        Self {
+            source_account,
+            mint,
+            destination_account,
+            owner_delegate,
+            extra_metas_account: None,
+            guard,
+            instruction_sysvar_account: None,
+            amount,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// `[optional account, default to PDA derived from 'extraMetasAccount']`
     #[inline(always)]
@@ -173,11 +167,6 @@ impl ExecuteBuilder {
         self.extra_metas_account = Some(extra_metas_account);
         self
     }
-    #[inline(always)]
-    pub fn guard(&mut self, guard: solana_address::Address) -> &mut Self {
-        self.guard = Some(guard);
-        self
-    }
     /// `[optional account, default to 'Sysvar1nstructions1111111111111111111111111']`
     #[inline(always)]
     pub fn instruction_sysvar_account(
@@ -185,11 +174,6 @@ impl ExecuteBuilder {
         instruction_sysvar_account: solana_address::Address,
     ) -> &mut Self {
         self.instruction_sysvar_account = Some(instruction_sysvar_account);
-        self
-    }
-    #[inline(always)]
-    pub fn amount(&mut self, amount: u64) -> &mut Self {
-        self.amount = Some(amount);
         self
     }
     /// Add an additional account to the instruction.
@@ -209,29 +193,30 @@ impl ExecuteBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
-        let extra_metas_account = self.extra_metas_account.unwrap_or_else(|| {
-            crate::pdas::find_extra_metas_account_pda(
-                &self
-                    .mint
-                    .expect("mint is needed for extra_metas_account PDA"),
-            )
-            .0
-        });
+        let source_account = self.source_account;
+        let mint = self.mint;
+        let destination_account = self.destination_account;
+        let owner_delegate = self.owner_delegate;
+        let extra_metas_account = self
+            .extra_metas_account
+            .unwrap_or_else(|| crate::pdas::find_extra_metas_account_pda(&self.mint).0);
+        let guard = self.guard;
+        let instruction_sysvar_account =
+            self.instruction_sysvar_account
+                .unwrap_or(solana_address::address!(
+                    "Sysvar1nstructions1111111111111111111111111"
+                ));
         let accounts = Execute {
-            source_account: self.source_account.expect("source_account is not set"),
-            mint: self.mint.expect("mint is not set"),
-            destination_account: self
-                .destination_account
-                .expect("destination_account is not set"),
-            owner_delegate: self.owner_delegate.expect("owner_delegate is not set"),
+            source_account,
+            mint,
+            destination_account,
+            owner_delegate,
             extra_metas_account,
-            guard: self.guard.expect("guard is not set"),
-            instruction_sysvar_account: self.instruction_sysvar_account.unwrap_or(
-                solana_address::address!("Sysvar1nstructions1111111111111111111111111"),
-            ),
+            guard,
+            instruction_sysvar_account,
         };
         let args = ExecuteInstructionArgs {
-            amount: self.amount.clone().expect("amount is not set"),
+            amount: self.amount.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -401,75 +386,30 @@ pub struct ExecuteCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> ExecuteCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        source_account: &'b solana_account_info::AccountInfo<'a>,
+        mint: &'b solana_account_info::AccountInfo<'a>,
+        destination_account: &'b solana_account_info::AccountInfo<'a>,
+        owner_delegate: &'b solana_account_info::AccountInfo<'a>,
+        extra_metas_account: &'b solana_account_info::AccountInfo<'a>,
+        guard: &'b solana_account_info::AccountInfo<'a>,
+        instruction_sysvar_account: &'b solana_account_info::AccountInfo<'a>,
+        amount: u64,
+    ) -> Self {
         let instruction = Box::new(ExecuteCpiBuilderInstruction {
-            __program: program,
-            source_account: None,
-            mint: None,
-            destination_account: None,
-            owner_delegate: None,
-            extra_metas_account: None,
-            guard: None,
-            instruction_sysvar_account: None,
-            amount: None,
+            __program,
+            source_account,
+            mint,
+            destination_account,
+            owner_delegate,
+            extra_metas_account,
+            guard,
+            instruction_sysvar_account,
+            amount,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn source_account(
-        &mut self,
-        source_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.source_account = Some(source_account);
-        self
-    }
-    #[inline(always)]
-    pub fn mint(&mut self, mint: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.mint = Some(mint);
-        self
-    }
-    #[inline(always)]
-    pub fn destination_account(
-        &mut self,
-        destination_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.destination_account = Some(destination_account);
-        self
-    }
-    #[inline(always)]
-    pub fn owner_delegate(
-        &mut self,
-        owner_delegate: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.owner_delegate = Some(owner_delegate);
-        self
-    }
-    #[inline(always)]
-    pub fn extra_metas_account(
-        &mut self,
-        extra_metas_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.extra_metas_account = Some(extra_metas_account);
-        self
-    }
-    #[inline(always)]
-    pub fn guard(&mut self, guard: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.guard = Some(guard);
-        self
-    }
-    #[inline(always)]
-    pub fn instruction_sysvar_account(
-        &mut self,
-        instruction_sysvar_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.instruction_sysvar_account = Some(instruction_sysvar_account);
-        self
-    }
-    #[inline(always)]
-    pub fn amount(&mut self, amount: u64) -> &mut Self {
-        self.instruction.amount = Some(amount);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -506,39 +446,17 @@ impl<'a, 'b> ExecuteCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = ExecuteInstructionArgs {
-            amount: self.instruction.amount.clone().expect("amount is not set"),
+            amount: self.instruction.amount.clone(),
         };
         let instruction = ExecuteCpi {
             __program: self.instruction.__program,
-
-            source_account: self
-                .instruction
-                .source_account
-                .expect("source_account is not set"),
-
-            mint: self.instruction.mint.expect("mint is not set"),
-
-            destination_account: self
-                .instruction
-                .destination_account
-                .expect("destination_account is not set"),
-
-            owner_delegate: self
-                .instruction
-                .owner_delegate
-                .expect("owner_delegate is not set"),
-
-            extra_metas_account: self
-                .instruction
-                .extra_metas_account
-                .expect("extra_metas_account is not set"),
-
-            guard: self.instruction.guard.expect("guard is not set"),
-
-            instruction_sysvar_account: self
-                .instruction
-                .instruction_sysvar_account
-                .expect("instruction_sysvar_account is not set"),
+            source_account: self.instruction.source_account,
+            mint: self.instruction.mint,
+            destination_account: self.instruction.destination_account,
+            owner_delegate: self.instruction.owner_delegate,
+            extra_metas_account: self.instruction.extra_metas_account,
+            guard: self.instruction.guard,
+            instruction_sysvar_account: self.instruction.instruction_sysvar_account,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -551,14 +469,14 @@ impl<'a, 'b> ExecuteCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct ExecuteCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    source_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    mint: Option<&'b solana_account_info::AccountInfo<'a>>,
-    destination_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    owner_delegate: Option<&'b solana_account_info::AccountInfo<'a>>,
-    extra_metas_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    guard: Option<&'b solana_account_info::AccountInfo<'a>>,
-    instruction_sysvar_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    amount: Option<u64>,
+    source_account: &'b solana_account_info::AccountInfo<'a>,
+    mint: &'b solana_account_info::AccountInfo<'a>,
+    destination_account: &'b solana_account_info::AccountInfo<'a>,
+    owner_delegate: &'b solana_account_info::AccountInfo<'a>,
+    extra_metas_account: &'b solana_account_info::AccountInfo<'a>,
+    guard: &'b solana_account_info::AccountInfo<'a>,
+    instruction_sysvar_account: &'b solana_account_info::AccountInfo<'a>,
+    amount: u64,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

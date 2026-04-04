@@ -132,28 +132,52 @@ impl CreateGuardInstructionArgs {
 ///   5. `[optional]` associated_token_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
 ///   6. `[optional]` token_program (default to `TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb`)
 ///   7. `[optional]` system_program (default to `11111111111111111111111111111111`)
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct CreateGuardBuilder {
     guard: Option<solana_address::Address>,
-    mint: Option<solana_address::Address>,
+    mint: solana_address::Address,
     mint_token_account: Option<solana_address::Address>,
-    guard_authority: Option<solana_address::Address>,
-    payer: Option<solana_address::Address>,
+    guard_authority: solana_address::Address,
+    payer: solana_address::Address,
     associated_token_program: Option<solana_address::Address>,
     token_program: Option<solana_address::Address>,
     system_program: Option<solana_address::Address>,
-    name: Option<String>,
-    symbol: Option<String>,
-    uri: Option<String>,
+    name: String,
+    symbol: String,
+    uri: String,
     cpi_rule: Option<CpiRule>,
     transfer_amount_rule: Option<TransferAmountRule>,
-    additional_fields_rule: Option<Vec<MetadataAdditionalFieldRule>>,
+    additional_fields_rule: Vec<MetadataAdditionalFieldRule>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl CreateGuardBuilder {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(
+        mint: solana_address::Address,
+        guard_authority: solana_address::Address,
+        payer: solana_address::Address,
+        name: String,
+        symbol: String,
+        uri: String,
+        additional_fields_rule: Vec<MetadataAdditionalFieldRule>,
+    ) -> Self {
+        Self {
+            guard: None,
+            mint,
+            mint_token_account: None,
+            guard_authority,
+            payer,
+            associated_token_program: None,
+            token_program: None,
+            system_program: None,
+            name,
+            symbol,
+            uri,
+            cpi_rule: None,
+            transfer_amount_rule: None,
+            additional_fields_rule,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// `[optional account, default to PDA derived from 'guard']`
     #[inline(always)]
@@ -161,25 +185,10 @@ impl CreateGuardBuilder {
         self.guard = Some(guard);
         self
     }
-    #[inline(always)]
-    pub fn mint(&mut self, mint: solana_address::Address) -> &mut Self {
-        self.mint = Some(mint);
-        self
-    }
     /// `[optional account, default to PDA derived from 'mintTokenAccount']`
     #[inline(always)]
     pub fn mint_token_account(&mut self, mint_token_account: solana_address::Address) -> &mut Self {
         self.mint_token_account = Some(mint_token_account);
-        self
-    }
-    #[inline(always)]
-    pub fn guard_authority(&mut self, guard_authority: solana_address::Address) -> &mut Self {
-        self.guard_authority = Some(guard_authority);
-        self
-    }
-    #[inline(always)]
-    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
-        self.payer = Some(payer);
         self
     }
     /// `[optional account, default to 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL']`
@@ -203,21 +212,6 @@ impl CreateGuardBuilder {
         self.system_program = Some(system_program);
         self
     }
-    #[inline(always)]
-    pub fn name(&mut self, name: String) -> &mut Self {
-        self.name = Some(name);
-        self
-    }
-    #[inline(always)]
-    pub fn symbol(&mut self, symbol: String) -> &mut Self {
-        self.symbol = Some(symbol);
-        self
-    }
-    #[inline(always)]
-    pub fn uri(&mut self, uri: String) -> &mut Self {
-        self.uri = Some(uri);
-        self
-    }
     /// `[optional argument]`
     #[inline(always)]
     pub fn cpi_rule(&mut self, cpi_rule: CpiRule) -> &mut Self {
@@ -228,14 +222,6 @@ impl CreateGuardBuilder {
     #[inline(always)]
     pub fn transfer_amount_rule(&mut self, transfer_amount_rule: TransferAmountRule) -> &mut Self {
         self.transfer_amount_rule = Some(transfer_amount_rule);
-        self
-    }
-    #[inline(always)]
-    pub fn additional_fields_rule(
-        &mut self,
-        additional_fields_rule: Vec<MetadataAdditionalFieldRule>,
-    ) -> &mut Self {
-        self.additional_fields_rule = Some(additional_fields_rule);
         self
     }
     /// Add an additional account to the instruction.
@@ -255,54 +241,55 @@ impl CreateGuardBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
-        let guard = self.guard.unwrap_or_else(|| {
-            crate::pdas::find_guard_pda(&self.mint.expect("mint is needed for guard PDA")).0
-        });
+        let guard = self
+            .guard
+            .unwrap_or_else(|| crate::pdas::find_guard_pda(&self.mint).0);
+        let mint = self.mint;
         let mint_token_account = self.mint_token_account.unwrap_or_else(|| {
             solana_address::Address::find_program_address(
                 &[
-                    self.guard_authority
-                        .expect("guard_authority is needed for mint_token_account PDA")
-                        .as_ref(),
+                    self.guard_authority.as_ref(),
                     self.token_program
                         .unwrap_or(solana_address::address!(
                             "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
                         ))
                         .as_ref(),
-                    self.mint
-                        .expect("mint is needed for mint_token_account PDA")
-                        .as_ref(),
+                    self.mint.as_ref(),
                 ],
                 &solana_address::address!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
             )
             .0
         });
+        let guard_authority = self.guard_authority;
+        let payer = self.payer;
+        let associated_token_program =
+            self.associated_token_program
+                .unwrap_or(solana_address::address!(
+                    "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+                ));
+        let token_program = self.token_program.unwrap_or(solana_address::address!(
+            "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        ));
+        let system_program = self
+            .system_program
+            .unwrap_or(solana_address::address!("11111111111111111111111111111111"));
         let accounts = CreateGuard {
             guard,
-            mint: self.mint.expect("mint is not set"),
+            mint,
             mint_token_account,
-            guard_authority: self.guard_authority.expect("guard_authority is not set"),
-            payer: self.payer.expect("payer is not set"),
-            associated_token_program: self.associated_token_program.unwrap_or(
-                solana_address::address!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
-            ),
-            token_program: self.token_program.unwrap_or(solana_address::address!(
-                "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
-            )),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
+            guard_authority,
+            payer,
+            associated_token_program,
+            token_program,
+            system_program,
         };
         let args = CreateGuardInstructionArgs {
-            name: self.name.clone().expect("name is not set"),
-            symbol: self.symbol.clone().expect("symbol is not set"),
-            uri: self.uri.clone().expect("uri is not set"),
+            name: self.name.clone(),
+            symbol: self.symbol.clone(),
+            uri: self.uri.clone(),
             cpi_rule: self.cpi_rule.clone(),
             transfer_amount_rule: self.transfer_amount_rule.clone(),
-            additional_fields_rule: self
-                .additional_fields_rule
-                .clone()
-                .expect("additional_fields_rule is not set"),
+            additional_fields_rule: self.additional_fields_rule.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -474,96 +461,40 @@ pub struct CreateGuardCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> CreateGuardCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        guard: &'b solana_account_info::AccountInfo<'a>,
+        mint: &'b solana_account_info::AccountInfo<'a>,
+        mint_token_account: &'b solana_account_info::AccountInfo<'a>,
+        guard_authority: &'b solana_account_info::AccountInfo<'a>,
+        payer: &'b solana_account_info::AccountInfo<'a>,
+        associated_token_program: &'b solana_account_info::AccountInfo<'a>,
+        token_program: &'b solana_account_info::AccountInfo<'a>,
+        system_program: &'b solana_account_info::AccountInfo<'a>,
+        name: String,
+        symbol: String,
+        uri: String,
+        additional_fields_rule: Vec<MetadataAdditionalFieldRule>,
+    ) -> Self {
         let instruction = Box::new(CreateGuardCpiBuilderInstruction {
-            __program: program,
-            guard: None,
-            mint: None,
-            mint_token_account: None,
-            guard_authority: None,
-            payer: None,
-            associated_token_program: None,
-            token_program: None,
-            system_program: None,
-            name: None,
-            symbol: None,
-            uri: None,
+            __program,
+            guard,
+            mint,
+            mint_token_account,
+            guard_authority,
+            payer,
+            associated_token_program,
+            token_program,
+            system_program,
+            name,
+            symbol,
+            uri,
             cpi_rule: None,
             transfer_amount_rule: None,
-            additional_fields_rule: None,
+            additional_fields_rule,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn guard(&mut self, guard: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.guard = Some(guard);
-        self
-    }
-    #[inline(always)]
-    pub fn mint(&mut self, mint: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.mint = Some(mint);
-        self
-    }
-    #[inline(always)]
-    pub fn mint_token_account(
-        &mut self,
-        mint_token_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.mint_token_account = Some(mint_token_account);
-        self
-    }
-    #[inline(always)]
-    pub fn guard_authority(
-        &mut self,
-        guard_authority: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.guard_authority = Some(guard_authority);
-        self
-    }
-    #[inline(always)]
-    pub fn payer(&mut self, payer: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.payer = Some(payer);
-        self
-    }
-    #[inline(always)]
-    pub fn associated_token_program(
-        &mut self,
-        associated_token_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.associated_token_program = Some(associated_token_program);
-        self
-    }
-    #[inline(always)]
-    pub fn token_program(
-        &mut self,
-        token_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.token_program = Some(token_program);
-        self
-    }
-    #[inline(always)]
-    pub fn system_program(
-        &mut self,
-        system_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn name(&mut self, name: String) -> &mut Self {
-        self.instruction.name = Some(name);
-        self
-    }
-    #[inline(always)]
-    pub fn symbol(&mut self, symbol: String) -> &mut Self {
-        self.instruction.symbol = Some(symbol);
-        self
-    }
-    #[inline(always)]
-    pub fn uri(&mut self, uri: String) -> &mut Self {
-        self.instruction.uri = Some(uri);
-        self
     }
     /// `[optional argument]`
     #[inline(always)]
@@ -575,14 +506,6 @@ impl<'a, 'b> CreateGuardCpiBuilder<'a, 'b> {
     #[inline(always)]
     pub fn transfer_amount_rule(&mut self, transfer_amount_rule: TransferAmountRule) -> &mut Self {
         self.instruction.transfer_amount_rule = Some(transfer_amount_rule);
-        self
-    }
-    #[inline(always)]
-    pub fn additional_fields_rule(
-        &mut self,
-        additional_fields_rule: Vec<MetadataAdditionalFieldRule>,
-    ) -> &mut Self {
-        self.instruction.additional_fields_rule = Some(additional_fields_rule);
         self
     }
     /// Add an additional account to the instruction.
@@ -620,50 +543,23 @@ impl<'a, 'b> CreateGuardCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = CreateGuardInstructionArgs {
-            name: self.instruction.name.clone().expect("name is not set"),
-            symbol: self.instruction.symbol.clone().expect("symbol is not set"),
-            uri: self.instruction.uri.clone().expect("uri is not set"),
+            name: self.instruction.name.clone(),
+            symbol: self.instruction.symbol.clone(),
+            uri: self.instruction.uri.clone(),
             cpi_rule: self.instruction.cpi_rule.clone(),
             transfer_amount_rule: self.instruction.transfer_amount_rule.clone(),
-            additional_fields_rule: self
-                .instruction
-                .additional_fields_rule
-                .clone()
-                .expect("additional_fields_rule is not set"),
+            additional_fields_rule: self.instruction.additional_fields_rule.clone(),
         };
         let instruction = CreateGuardCpi {
             __program: self.instruction.__program,
-
-            guard: self.instruction.guard.expect("guard is not set"),
-
-            mint: self.instruction.mint.expect("mint is not set"),
-
-            mint_token_account: self
-                .instruction
-                .mint_token_account
-                .expect("mint_token_account is not set"),
-
-            guard_authority: self
-                .instruction
-                .guard_authority
-                .expect("guard_authority is not set"),
-
-            payer: self.instruction.payer.expect("payer is not set"),
-
-            associated_token_program: self
-                .instruction
-                .associated_token_program
-                .expect("associated_token_program is not set"),
-
-            token_program: self
-                .instruction
-                .token_program
-                .expect("token_program is not set"),
-
-            system_program: self
-                .instruction
-                .system_program
-                .expect("system_program is not set"),
+            guard: self.instruction.guard,
+            mint: self.instruction.mint,
+            mint_token_account: self.instruction.mint_token_account,
+            guard_authority: self.instruction.guard_authority,
+            payer: self.instruction.payer,
+            associated_token_program: self.instruction.associated_token_program,
+            token_program: self.instruction.token_program,
+            system_program: self.instruction.system_program,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -676,20 +572,20 @@ impl<'a, 'b> CreateGuardCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct CreateGuardCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    guard: Option<&'b solana_account_info::AccountInfo<'a>>,
-    mint: Option<&'b solana_account_info::AccountInfo<'a>>,
-    mint_token_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    guard_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
-    payer: Option<&'b solana_account_info::AccountInfo<'a>>,
-    associated_token_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    token_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    name: Option<String>,
-    symbol: Option<String>,
-    uri: Option<String>,
+    guard: &'b solana_account_info::AccountInfo<'a>,
+    mint: &'b solana_account_info::AccountInfo<'a>,
+    mint_token_account: &'b solana_account_info::AccountInfo<'a>,
+    guard_authority: &'b solana_account_info::AccountInfo<'a>,
+    payer: &'b solana_account_info::AccountInfo<'a>,
+    associated_token_program: &'b solana_account_info::AccountInfo<'a>,
+    token_program: &'b solana_account_info::AccountInfo<'a>,
+    system_program: &'b solana_account_info::AccountInfo<'a>,
+    name: String,
+    symbol: String,
+    uri: String,
     cpi_rule: Option<CpiRule>,
     transfer_amount_rule: Option<TransferAmountRule>,
-    additional_fields_rule: Option<Vec<MetadataAdditionalFieldRule>>,
+    additional_fields_rule: Vec<MetadataAdditionalFieldRule>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }
