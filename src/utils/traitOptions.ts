@@ -144,13 +144,26 @@ function partitionTraitsInFeatures(
 
     const unfeaturedTraits: string[] = [];
     const featuredTraits: Record<string, string[]> = {};
+    const seenTraits = new Set<string>();
+
     for (const trait of traits) {
+        seenTraits.add(trait);
         const feature: string | undefined = reverseFeatureFlags[trait];
         if (feature === undefined) {
             unfeaturedTraits.push(trait);
         } else {
             if (!featuredTraits[feature]) featuredTraits[feature] = [];
             featuredTraits[feature].push(trait);
+        }
+    }
+
+    // Inject feature-flagged traits that weren't already in the defaults/overrides.
+    for (const [feature, flaggedTraits] of Object.entries(featureFlags)) {
+        for (const trait of flaggedTraits) {
+            if (!seenTraits.has(trait)) {
+                if (!featuredTraits[feature]) featuredTraits[feature] = [];
+                featuredTraits[feature].push(trait);
+            }
         }
     }
 
@@ -191,9 +204,10 @@ export function getSerdeFieldAttribute(
     const nodeOverrides: string[] | undefined = sanitizedOverrides[node.name];
     const allTraits = nodeOverrides === undefined ? getDefaultTraits(nodeType, options) : nodeOverrides;
 
-    // Check if serde traits are present.
-    const hasSerdeSerialize = allTraits.some(t => t === 'serde::Serialize' || t === 'Serialize');
-    const hasSerdeDeserialize = allTraits.some(t => t === 'serde::Deserialize' || t === 'Deserialize');
+    // Check if serde traits are present in defaults/overrides or feature flags.
+    const allTraitsAndFeatured = [...allTraits, ...Object.values(options.featureFlags).flat()];
+    const hasSerdeSerialize = allTraitsAndFeatured.some(t => t === 'serde::Serialize' || t === 'Serialize');
+    const hasSerdeDeserialize = allTraitsAndFeatured.some(t => t === 'serde::Deserialize' || t === 'Deserialize');
 
     if (!hasSerdeSerialize && !hasSerdeDeserialize) {
         return '';

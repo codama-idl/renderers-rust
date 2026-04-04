@@ -342,6 +342,95 @@ describe('overridden traits', () => {
     });
 });
 
+describe('feature-flag-only traits (not in defaults)', () => {
+    test('it injects feature-flagged traits that are not in any defaults', () => {
+        // Given a struct defined type with no serde in defaults.
+        const node = definedTypeNode({
+            name: 'MyStruct',
+            type: structTypeNode([structFieldTypeNode({ name: 'value', type: numberTypeNode('u64') })]),
+        });
+
+        // When we specify traits only in featureFlags (not in baseDefaults).
+        const { render } = getTraitsFromNode(node, {
+            ...RESET_OPTIONS,
+            baseDefaults: ['Clone', 'Debug'],
+            featureFlags: {
+                serde: ['serde::Serialize'],
+            },
+        });
+
+        // Then we expect the feature-only trait to appear in cfg_attr.
+        expect(render).toBe(`#[derive(Clone, Debug)]\n` + `#[cfg_attr(feature = "serde", derive(serde::Serialize))]\n`);
+    });
+
+    test('it injects multiple feature-flag-only traits across different features', () => {
+        // Given a struct defined type.
+        const node = definedTypeNode({
+            name: 'MyStruct',
+            type: structTypeNode([structFieldTypeNode({ name: 'value', type: numberTypeNode('u64') })]),
+        });
+
+        // When we specify traits only in featureFlags with multiple features.
+        const { render } = getTraitsFromNode(node, {
+            ...RESET_OPTIONS,
+            baseDefaults: ['Clone'],
+            featureFlags: {
+                extra: ['MyExtraTrait'],
+                serde: ['serde::Serialize', 'serde::Deserialize'],
+            },
+        });
+
+        // Then all feature-only traits appear in their respective cfg_attr blocks.
+        expect(render).toBe(
+            `#[derive(Clone)]\n` +
+                `#[cfg_attr(feature = "extra", derive(MyExtraTrait))]\n` +
+                `#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]\n`,
+        );
+    });
+
+    test('it mixes default-partitioned and feature-only traits correctly', () => {
+        // Given a struct defined type.
+        const node = definedTypeNode({
+            name: 'MyStruct',
+            type: structTypeNode([structFieldTypeNode({ name: 'value', type: numberTypeNode('u64') })]),
+        });
+
+        // When some featureFlags traits are in defaults and some are not.
+        const { render } = getTraitsFromNode(node, {
+            ...RESET_OPTIONS,
+            baseDefaults: ['Clone', 'Debug', 'serde::Serialize'],
+            featureFlags: {
+                serde: ['serde::Serialize', 'serde::Deserialize'],
+            },
+        });
+
+        // Then Serialize (in defaults) and Deserialize (not in defaults) both appear under serde.
+        expect(render).toBe(
+            `#[derive(Clone, Debug)]\n` +
+                `#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]\n`,
+        );
+    });
+
+    test('it works with feature-only traits and no defaults at all', () => {
+        // Given a struct defined type.
+        const node = definedTypeNode({
+            name: 'MyStruct',
+            type: structTypeNode([structFieldTypeNode({ name: 'value', type: numberTypeNode('u64') })]),
+        });
+
+        // When all traits are only in featureFlags.
+        const { render } = getTraitsFromNode(node, {
+            ...RESET_OPTIONS,
+            featureFlags: {
+                serde: ['serde::Serialize'],
+            },
+        });
+
+        // Then only cfg_attr is rendered with no #[derive(...)].
+        expect(render).toBe(`#[cfg_attr(feature = "serde", derive(serde::Serialize))]\n`);
+    });
+});
+
 describe('fully qualified name traits', () => {
     test('it can use fully qualified names for traits instead of importing them', () => {
         // Given a scalar enum defined type.
@@ -634,5 +723,33 @@ describe('conditional serde field attributes', () => {
         const account = getFromRenderMap(renderMap, 'accounts/my_account.rs').content;
         expect(account).toContain('#[serde(with = "serde_with::As::<serde_with::DisplayFromStr>")]');
         expect(account).not.toContain('#[cfg_attr(feature = "serde"');
+    });
+
+    test('it emits serde field attributes when serde is only in featureFlags (not in defaults)', () => {
+        // Given an account with a Pubkey field.
+        const node = accountNode({
+            data: structTypeNode([structFieldTypeNode({ name: 'authority', type: publicKeyTypeNode() })]),
+            name: 'myAccount',
+        });
+
+        // When serde traits are only in featureFlags, not in baseDefaults.
+        const renderMap = visit(
+            rootNode(programNode({ accounts: [node], name: 'myProgram', publicKey: '1111' })),
+            getRenderMapVisitor({
+                traitOptions: {
+                    baseDefaults: ['BorshSerialize', 'BorshDeserialize', 'Clone', 'Debug'],
+                    featureFlags: {
+                        serde: ['serde::Serialize', 'serde::Deserialize'],
+                    },
+                },
+            }),
+        );
+
+        // Then we expect both cfg_attr derive and cfg_attr serde field attributes.
+        const account = getFromRenderMap(renderMap, 'accounts/my_account.rs').content;
+        expect(account).toContain('#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]');
+        expect(account).toContain(
+            '#[cfg_attr(feature = "serde", serde(with = "serde_with::As::<serde_with::DisplayFromStr>"))]',
+        );
     });
 });
