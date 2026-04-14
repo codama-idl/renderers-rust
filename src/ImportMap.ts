@@ -7,6 +7,7 @@ const DEFAULT_MODULE_MAP: Record<string, string> = {
     generated: 'crate::generated',
     generatedAccounts: 'crate::generated::accounts',
     generatedErrors: 'crate::generated::errors',
+    generatedEvents: 'crate::generated::events',
     generatedInstructions: 'crate::generated::instructions',
     generatedTypes: 'crate::generated::types',
     hooked: 'crate::hooked',

@@ -1,0 +1,39 @@
+{% extends "layout.njk" %}
+{% import "macros.njk" as macros %}
+
+{% block main %}
+
+{{ imports }}
+
+{{ macros.docblock(event.docs) }}
+{{- typeManifest.type }}
+
+{% for nestedStruct in typeManifest.nestedStructs %}
+{{ nestedStruct }}
+{% endfor %}
+
+{{ discriminatorConstants }}
+
+{% if constantDiscriminators.length > 0 %}
+impl {{ event.name | pascalCase }} {
+  #[inline(always)]
+  pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {
+{% for disc in constantDiscriminators %}
+{% if disc.offset === 0 %}
+    if data.get(..{{ disc.name }}.len()) != Some(&{{ disc.name }}[..]) {
+{% else %}
+    if data.get({{ disc.offset }}..{{ disc.offset }} + {{ disc.name }}.len()) != Some(&{{ disc.name }}[..]) {
+{% endif %}
+      return Err(std::io::Error::new(
+        std::io::ErrorKind::InvalidData,
+        "invalid event discriminator",
+      ));
+    }
+{% endfor %}
+    let mut data = &data[{{ hiddenPrefixSkip }}..];
+    Self::deserialize(&mut data)
+  }
+}
+{% endif %}
+
+{% endblock %}

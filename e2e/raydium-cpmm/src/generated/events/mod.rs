@@ -5,12 +5,10 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
-pub mod accounts;
-pub mod errors;
-pub mod events;
-pub mod instructions;
-pub mod programs;
-pub mod shared;
-pub mod types;
+pub(crate) mod r#lp_change_event;
+pub(crate) mod r#raydium_cp_swap_events;
+pub(crate) mod r#swap_event;
 
-pub(crate) use programs::*;
+pub use self::r#lp_change_event::*;
+pub use self::r#raydium_cp_swap_events::*;
+pub use self::r#swap_event::*;

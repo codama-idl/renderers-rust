@@ -1,0 +1,23 @@
+{% extends "layout.njk" %}
+
+{% block main %}
+
+{% for event in eventsToExport | sort(false, false, 'name') %}
+  pub(crate) mod r#{{ event.name | snakeCase }};
+{% endfor %}
+{% for program in programsToExport | sort(false, false, 'name') %}
+{% if programsWithEventEnum.has(program.name) %}
+  pub(crate) mod r#{{ program.name | snakeCase }}_events;
+{% endif %}
+{% endfor %}
+
+{% for event in eventsToExport | sort(false, false, 'name') %}
+  pub use self::r#{{ event.name | snakeCase }}::*;
+{% endfor %}
+{% for program in programsToExport | sort(false, false, 'name') %}
+{% if programsWithEventEnum.has(program.name) %}
+  pub use self::r#{{ program.name | snakeCase }}_events::*;
+{% endif %}
+{% endfor %}
+
+{% endblock %}

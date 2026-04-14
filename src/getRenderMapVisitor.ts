@@ -1,7 +1,10 @@
 import { logWarn } from '@codama/errors';
 import {
+    definedTypeNode,
+    EventNode,
     getAllAccounts,
     getAllDefinedTypes,
+    getAllEvents,
     getAllInstructionsWithSubs,
     getAllPrograms,
     InstructionNode,
@@ -31,9 +34,12 @@ import { ImportMap } from './ImportMap';
 import { renderValueNode } from './renderValueNodeVisitor';
 import {
     CargoDependencies,
+    constantDiscriminatorName,
     Fragment,
+    getDiscriminatorConditions,
     getDiscriminatorConstants,
     getImportFromFactory,
+    GetImportFromFunction,
     getTraitsFromNodeFactory,
     LinkOverrides,
     render,
@@ -54,6 +60,7 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
     const linkables = new LinkableDictionary();
     const stack = new NodeStack();
     let program: ProgramNode | null = null;
+    const programsWithEventEnum = new Set<string>();
 
     const renderParentInstructions = options.renderParentInstructions ?? false;
     const dependencyMap = options.dependencyMap ?? {};
@@ -68,7 +75,7 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
 
     return pipe(
         staticVisitor(() => createRenderMap<Fragment>(), {
-            keys: ['rootNode', 'programNode', 'instructionNode', 'accountNode', 'definedTypeNode'],
+            keys: ['rootNode', 'programNode', 'instructionNode', 'accountNode', 'definedTypeNode', 'eventNode'],
         }),
         v =>
             extendVisitor(v, {
@@ -141,6 +148,65 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                     return createRenderMap(`types/${snakeCase(node.name)}.rs`, {
                         content: render('definedTypesPage.njk', {
                             definedType: node,
+                            imports: imports.toString(dependencyMap),
+                            typeManifest,
+                        }),
+                        imports,
+                    });
+                },
+
+                visitEvent(node) {
+                    const discriminators = node.discriminators ?? [];
+                    const innerType = resolveNestedTypeNode(node.data);
+                    // Wrap as definedTypeNode so typeManifestVisitor generates the struct with derives.
+                    const syntheticType = definedTypeNode({
+                        docs: node.docs,
+                        name: node.name,
+                        type: innerType,
+                    });
+                    const typeManifest = visit(syntheticType, typeManifestVisitor);
+
+                    // Discriminator constants.
+                    const fields = isNode(innerType, 'structTypeNode') ? innerType.fields : [];
+                    const discriminatorConstants = getDiscriminatorConstants({
+                        discriminatorNodes: discriminators,
+                        fields,
+                        getImportFrom,
+                        prefix: node.name,
+                        typeManifestVisitor,
+                    });
+
+                    const hasFromBytes = eventHasFromBytes(node);
+                    const allConstantDiscriminators = hasFromBytes
+                        ? discriminators
+                              .filter(isNodeFilter('constantDiscriminatorNode'))
+                              .map(d => ({
+                                  name: snakeCase(
+                                      constantDiscriminatorName(node.name, d, discriminators),
+                                  ).toUpperCase(),
+                                  offset: d.offset,
+                              }))
+                              .sort((a, b) => a.offset - b.offset)
+                        : [];
+
+                    const hiddenPrefixSkipResult = hasFromBytes
+                        ? getHiddenPrefixSkip(node, allConstantDiscriminators)
+                        : null;
+                    const generateFromBytes = hasFromBytes && hiddenPrefixSkipResult !== null;
+                    const hiddenPrefixSkip = hiddenPrefixSkipResult ?? '0';
+                    const constantDiscriminators = generateFromBytes ? allConstantDiscriminators : [];
+
+                    const imports = new ImportMap()
+                        .mergeWithManifest(typeManifest)
+                        .mergeWith(discriminatorConstants.imports)
+                        .remove(`generatedEvents::${pascalCase(node.name)}`);
+
+                    return createRenderMap(`events/${snakeCase(node.name)}.rs`, {
+                        content: render('eventsPage.njk', {
+                            constantDiscriminators,
+                            discriminatorConstants: discriminatorConstants.render,
+                            event: node,
+                            hiddenPrefixSkip,
                             imports: imports.toString(dependencyMap),
                             typeManifest,
                         }),
@@ -260,6 +326,7 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                     let renders = mergeRenderMaps([
                         ...node.accounts.map(account => visit(account, self)),
                         ...node.definedTypes.map(type => visit(type, self)),
+                        ...(node.events ?? []).map(event => visit(event, self)),
                         ...getAllInstructionsWithSubs(node, {
                             leavesOnly: !renderParentInstructions,
                         }).map(ix => visit(ix, self)),
@@ -277,6 +344,23 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                         });
                     }
 
+                    // Program events (enum + identify + try_parse).
+                    const programEventsRender = buildProgramEventsRender(
+                        node.events ?? [],
+                        node,
+                        getImportFrom,
+                        typeManifestVisitor,
+                        dependencyMap,
+                    );
+                    if (programEventsRender) {
+                        programsWithEventEnum.add(node.name);
+                        renders = addToRenderMap(
+                            renders,
+                            `events/${snakeCase(node.name)}_events.rs`,
+                            programEventsRender,
+                        );
+                    }
+
                     program = null;
                     return renders;
                 },
@@ -288,20 +372,27 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                         leavesOnly: !renderParentInstructions,
                     });
                     const definedTypesToExport = getAllDefinedTypes(node);
+                    const eventsToExport = getAllEvents(node).filter(Boolean);
                     const hasAnythingToExport =
                         programsToExport.length > 0 ||
                         accountsToExport.length > 0 ||
                         instructionsToExport.length > 0 ||
-                        definedTypesToExport.length > 0;
+                        definedTypesToExport.length > 0 ||
+                        eventsToExport.length > 0;
 
                     const ctx = {
                         accountsToExport,
                         definedTypesToExport,
+                        eventsToExport,
                         hasAnythingToExport,
                         instructionsToExport,
                         programsToExport,
+                        programsWithEventEnum,
                         root: node,
                     };
+
+                    // Visit programs first so programsWithEventEnum is populated.
+                    const programRenders = getAllPrograms(node).map(p => visit(p, self));
 
                     return mergeRenderMaps([
                         createRenderMap({
@@ -312,6 +403,10 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                             ['errors/mod.rs']:
                                 programsToExport.length > 0
                                     ? { content: render('errorsMod.njk', ctx), imports: new ImportMap() }
+                                    : undefined,
+                            ['events/mod.rs']:
+                                eventsToExport.length > 0
+                                    ? { content: render('eventsMod.njk', ctx), imports: new ImportMap() }
                                     : undefined,
                             ['instructions/mod.rs']:
                                 instructionsToExport.length > 0
@@ -331,13 +426,110 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                                     ? { content: render('definedTypesMod.njk', ctx), imports: new ImportMap() }
                                     : undefined,
                         }),
-                        ...getAllPrograms(node).map(p => visit(p, self)),
+                        ...programRenders,
                     ]);
                 },
             }),
         v => recordNodeStackVisitor(v, stack),
         v => recordLinkablesOnFirstVisitVisitor(v, linkables),
     );
+}
+
+function eventHasFromBytes(event: EventNode): boolean {
+    const hasConstantDiscriminator = (event.discriminators ?? []).some(d => isNode(d, 'constantDiscriminatorNode'));
+    const dataHasHiddenPrefix = isNode(event.data, 'hiddenPrefixTypeNode');
+    return hasConstantDiscriminator && dataHasHiddenPrefix;
+}
+
+function getHiddenPrefixSkip(
+    event: EventNode,
+    constantDiscriminators: { name: string; offset: number }[],
+): string | null {
+    if (!isNode(event.data, 'hiddenPrefixTypeNode')) {
+        return '0';
+    }
+    let hasNonFixedSize = false;
+    const prefixSize = event.data.prefix.reduce((sum, p) => {
+        if (!isNode(p.type, 'fixedSizeTypeNode')) {
+            logWarn(
+                `[Rust] Event [${event.name}] has a non-fixed-size hidden prefix entry; ` +
+                    `from_bytes will not be generated.`,
+            );
+            hasNonFixedSize = true;
+            return sum;
+        }
+        return sum + p.type.size;
+    }, 0);
+    if (hasNonFixedSize) {
+        return null;
+    }
+    const firstDisc = constantDiscriminators.find(d => d.offset === 0);
+    if (event.data.prefix.length === 1 && firstDisc) {
+        return `${firstDisc.name}.len()`;
+    }
+    return String(prefixSize);
+}
+
+function buildProgramEventsRender(
+    events: EventNode[],
+    programNode: ProgramNode,
+    getImportFrom: GetImportFromFunction,
+    typeManifestVisitor: ReturnType<typeof getTypeManifestVisitor>,
+    dependencyMap: Record<string, string>,
+): { content: string; imports: ImportMap } | null {
+    if (events.length === 0) {
+        return null;
+    }
+
+    const imports = new ImportMap();
+
+    const eventsWithDiscriminators = events
+        .filter(event => (event.discriminators ?? []).length > 0)
+        .flatMap(event => {
+            const innerType = resolveNestedTypeNode(event.data);
+            const fields = isNode(innerType, 'structTypeNode') ? innerType.fields : [];
+            const { conditions, imports: condImports } = getDiscriminatorConditions({
+                discriminatorNodes: event.discriminators ?? [],
+                fields,
+                getImportFrom,
+                importPrefix: 'generatedEvents',
+                prefix: event.name,
+                typeManifestVisitor,
+            });
+            const discriminators = event.discriminators ?? [];
+            const eventConstantDiscs = discriminators.filter(isNodeFilter('constantDiscriminatorNode')).map(d => ({
+                name: snakeCase(constantDiscriminatorName(event.name, d, discriminators)).toUpperCase(),
+                offset: d.offset,
+            }));
+            const hiddenPrefixSkipResult = isNode(event.data, 'hiddenPrefixTypeNode')
+                ? getHiddenPrefixSkip(event, eventConstantDiscs)
+                : '0';
+
+            if (hiddenPrefixSkipResult === null || conditions.length === 0) {
+                return [];
+            }
+
+            imports.mergeWith(condImports);
+            return [{ ...event, conditions, hiddenPrefixSkip: hiddenPrefixSkipResult }];
+        });
+
+    if (eventsWithDiscriminators.length === 0) {
+        return null;
+    }
+
+    imports.add('borsh::BorshDeserialize');
+    eventsWithDiscriminators.forEach(event => {
+        imports.add(`generatedEvents::${pascalCase(event.name)}`);
+    });
+
+    return {
+        content: render('programEventsPage.njk', {
+            eventsWithDiscriminators,
+            imports: imports.toString(dependencyMap),
+            program: programNode,
+        }),
+        imports,
+    };
 }
 
 function getConflictsForInstructionAccountsAndArgs(instruction: InstructionNode): string[] {

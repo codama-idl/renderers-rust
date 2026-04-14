@@ -1,0 +1,55 @@
+{% extends "layout.njk" %}
+
+{% block main %}
+
+{{ imports }}
+
+/// Event kinds for the `{{ program.name | snakeCase }}` program.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum {{ program.name | pascalCase }}EventKind {
+{% for event in eventsWithDiscriminators | sort(false, false, 'name') %}
+    {{ event.name | pascalCase }},
+{% endfor %}
+}
+
+/// Identifies a `{{ program.name | snakeCase }}` event from the provided data.
+pub fn identify_{{ program.name | snakeCase }}_event(data: &[u8]) -> Option<{{ program.name | pascalCase }}EventKind> {
+{% for event in eventsWithDiscriminators | sort(false, false, 'name') %}
+    if {{ event.conditions | join(' && ') }} {
+        return Some({{ program.name | pascalCase }}EventKind::{{ event.name | pascalCase }});
+    }
+{% endfor %}
+    None
+}
+
+/// Parsed event variants for the `{{ program.name | snakeCase }}` program.
+#[derive(Clone, Debug, PartialEq)]
+pub enum {{ program.name | pascalCase }}Event {
+{% for event in eventsWithDiscriminators | sort(false, false, 'name') %}
+    {{ event.name | pascalCase }}({{ event.name | pascalCase }}),
+{% endfor %}
+}
+
+/// Tries to parse a `{{ program.name | snakeCase }}` event from the provided data.
+pub fn try_parse_{{ program.name | snakeCase }}_event(data: &[u8]) -> Option<Result<{{ program.name | pascalCase }}Event, std::io::Error>> {
+    let event_kind = identify_{{ program.name | snakeCase }}_event(data)?;
+    Some(match event_kind {
+{% for event in eventsWithDiscriminators | sort(false, false, 'name') %}
+{% if event.hiddenPrefixSkip != '0' %}
+        {{ program.name | pascalCase }}EventKind::{{ event.name | pascalCase }} => {
+            let mut data = &data[{{ event.hiddenPrefixSkip }}..];
+            {{ event.name | pascalCase }}::deserialize(&mut data)
+                .map({{ program.name | pascalCase }}Event::{{ event.name | pascalCase }})
+        }
+{% else %}
+        {{ program.name | pascalCase }}EventKind::{{ event.name | pascalCase }} => {
+            let mut data = data;
+            {{ event.name | pascalCase }}::deserialize(&mut data)
+                .map({{ program.name | pascalCase }}Event::{{ event.name | pascalCase }})
+        }
+{% endif %}
+{% endfor %}
+    })
+}
+
+{% endblock %}
