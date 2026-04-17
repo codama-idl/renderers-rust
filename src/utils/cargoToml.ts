@@ -246,8 +246,9 @@ function getUsedImportNames(renderMap: RenderMap<Fragment>, dependencyMap: Recor
     // and capturing only the crate name (first segment). For instance,
     // "some_crate::some_module::SomeType" or "::some_crate::SomeType".
     const PATH_REGEX = /\b(?:::)?([a-z_][a-z0-9_]*)(?:::[a-zA-Z0-9_]+)+/g;
+    const LINE_COMMENT_REGEX = /\/\/[^\n]*/g;
     const fromContent = fragments.flatMap(({ content }) => {
-        return [...content.matchAll(PATH_REGEX)]
+        return [...content.replace(LINE_COMMENT_REGEX, '').matchAll(PATH_REGEX)]
             .map(match => match[1])
             .filter(crateName => !RUST_CORE_IMPORTS.has(crateName));
     });
