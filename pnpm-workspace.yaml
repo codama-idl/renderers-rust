@@ -1,0 +1,14 @@
+# Forked codama packages, served as prebuilt tarballs by pkg.pr.new
+# (producer: ioxde/codama .github/workflows/main.yml `publish-preview` job).
+# Pinned to ioxde/codama@963c0db (main). workspace:* deps are rewritten by
+# pkg.pr.new at publish time, so installing these resolves the whole fork set.
+# These are overrides only — not part of the published @codama/renderers-rust.
+overrides:
+  '@codama/errors': 'https://pkg.pr.new/ioxde/codama/@codama/errors@963c0dbe9c2651348789fd8f583164d9b20619c1'
+  '@codama/node-types': 'https://pkg.pr.new/ioxde/codama/@codama/node-types@963c0dbe9c2651348789fd8f583164d9b20619c1'
+  '@codama/nodes': 'https://pkg.pr.new/ioxde/codama/@codama/nodes@963c0dbe9c2651348789fd8f583164d9b20619c1'
+  '@codama/nodes-from-anchor': 'https://pkg.pr.new/ioxde/codama/@codama/nodes-from-anchor@963c0dbe9c2651348789fd8f583164d9b20619c1'
+  '@codama/renderers-core': 'https://pkg.pr.new/ioxde/codama/@codama/renderers-core@963c0dbe9c2651348789fd8f583164d9b20619c1'
+  '@codama/visitors': 'https://pkg.pr.new/ioxde/codama/@codama/visitors@963c0dbe9c2651348789fd8f583164d9b20619c1'
+  '@codama/visitors-core': 'https://pkg.pr.new/ioxde/codama/@codama/visitors-core@963c0dbe9c2651348789fd8f583164d9b20619c1'
+  '@codama/validators': 'https://pkg.pr.new/ioxde/codama/@codama/validators@963c0dbe9c2651348789fd8f583164d9b20619c1'
