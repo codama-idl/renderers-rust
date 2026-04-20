@@ -5,6 +5,8 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
+use alloc::string::String;
+use alloc::vec::Vec;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 

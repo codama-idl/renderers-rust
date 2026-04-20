@@ -150,7 +150,7 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
 
                 visitInstruction(node) {
                     // Imports.
-                    const imports = new ImportMap();
+                    const imports = new ImportMap().add(['alloc::boxed::Box', 'alloc::vec::Vec']);
 
                     // canMergeAccountsAndArgs
                     const accountsAndArgsConflicts = getConflictsForInstructionAccountsAndArgs(node);

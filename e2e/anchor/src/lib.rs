@@ -1,3 +1,7 @@
+#![no_std]
+
+extern crate alloc;
+
 mod generated;
 
 pub use generated::programs::WEN_TRANSFER_GUARD_ID as ID;

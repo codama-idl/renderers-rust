@@ -131,7 +131,7 @@ impl {{ instruction.name | pascalCase }}InstructionData {
   }
 
   {% if dataTraits | hasTrait('BorshSerialize', 'borsh::BorshSerialize') %}
-  pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+  pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, borsh::io::Error> {
     borsh::to_vec(self)
   }
   {% endif %}
@@ -154,7 +154,7 @@ impl Default for {{ instruction.name | pascalCase }}InstructionData {
 
 {% if dataTraits | hasTrait('BorshSerialize', 'borsh::BorshSerialize') %}
 impl {{ instruction.name | pascalCase }}InstructionArgs {
-  pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+  pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, borsh::io::Error> {
     borsh::to_vec(self)
   }
 }

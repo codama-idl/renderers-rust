@@ -18,6 +18,7 @@ use num_derive::FromPrimitive;
     PartialEq,
     Copy,
     PartialOrd,
+    Ord,
     Hash,
     FromPrimitive,
 )]

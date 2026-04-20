@@ -8,6 +8,8 @@
 use crate::generated::types::CpiRule;
 use crate::generated::types::MetadataAdditionalFieldRule;
 use crate::generated::types::TransferAmountRule;
+use alloc::boxed::Box;
+use alloc::vec::Vec;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
@@ -86,7 +88,7 @@ impl UpdateGuardInstructionData {
         }
     }
 
-    pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+    pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, borsh::io::Error> {
         borsh::to_vec(self)
     }
 }
@@ -105,7 +107,7 @@ pub struct UpdateGuardInstructionArgs {
 }
 
 impl UpdateGuardInstructionArgs {
-    pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+    pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, borsh::io::Error> {
         borsh::to_vec(self)
     }
 }

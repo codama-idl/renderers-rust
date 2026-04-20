@@ -42,7 +42,7 @@ export const DEFAULT_TRAIT_OPTIONS: Required<TraitOptions> = {
     dataEnumDefaults: [],
     featureFlags: {},
     overrides: {},
-    scalarEnumDefaults: ['Copy', 'PartialOrd', 'Hash', 'num_derive::FromPrimitive'],
+    scalarEnumDefaults: ['Copy', 'PartialOrd', 'Ord', 'Hash', 'num_derive::FromPrimitive'],
     structDefaults: [],
     useFullyQualifiedName: false,
 };

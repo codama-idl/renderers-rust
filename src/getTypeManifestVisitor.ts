@@ -98,6 +98,7 @@ export function getTypeManifestVisitor(options: {
                             case 'u32':
                                 return {
                                     ...childManifest,
+                                    imports: childManifest.imports.add('alloc::vec::Vec'),
                                     type: `Vec<${childManifest.type}>`,
                                 };
                             case 'u8':
@@ -267,10 +268,10 @@ export function getTypeManifestVisitor(options: {
                     const key = visit(mapType.key, self);
                     const value = visit(mapType.value, self);
                     const mergedManifest = mergeManifests([key, value]);
-                    mergedManifest.imports.add('std::collections::HashMap');
+                    mergedManifest.imports.add('alloc::collections::BTreeMap');
                     return {
                         ...mergedManifest,
-                        type: `HashMap<${key.type}, ${value.type}>`,
+                        type: `BTreeMap<${key.type}, ${value.type}>`,
                     };
                 },
 
@@ -324,10 +325,10 @@ export function getTypeManifestVisitor(options: {
 
                 visitSetType(setType, { self }) {
                     const childManifest = visit(setType.item, self);
-                    childManifest.imports.add('std::collections::HashSet');
+                    childManifest.imports.add('alloc::collections::BTreeSet');
                     return {
                         ...childManifest,
-                        type: `HashSet<${childManifest.type}>`,
+                        type: `BTreeSet<${childManifest.type}>`,
                     };
                 },
 
@@ -359,7 +360,7 @@ export function getTypeManifestVisitor(options: {
                         switch (parentSize.format) {
                             case 'u32':
                                 return {
-                                    imports: new ImportMap(),
+                                    imports: new ImportMap().add('alloc::string::String'),
                                     nestedStructs: [],
                                     type: 'String',
                                 };

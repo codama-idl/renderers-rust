@@ -8,6 +8,7 @@
 use crate::generated::types::CpiRule;
 use crate::generated::types::MetadataAdditionalFieldRule;
 use crate::generated::types::TransferAmountRule;
+use alloc::vec::Vec;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use solana_address::Address;
@@ -31,14 +32,14 @@ pub const GUARD_V1_DISCRIMINATOR: [u8; 8] = [185, 149, 156, 78, 245, 108, 172, 6
 
 impl GuardV1 {
     #[inline(always)]
-    pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {
+    pub fn from_bytes(data: &[u8]) -> Result<Self, borsh::io::Error> {
         let mut data = data;
         Self::deserialize(&mut data)
     }
 }
 
 impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for GuardV1 {
-    type Error = std::io::Error;
+    type Error = borsh::io::Error;
 
     fn try_from(account_info: &solana_account_info::AccountInfo<'a>) -> Result<Self, Self::Error> {
         let mut data: &[u8] = &(*account_info.data).borrow();
@@ -50,7 +51,7 @@ impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for GuardV1 {
 pub fn fetch_guard_v1(
     rpc: &solana_client::rpc_client::RpcClient,
     address: &solana_address::Address,
-) -> Result<crate::shared::DecodedAccount<GuardV1>, std::io::Error> {
+) -> Result<crate::shared::DecodedAccount<GuardV1>, borsh::io::Error> {
     let accounts = fetch_all_guard_v1(rpc, &[*address])?;
     Ok(accounts[0].clone())
 }
@@ -59,16 +60,19 @@ pub fn fetch_guard_v1(
 pub fn fetch_all_guard_v1(
     rpc: &solana_client::rpc_client::RpcClient,
     addresses: &[solana_address::Address],
-) -> Result<Vec<crate::shared::DecodedAccount<GuardV1>>, std::io::Error> {
+) -> Result<alloc::vec::Vec<crate::shared::DecodedAccount<GuardV1>>, borsh::io::Error> {
     let accounts = rpc
         .get_multiple_accounts(addresses)
-        .map_err(|e| std::io::Error::other(e.to_string()))?;
-    let mut decoded_accounts: Vec<crate::shared::DecodedAccount<GuardV1>> = Vec::new();
+        .map_err(|e| borsh::io::Error::other(alloc::format!("{e}")))?;
+    let mut decoded_accounts: alloc::vec::Vec<crate::shared::DecodedAccount<GuardV1>> =
+        alloc::vec::Vec::new();
     for i in 0..addresses.len() {
         let address = addresses[i];
-        let account = accounts[i].as_ref().ok_or(std::io::Error::other(format!(
-            "Account not found: {address}"
-        )))?;
+        let account = accounts[i]
+            .as_ref()
+            .ok_or(borsh::io::Error::other(alloc::format!(
+                "Account not found: {address}"
+            )))?;
         let data = GuardV1::from_bytes(&account.data)?;
         decoded_accounts.push(crate::shared::DecodedAccount {
             address,
@@ -83,7 +87,7 @@ pub fn fetch_all_guard_v1(
 pub fn fetch_maybe_guard_v1(
     rpc: &solana_client::rpc_client::RpcClient,
     address: &solana_address::Address,
-) -> Result<crate::shared::MaybeAccount<GuardV1>, std::io::Error> {
+) -> Result<crate::shared::MaybeAccount<GuardV1>, borsh::io::Error> {
     let accounts = fetch_all_maybe_guard_v1(rpc, &[*address])?;
     Ok(accounts[0].clone())
 }
@@ -92,11 +96,12 @@ pub fn fetch_maybe_guard_v1(
 pub fn fetch_all_maybe_guard_v1(
     rpc: &solana_client::rpc_client::RpcClient,
     addresses: &[solana_address::Address],
-) -> Result<Vec<crate::shared::MaybeAccount<GuardV1>>, std::io::Error> {
+) -> Result<alloc::vec::Vec<crate::shared::MaybeAccount<GuardV1>>, borsh::io::Error> {
     let accounts = rpc
         .get_multiple_accounts(addresses)
-        .map_err(|e| std::io::Error::other(e.to_string()))?;
-    let mut decoded_accounts: Vec<crate::shared::MaybeAccount<GuardV1>> = Vec::new();
+        .map_err(|e| borsh::io::Error::other(alloc::format!("{e}")))?;
+    let mut decoded_accounts: alloc::vec::Vec<crate::shared::MaybeAccount<GuardV1>> =
+        alloc::vec::Vec::new();
     for i in 0..addresses.len() {
         let address = addresses[i];
         if let Some(account) = accounts[i].as_ref() {

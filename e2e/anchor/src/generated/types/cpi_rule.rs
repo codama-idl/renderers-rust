@@ -5,6 +5,7 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
+use alloc::vec::Vec;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use solana_address::Address;

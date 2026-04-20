@@ -2,6 +2,8 @@
 
 {% block main %}
 
+extern crate alloc;
+
 {% if hasAnythingToExport %}
   {% if accountsToExport.length > 0 %}
     pub mod accounts;

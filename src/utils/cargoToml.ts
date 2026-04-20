@@ -41,19 +41,19 @@ type CargoDependencyObject = {
 
 export const DEFAULT_DEPENDENCY_VERSIONS: CargoDependencies = {
     'anchor-lang': { optional: true, version: '~0.31' },
-    borsh: '^1.0',
+    borsh: { 'default-features': false, features: ['derive'], version: '^1.0' },
     'num-derive': '^0.4',
-    'num-traits': '^0.2',
+    'num-traits': { 'default-features': false, version: '^0.2' },
     'solana-account': '~3.0',
     'solana-account-info': '~3.1',
     'solana-address': { features: ['borsh', 'copy', 'curve25519', 'decode'], version: '~2.2' },
     'solana-client': { optional: true, version: '^3.0' },
     'solana-cpi': '~3.1',
     'solana-decode-error': '~2.3',
-    'solana-instruction': '~3.2',
+    'solana-instruction': { 'default-features': false, version: '~3.2' },
     'solana-program-error': '~3.0',
     'spl-collections': { features: ['borsh'], version: '^0.1' },
-    thiserror: '^1.0',
+    thiserror: { 'default-features': false, version: '^2.0' },
 };
 
 export function syncCargoToml(

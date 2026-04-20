@@ -6,6 +6,7 @@
 //!
 
 use crate::generated::types::MetadataAdditionalFieldRestriction;
+use alloc::string::String;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 

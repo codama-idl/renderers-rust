@@ -94,10 +94,10 @@ export function renderValueNodeVisitor(
         },
         visitMapValue(node) {
             const map = node.entries.map(entry => visit(entry, this));
-            const imports = new ImportMap().add('std::collection::HashMap');
+            const imports = new ImportMap().add('alloc::collections::BTreeMap');
             return {
                 imports: imports.mergeWith(...map.map(c => c.imports)),
-                render: `HashMap::from([${map.map(c => c.render).join(', ')}])`,
+                render: `BTreeMap::from([${map.map(c => c.render).join(', ')}])`,
             };
         },
         visitNoneValue() {
@@ -120,10 +120,10 @@ export function renderValueNodeVisitor(
         },
         visitSetValue(node) {
             const set = node.items.map(v => visit(v, this));
-            const imports = new ImportMap().add('std::collection::HashSet');
+            const imports = new ImportMap().add('alloc::collections::BTreeSet');
             return {
                 imports: imports.mergeWith(...set.map(c => c.imports)),
-                render: `HashSet::from([${set.map(c => c.render).join(', ')}])`,
+                render: `BTreeSet::from([${set.map(c => c.render).join(', ')}])`,
             };
         },
         visitSomeValue(node) {
@@ -136,7 +136,9 @@ export function renderValueNodeVisitor(
         visitStringValue(node) {
             return {
                 imports: new ImportMap(),
-                render: useStr ? `${JSON.stringify(node.string)}` : `String::from(${JSON.stringify(node.string)})`,
+                render: useStr
+                    ? `${JSON.stringify(node.string)}`
+                    : `alloc::string::String::from(${JSON.stringify(node.string)})`,
             };
         },
         visitStructFieldValue(node) {

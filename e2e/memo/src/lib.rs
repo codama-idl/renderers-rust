@@ -1,3 +1,7 @@
+#![no_std]
+
+extern crate alloc;
+
 mod generated;
 
 pub use generated::programs::MEMO_ID as ID;

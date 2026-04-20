@@ -5,6 +5,8 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
+use alloc::boxed::Box;
+use alloc::vec::Vec;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use solana_address::Address;
@@ -73,7 +75,7 @@ impl InitializeNonceAccountInstructionData {
         Self { discriminator: 6 }
     }
 
-    pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+    pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, borsh::io::Error> {
         borsh::to_vec(self)
     }
 }
@@ -90,7 +92,7 @@ pub struct InitializeNonceAccountInstructionArgs {
 }
 
 impl InitializeNonceAccountInstructionArgs {
-    pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+    pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, borsh::io::Error> {
         borsh::to_vec(self)
     }
 }

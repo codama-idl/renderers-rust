@@ -5,6 +5,7 @@ import { spawnSync } from 'child_process';
 
 import { GetRenderMapOptions, getRenderMapVisitor } from './getRenderMapVisitor';
 import { syncCargoToml } from './utils';
+import { assertNoStdCompatible } from './utils/noStd';
 
 export type RenderOptions = GetRenderMapOptions & {
     deleteFolderBeforeRendering?: boolean;
@@ -25,6 +26,7 @@ export function renderVisitor(crateFolder: string, options: RenderOptions = {}) 
 
         // Render the new files.
         const renderMap = visit(root, getRenderMapVisitor(options));
+        assertNoStdCompatible(renderMap);
         writeRenderMap(renderMap, generatedFolder);
 
         // Sync Cargo.toml dependencies and versions, if requested.

@@ -61,7 +61,7 @@ describe('default values', () => {
 
         // Then we expect the following traits to be rendered.
         expect(render).toBe(
-            `#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq, Copy, PartialOrd, Hash, FromPrimitive)]\n`,
+            `#[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq, Copy, PartialOrd, Ord, Hash, FromPrimitive)]\n`,
         );
 
         // And the following imports to be used.
@@ -378,7 +378,7 @@ describe('conditional try_to_vec generation', () => {
 
         // Then we expect the try_to_vec method to be included with borsh::to_vec implementation.
         const instruction = getFromRenderMap(renderMap, 'instructions/transfer.rs').content;
-        expect(instruction).toContain('pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error>');
+        expect(instruction).toContain('pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, borsh::io::Error>');
         expect(instruction).toContain('borsh::to_vec(self)');
 
         // And the instruction functions should use try_to_vec.
@@ -450,7 +450,7 @@ describe('conditional try_to_vec generation', () => {
 
         // Then we expect try_to_vec to be generated even with fully qualified trait name.
         const instruction = getFromRenderMap(renderMap, 'instructions/transfer.rs').content;
-        expect(instruction).toContain('pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error>');
+        expect(instruction).toContain('pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, borsh::io::Error>');
         expect(instruction).toContain('borsh::to_vec(self)');
         expect(instruction).toContain('#[derive(borsh::BorshSerialize');
     });

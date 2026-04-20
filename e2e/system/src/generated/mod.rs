@@ -5,6 +5,8 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
+extern crate alloc;
+
 pub mod accounts;
 pub mod errors;
 pub mod instructions;

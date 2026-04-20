@@ -8,6 +8,9 @@
 use crate::generated::types::CpiRule;
 use crate::generated::types::MetadataAdditionalFieldRule;
 use crate::generated::types::TransferAmountRule;
+use alloc::boxed::Box;
+use alloc::string::String;
+use alloc::vec::Vec;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
@@ -93,7 +96,7 @@ impl CreateGuardInstructionData {
         }
     }
 
-    pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+    pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, borsh::io::Error> {
         borsh::to_vec(self)
     }
 }
@@ -115,7 +118,7 @@ pub struct CreateGuardInstructionArgs {
 }
 
 impl CreateGuardInstructionArgs {
-    pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+    pub(crate) fn try_to_vec(&self) -> Result<Vec<u8>, borsh::io::Error> {
         borsh::to_vec(self)
     }
 }
