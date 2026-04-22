@@ -1,6 +1,6 @@
 {
     "name": "@codama/renderers-rust",
-    "version": "3.0.0",
+    "version": "3.1.0",
     "description": "Renders Rust clients for your programs",
     "exports": {
         "types": "./dist/types/index.d.ts",
