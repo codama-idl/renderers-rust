@@ -1,5 +1,11 @@
 # @codama/renderers-rust
 
+## 3.1.0
+
+### Minor Changes
+
+- [#94](https://github.com/codama-idl/renderers-rust/pull/94) [`7d95022`](https://github.com/codama-idl/renderers-rust/commit/7d950220d9d2b2ea93febb0ab66d4e0ab26425ac) Thanks [@Arrowana](https://github.com/Arrowana)! - Use `solana-rpc-client` crate to reduce nested dependencies
+
 ## 3.0.0
 
 ### Major Changes
