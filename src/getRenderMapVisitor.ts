@@ -1,6 +1,8 @@
 import { logWarn } from '@codama/errors';
 import {
+    ConstantValueNode,
     definedTypeNode,
+    EventFraming,
     EventNode,
     getAllAccounts,
     getAllDefinedTypes,
@@ -60,6 +62,7 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
     const linkables = new LinkableDictionary();
     const stack = new NodeStack();
     let program: ProgramNode | null = null;
+    let programEventFraming: ResolvedProgramEventFraming | undefined = undefined;
     const programsWithEventEnum = new Set<string>();
 
     const renderParentInstructions = options.renderParentInstructions ?? false;
@@ -156,7 +159,13 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                 },
 
                 visitEvent(node) {
-                    const discriminators = node.discriminators ?? [];
+                    const allDiscriminators = node.discriminators ?? [];
+                    const isCpiFramed = isEventCpiFramed(node, programEventFraming);
+                    const framingConstantName = isCpiFramed
+                        ? snakeCase(programEventFraming!.framing.sharedConstantName).toUpperCase()
+                        : null;
+                    // Strip the hoisted framing constant so per-event _DISCRIMINATOR matches IDL events[].discriminator bytes.
+                    const discriminators = isCpiFramed ? allDiscriminators.slice(1) : allDiscriminators;
                     const innerType = resolveNestedTypeNode(node.data);
                     // Wrap as definedTypeNode so typeManifestVisitor generates the struct with derives.
                     const syntheticType = definedTypeNode({
@@ -166,7 +175,7 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                     });
                     const typeManifest = visit(syntheticType, typeManifestVisitor);
 
-                    // Discriminator constants.
+                    // Discriminator constants (excluding the hoisted framing one for CPI-framed events).
                     const fields = isNode(innerType, 'structTypeNode') ? innerType.fields : [];
                     const discriminatorConstants = getDiscriminatorConstants({
                         discriminatorNodes: discriminators,
@@ -177,7 +186,7 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                     });
 
                     const hasFromBytes = eventHasFromBytes(node);
-                    const allConstantDiscriminators = hasFromBytes
+                    const perEventConstantDiscriminators = hasFromBytes
                         ? discriminators
                               .filter(isNodeFilter('constantDiscriminatorNode'))
                               .map(d => ({
@@ -189,8 +198,15 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                               .sort((a, b) => a.offset - b.offset)
                         : [];
 
+                    const allConstantDiscriminators =
+                        isCpiFramed && framingConstantName
+                            ? [{ name: framingConstantName, offset: 0 }, ...perEventConstantDiscriminators]
+                            : perEventConstantDiscriminators;
+
                     const hiddenPrefixSkipResult = hasFromBytes
-                        ? getHiddenPrefixSkip(node, allConstantDiscriminators)
+                        ? isCpiFramed
+                            ? getCpiFramedSkip(allConstantDiscriminators)
+                            : getHiddenPrefixSkip(node, allConstantDiscriminators)
                         : null;
                     const generateFromBytes = hasFromBytes && hiddenPrefixSkipResult !== null;
                     const hiddenPrefixSkip = hiddenPrefixSkipResult ?? '0';
@@ -200,6 +216,9 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                         .mergeWithManifest(typeManifest)
                         .mergeWith(discriminatorConstants.imports)
                         .remove(`generatedEvents::${pascalCase(node.name)}`);
+                    if (framingConstantName) {
+                        imports.add(`generatedEvents::${framingConstantName}`);
+                    }
 
                     return createRenderMap(`events/${snakeCase(node.name)}.rs`, {
                         content: render('eventsPage.njk', {
@@ -323,6 +342,7 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
 
                 visitProgram(node, { self }) {
                     program = node;
+                    programEventFraming = deriveProgramEventFraming(node);
                     let renders = mergeRenderMaps([
                         ...node.accounts.map(account => visit(account, self)),
                         ...node.definedTypes.map(type => visit(type, self)),
@@ -348,6 +368,7 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                     const programEventsRender = buildProgramEventsRender(
                         node.events ?? [],
                         node,
+                        programEventFraming,
                         getImportFrom,
                         typeManifestVisitor,
                         dependencyMap,
@@ -362,6 +383,7 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                     }
 
                     program = null;
+                    programEventFraming = undefined;
                     return renders;
                 },
 
@@ -470,9 +492,65 @@ function getHiddenPrefixSkip(
     return String(prefixSize);
 }
 
+/** Resolved program-level framing: the hoisted prefix constant + its source EventFraming. */
+type ResolvedProgramEventFraming = { constant: ConstantValueNode; framing: EventFraming };
+
+function deriveProgramEventFraming(programNode: ProgramNode | null): ResolvedProgramEventFraming | undefined {
+    if (!programNode) return undefined;
+    let resolved: ResolvedProgramEventFraming | undefined;
+    for (const event of programNode.events ?? []) {
+        if (!event.framing) continue;
+        if (!isNode(event.data, 'hiddenPrefixTypeNode')) continue;
+        if (event.data.prefix.length === 0) continue;
+        if (!resolved) {
+            resolved = { constant: event.data.prefix[0], framing: event.framing };
+            continue;
+        }
+        if (resolved.framing.sharedConstantName !== event.framing.sharedConstantName) {
+            logWarn(
+                `[Rust] Program [${programNode.name}] has events with conflicting event framings ` +
+                    `('${resolved.framing.sharedConstantName}' vs '${event.framing.sharedConstantName}'). ` +
+                    `Only the first will be hoisted.`,
+            );
+            break;
+        }
+    }
+    return resolved;
+}
+
+function isEventCpiFramed(event: EventNode, programEventFraming: ResolvedProgramEventFraming | undefined): boolean {
+    if (programEventFraming === undefined) return false;
+    if (!event.framing) return false;
+    if (event.framing.sharedConstantName !== programEventFraming.framing.sharedConstantName) return false;
+    if (!isNode(event.data, 'hiddenPrefixTypeNode')) return false;
+    return event.data.prefix.length > 0;
+}
+
+function getCpiFramedSkip(constantDiscriminators: { name: string; offset: number }[]): string {
+    // Sorted by offset; skip past every leading constant discriminator.
+    return constantDiscriminators.map(d => `${d.name}.len()`).join(' + ');
+}
+
+/** Renders a fixed-size bytes ConstantValueNode as a Rust `[u8; N] = [b0, b1, ...]` array literal. */
+function renderConstantBytesArray(constant: ConstantValueNode): { len: number; literal: string } | null {
+    if (!isNode(constant.type, 'fixedSizeTypeNode')) return null;
+    if (!isNode(constant.value, 'bytesValueNode')) return null;
+    const size = constant.type.size;
+    const bytes: number[] = [];
+    const hex = constant.value.encoding === 'base16' ? constant.value.data.toLowerCase() : null;
+    if (hex === null || hex.length !== size * 2) return null;
+    for (let i = 0; i < size; i++) {
+        const byte = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+        if (Number.isNaN(byte)) return null;
+        bytes.push(byte);
+    }
+    return { len: size, literal: `[${bytes.join(', ')}]` };
+}
+
 function buildProgramEventsRender(
     events: EventNode[],
     programNode: ProgramNode,
+    programEventFraming: ResolvedProgramEventFraming | undefined,
     getImportFrom: GetImportFromFunction,
     typeManifestVisitor: ReturnType<typeof getTypeManifestVisitor>,
     dependencyMap: Record<string, string>,
@@ -482,28 +560,50 @@ function buildProgramEventsRender(
     }
 
     const imports = new ImportMap();
+    const framingConstantName = programEventFraming
+        ? snakeCase(programEventFraming.framing.sharedConstantName).toUpperCase()
+        : null;
 
     const eventsWithDiscriminators = events
         .filter(event => (event.discriminators ?? []).length > 0)
         .flatMap(event => {
+            const isCpiFramed = isEventCpiFramed(event, programEventFraming);
+            const allDiscriminators = event.discriminators ?? [];
+            // For CPI-framed events, strip the leading framing discriminator — it's hoisted to the
+            // program-level shared constant and prepended manually below.
+            const perEventDiscriminators = isCpiFramed ? allDiscriminators.slice(1) : allDiscriminators;
             const innerType = resolveNestedTypeNode(event.data);
             const fields = isNode(innerType, 'structTypeNode') ? innerType.fields : [];
-            const { conditions, imports: condImports } = getDiscriminatorConditions({
-                discriminatorNodes: event.discriminators ?? [],
+            const { conditions: perEventConditions, imports: condImports } = getDiscriminatorConditions({
+                discriminatorNodes: perEventDiscriminators,
                 fields,
                 getImportFrom,
                 importPrefix: 'generatedEvents',
                 prefix: event.name,
                 typeManifestVisitor,
             });
-            const discriminators = event.discriminators ?? [];
-            const eventConstantDiscs = discriminators.filter(isNodeFilter('constantDiscriminatorNode')).map(d => ({
-                name: snakeCase(constantDiscriminatorName(event.name, d, discriminators)).toUpperCase(),
-                offset: d.offset,
-            }));
-            const hiddenPrefixSkipResult = isNode(event.data, 'hiddenPrefixTypeNode')
-                ? getHiddenPrefixSkip(event, eventConstantDiscs)
-                : '0';
+            const perEventConstantDiscs = perEventDiscriminators
+                .filter(isNodeFilter('constantDiscriminatorNode'))
+                .map(d => ({
+                    name: snakeCase(constantDiscriminatorName(event.name, d, perEventDiscriminators)).toUpperCase(),
+                    offset: d.offset,
+                }));
+
+            let conditions: string[];
+            let hiddenPrefixSkipResult: string | null;
+            if (isCpiFramed && framingConstantName) {
+                conditions = [
+                    `data.get(..${framingConstantName}.len()) == Some(&${framingConstantName}[..])`,
+                    ...perEventConditions,
+                ];
+                const allConstantDiscs = [{ name: framingConstantName, offset: 0 }, ...perEventConstantDiscs];
+                hiddenPrefixSkipResult = getCpiFramedSkip(allConstantDiscs);
+            } else {
+                conditions = perEventConditions;
+                hiddenPrefixSkipResult = isNode(event.data, 'hiddenPrefixTypeNode')
+                    ? getHiddenPrefixSkip(event, perEventConstantDiscs)
+                    : '0';
+            }
 
             if (hiddenPrefixSkipResult === null || conditions.length === 0) {
                 return [];
@@ -522,8 +622,16 @@ function buildProgramEventsRender(
         imports.add(`generatedEvents::${pascalCase(event.name)}`);
     });
 
+    const anyCpiFramed = eventsWithDiscriminators.some(event => isEventCpiFramed(event, programEventFraming));
+    const eventFramingBytes =
+        anyCpiFramed && programEventFraming !== undefined
+            ? renderConstantBytesArray(programEventFraming.constant)
+            : null;
+
     return {
         content: render('programEventsPage.njk', {
+            eventFramingBytes,
+            eventFramingName: anyCpiFramed ? framingConstantName : null,
             eventsWithDiscriminators,
             imports: imports.toString(dependencyMap),
             program: programNode,

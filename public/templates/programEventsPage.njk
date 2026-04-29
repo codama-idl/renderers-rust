@@ -4,6 +4,12 @@
 
 {{ imports }}
 
+{% if eventFramingBytes and eventFramingName %}
+/// Shared event-framing tag prepended to every framed event emitted by the
+/// `{{ program.name | snakeCase }}` program.
+pub const {{ eventFramingName }}: [u8; {{ eventFramingBytes.len }}] = {{ eventFramingBytes.literal }};
+
+{% endif %}
 /// Event kinds for the `{{ program.name | snakeCase }}` program.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum {{ program.name | pascalCase }}EventKind {

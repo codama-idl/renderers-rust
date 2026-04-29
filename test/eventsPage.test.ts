@@ -3,6 +3,7 @@ import {
     arrayValueNode,
     bytesTypeNode,
     bytesValueNode,
+    CamelCaseString,
     constantDiscriminatorNode,
     constantValueNode,
     eventNode,
@@ -20,7 +21,7 @@ import {
 } from '@codama/nodes';
 import { getFromRenderMap } from '@codama/renderers-core';
 import { visit } from '@codama/visitors-core';
-import { expect, test } from 'vitest';
+import { expect, test, vi } from 'vitest';
 
 import { getRenderMapVisitor } from '../src';
 import { codeContains, codeDoesNotContains } from './_setup';
@@ -799,4 +800,198 @@ test('it handles multiple constant discriminators and excludes events with unres
     ]);
     codeContains(code, ['pub enum MyProgramEventKind']);
     codeDoesNotContains(code, ['NoDefaultEvent']);
+});
+
+// --- Event framing (CPI-framed) tests ---
+
+const cpiFraming = { kind: 'anchorEventCpi', sharedConstantName: 'eventCpiPrefix' as CamelCaseString };
+const framingPrefix = constantValueNode(
+    fixedSizeTypeNode(bytesTypeNode(), 8),
+    bytesValueNode('base16', 'aabbccdd11223344'),
+);
+const tradeDisc = constantValueNode(
+    fixedSizeTypeNode(bytesTypeNode(), 8),
+    bytesValueNode('base16', '1122334455667788'),
+);
+const settleDisc = constantValueNode(
+    fixedSizeTypeNode(bytesTypeNode(), 8),
+    bytesValueNode('base16', '99aabbccddeeff00'),
+);
+
+function framedEvent(name: string, eventDisc: ReturnType<typeof constantValueNode>) {
+    return eventNode({
+        data: hiddenPrefixTypeNode(
+            structTypeNode([structFieldTypeNode({ name: 'amount', type: numberTypeNode('u64') })]),
+            [framingPrefix, eventDisc],
+        ),
+        discriminators: [constantDiscriminatorNode(framingPrefix, 0), constantDiscriminatorNode(eventDisc, 8)],
+        framing: cpiFraming,
+        name,
+    });
+}
+
+test('it hoists the shared framing constant to the program-events file', () => {
+    const node = programNode({
+        events: [framedEvent('tradeEvent', tradeDisc), framedEvent('settleEvent', settleDisc)],
+        name: 'myProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const programEventsCode = getFromRenderMap(renderMap, 'events/my_program_events.rs').content;
+
+    codeContains(programEventsCode, [
+        'pub const EVENT_CPI_PREFIX: [u8; 8] = [170, 187, 204, 221, 17, 34, 51, 68];',
+        'data.get(..EVENT_CPI_PREFIX.len()) == Some(&EVENT_CPI_PREFIX[..])',
+        'return Some(MyProgramEventKind::TradeEvent)',
+        'return Some(MyProgramEventKind::SettleEvent)',
+    ]);
+    expect(programEventsCode.match(/pub const EVENT_CPI_PREFIX/g)).toHaveLength(1);
+});
+
+test('it renders per-event _DISCRIMINATOR with IDL bytes, not framing bytes', () => {
+    const node = programNode({
+        events: [framedEvent('tradeEvent', tradeDisc)],
+        name: 'myProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const tradeEventCode = getFromRenderMap(renderMap, 'events/trade_event.rs').content;
+
+    codeContains(tradeEventCode, ['TRADE_EVENT_DISCRIMINATOR: [u8; 8] = [17, 34, 51, 68, 85, 102, 119, 136]']);
+    codeDoesNotContains(tradeEventCode, ['[170, 187, 204, 221, 17, 34, 51, 68]', 'pub const EVENT_CPI_PREFIX']);
+});
+
+test('it generates from_bytes that validates both the framing prefix and the event-specific discriminator', () => {
+    const node = programNode({
+        events: [framedEvent('tradeEvent', tradeDisc)],
+        name: 'myProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const tradeEventCode = getFromRenderMap(renderMap, 'events/trade_event.rs').content;
+
+    codeContains(tradeEventCode, [
+        'pub fn from_bytes',
+        'data.get(..EVENT_CPI_PREFIX.len()) != Some(&EVENT_CPI_PREFIX[..])',
+        'data.get(8..8 + TRADE_EVENT_DISCRIMINATOR.len()) != Some(&TRADE_EVENT_DISCRIMINATOR[..])',
+        'let mut data = &data[EVENT_CPI_PREFIX.len() + TRADE_EVENT_DISCRIMINATOR.len()..];',
+        'Self::deserialize(&mut data)',
+    ]);
+});
+
+test('it references the hoisted framing constant in identify and try_parse', () => {
+    const node = programNode({
+        events: [framedEvent('tradeEvent', tradeDisc), framedEvent('settleEvent', settleDisc)],
+        name: 'myProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const programEventsCode = getFromRenderMap(renderMap, 'events/my_program_events.rs').content;
+
+    codeContains(programEventsCode, [
+        'pub fn identify_my_program_event',
+        'data.get(..EVENT_CPI_PREFIX.len()) == Some(&EVENT_CPI_PREFIX[..])',
+        '&& data.get(8..8 + TRADE_EVENT_DISCRIMINATOR.len()) == Some(&TRADE_EVENT_DISCRIMINATOR[..])',
+        '&& data.get(8..8 + SETTLE_EVENT_DISCRIMINATOR.len()) == Some(&SETTLE_EVENT_DISCRIMINATOR[..])',
+        'pub fn try_parse_my_program_event',
+        'let mut data = &data[EVENT_CPI_PREFIX.len() + TRADE_EVENT_DISCRIMINATOR.len()..]',
+        'let mut data = &data[EVENT_CPI_PREFIX.len() + SETTLE_EVENT_DISCRIMINATOR.len()..]',
+    ]);
+});
+
+test('it does not hoist a shared constant when no event has framing', () => {
+    const node = programNode({
+        events: [
+            eventNode({
+                data: hiddenPrefixTypeNode(
+                    structTypeNode([structFieldTypeNode({ name: 'amount', type: numberTypeNode('u64') })]),
+                    [framingPrefix],
+                ),
+                discriminators: [constantDiscriminatorNode(framingPrefix, 0)],
+                name: 'plainEvent',
+            }),
+        ],
+        name: 'myProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const programEventsCode = getFromRenderMap(renderMap, 'events/my_program_events.rs').content;
+    const plainEventCode = getFromRenderMap(renderMap, 'events/plain_event.rs').content;
+
+    codeDoesNotContains(programEventsCode, ['EVENT_CPI_PREFIX']);
+    codeDoesNotContains(plainEventCode, ['EVENT_CPI_PREFIX']);
+    codeContains(plainEventCode, ['PLAIN_EVENT_DISCRIMINATOR: [u8; 8] = [170, 187, 204, 221, 17, 34, 51, 68]']);
+});
+
+test('it renders framed and non-framed events side-by-side without cross-contamination', () => {
+    const node = programNode({
+        events: [
+            framedEvent('tradeEvent', tradeDisc),
+            eventNode({
+                data: structTypeNode([structFieldTypeNode({ name: 'value', type: numberTypeNode('u32') })]),
+                discriminators: [constantDiscriminatorNode(settleDisc, 0)],
+                name: 'plainEvent',
+            }),
+        ],
+        name: 'myProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const tradeEventCode = getFromRenderMap(renderMap, 'events/trade_event.rs').content;
+    const plainEventCode = getFromRenderMap(renderMap, 'events/plain_event.rs').content;
+    const programEventsCode = getFromRenderMap(renderMap, 'events/my_program_events.rs').content;
+
+    codeContains(tradeEventCode, [
+        'use crate::generated::events::EVENT_CPI_PREFIX;',
+        'data.get(..EVENT_CPI_PREFIX.len()) != Some(&EVENT_CPI_PREFIX[..])',
+    ]);
+    codeDoesNotContains(plainEventCode, ['EVENT_CPI_PREFIX']);
+    codeContains(programEventsCode, [
+        'pub const EVENT_CPI_PREFIX: [u8; 8] = [170, 187, 204, 221, 17, 34, 51, 68];',
+        'return Some(MyProgramEventKind::TradeEvent)',
+        'return Some(MyProgramEventKind::PlainEvent)',
+    ]);
+});
+
+test('it warns and hoists only the first framing when events have conflicting sharedConstantName', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+        const altFraming = { kind: 'anchorEventCpi', sharedConstantName: 'altPrefix' as CamelCaseString };
+        const altPrefix = constantValueNode(
+            fixedSizeTypeNode(bytesTypeNode(), 8),
+            bytesValueNode('base16', 'deadbeefcafebabe'),
+        );
+        const altEvent = eventNode({
+            data: hiddenPrefixTypeNode(
+                structTypeNode([structFieldTypeNode({ name: 'amount', type: numberTypeNode('u64') })]),
+                [altPrefix, settleDisc],
+            ),
+            discriminators: [constantDiscriminatorNode(altPrefix, 0), constantDiscriminatorNode(settleDisc, 8)],
+            framing: altFraming,
+            name: 'settleEvent',
+        });
+
+        const node = programNode({
+            events: [framedEvent('tradeEvent', tradeDisc), altEvent],
+            name: 'myProgram',
+            publicKey: '11111111111111111111111111111111',
+        });
+
+        const renderMap = visit(node, getRenderMapVisitor());
+        const programEventsCode = getFromRenderMap(renderMap, 'events/my_program_events.rs').content;
+
+        expect(warnSpy).toHaveBeenCalledTimes(1);
+        expect(warnSpy.mock.calls[0][0]).toMatch(/conflicting event framings.*'eventCpiPrefix' vs 'altPrefix'/);
+
+        codeContains(programEventsCode, ['pub const EVENT_CPI_PREFIX']);
+        codeDoesNotContains(programEventsCode, ['pub const ALT_PREFIX']);
+    } finally {
+        warnSpy.mockRestore();
+    }
 });
