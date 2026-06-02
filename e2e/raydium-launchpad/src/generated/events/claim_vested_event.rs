@@ -5,6 +5,7 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
+use crate::generated::events::ANCHOR_EVENT_CPI_DISCRIMINATOR;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use solana_address::Address;
@@ -21,7 +22,15 @@ pub const CLAIM_VESTED_EVENT_DISCRIMINATOR: [u8; 8] = [21, 194, 114, 87, 120, 21
 impl ClaimVestedEvent {
     #[inline(always)]
     pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {
-        if data.get(..CLAIM_VESTED_EVENT_DISCRIMINATOR.len())
+        if data.get(..ANCHOR_EVENT_CPI_DISCRIMINATOR.len())
+            != Some(&ANCHOR_EVENT_CPI_DISCRIMINATOR[..])
+        {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "invalid event discriminator",
+            ));
+        }
+        if data.get(8..8 + CLAIM_VESTED_EVENT_DISCRIMINATOR.len())
             != Some(&CLAIM_VESTED_EVENT_DISCRIMINATOR[..])
         {
             return Err(std::io::Error::new(
@@ -29,7 +38,8 @@ impl ClaimVestedEvent {
                 "invalid event discriminator",
             ));
         }
-        let mut data = &data[CLAIM_VESTED_EVENT_DISCRIMINATOR.len()..];
+        let mut data =
+            &data[ANCHOR_EVENT_CPI_DISCRIMINATOR.len() + CLAIM_VESTED_EVENT_DISCRIMINATOR.len()..];
         Self::deserialize(&mut data)
     }
 }

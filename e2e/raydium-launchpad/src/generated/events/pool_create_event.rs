@@ -5,6 +5,7 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
+use crate::generated::events::ANCHOR_EVENT_CPI_DISCRIMINATOR;
 use crate::generated::types::CurveParams;
 use crate::generated::types::MintParams;
 use crate::generated::types::VestingParams;
@@ -27,7 +28,15 @@ pub const POOL_CREATE_EVENT_DISCRIMINATOR: [u8; 8] = [151, 215, 226, 9, 118, 161
 impl PoolCreateEvent {
     #[inline(always)]
     pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {
-        if data.get(..POOL_CREATE_EVENT_DISCRIMINATOR.len())
+        if data.get(..ANCHOR_EVENT_CPI_DISCRIMINATOR.len())
+            != Some(&ANCHOR_EVENT_CPI_DISCRIMINATOR[..])
+        {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "invalid event discriminator",
+            ));
+        }
+        if data.get(8..8 + POOL_CREATE_EVENT_DISCRIMINATOR.len())
             != Some(&POOL_CREATE_EVENT_DISCRIMINATOR[..])
         {
             return Err(std::io::Error::new(
@@ -35,7 +44,8 @@ impl PoolCreateEvent {
                 "invalid event discriminator",
             ));
         }
-        let mut data = &data[POOL_CREATE_EVENT_DISCRIMINATOR.len()..];
+        let mut data =
+            &data[ANCHOR_EVENT_CPI_DISCRIMINATOR.len() + POOL_CREATE_EVENT_DISCRIMINATOR.len()..];
         Self::deserialize(&mut data)
     }
 }
