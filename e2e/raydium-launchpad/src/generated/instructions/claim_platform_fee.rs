@@ -124,24 +124,24 @@ impl Default for ClaimPlatformFeeInstructionData {
 /// ### Accounts:
 ///
 ///   0. `[writable, signer]` platform_fee_wallet
-///   1. `[]` authority
+///   1. `[optional]` authority (default to PDA derived from 'authority')
 ///   2. `[writable]` pool_state
 ///   3. `[]` platform_config
 ///   4. `[writable]` quote_vault
-///   5. `[writable]` recipient_token_account
+///   5. `[writable, optional]` recipient_token_account (default to PDA derived from 'recipientTokenAccount')
 ///   6. `[]` quote_mint
 ///   7. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 ///   8. `[optional]` system_program (default to `11111111111111111111111111111111`)
 ///   9. `[optional]` associated_token_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct ClaimPlatformFeeBuilder {
-    platform_fee_wallet: Option<solana_address::Address>,
+    platform_fee_wallet: solana_address::Address,
     authority: Option<solana_address::Address>,
-    pool_state: Option<solana_address::Address>,
-    platform_config: Option<solana_address::Address>,
-    quote_vault: Option<solana_address::Address>,
+    pool_state: solana_address::Address,
+    platform_config: solana_address::Address,
+    quote_vault: solana_address::Address,
     recipient_token_account: Option<solana_address::Address>,
-    quote_mint: Option<solana_address::Address>,
+    quote_mint: solana_address::Address,
     token_program: Option<solana_address::Address>,
     system_program: Option<solana_address::Address>,
     associated_token_program: Option<solana_address::Address>,
@@ -149,18 +149,28 @@ pub struct ClaimPlatformFeeBuilder {
 }
 
 impl ClaimPlatformFeeBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    /// Only the wallet stored in platform_config can collect platform fees
-    #[inline(always)]
-    pub fn platform_fee_wallet(
-        &mut self,
+    pub fn new(
         platform_fee_wallet: solana_address::Address,
-    ) -> &mut Self {
-        self.platform_fee_wallet = Some(platform_fee_wallet);
-        self
+        pool_state: solana_address::Address,
+        platform_config: solana_address::Address,
+        quote_vault: solana_address::Address,
+        quote_mint: solana_address::Address,
+    ) -> Self {
+        Self {
+            platform_fee_wallet,
+            authority: None,
+            pool_state,
+            platform_config,
+            quote_vault,
+            recipient_token_account: None,
+            quote_mint,
+            token_program: None,
+            system_program: None,
+            associated_token_program: None,
+            __remaining_accounts: Vec::new(),
+        }
     }
+    /// `[optional account, default to PDA derived from 'authority']`
     /// PDA that acts as the authority for pool vault and mint operations
     /// Generated using AUTH_SEED
     #[inline(always)]
@@ -168,24 +178,7 @@ impl ClaimPlatformFeeBuilder {
         self.authority = Some(authority);
         self
     }
-    /// Account that stores the pool's state and parameters
-    /// PDA generated using POOL_SEED and both token mints
-    #[inline(always)]
-    pub fn pool_state(&mut self, pool_state: solana_address::Address) -> &mut Self {
-        self.pool_state = Some(pool_state);
-        self
-    }
-    /// The platform config account
-    #[inline(always)]
-    pub fn platform_config(&mut self, platform_config: solana_address::Address) -> &mut Self {
-        self.platform_config = Some(platform_config);
-        self
-    }
-    #[inline(always)]
-    pub fn quote_vault(&mut self, quote_vault: solana_address::Address) -> &mut Self {
-        self.quote_vault = Some(quote_vault);
-        self
-    }
+    /// `[optional account, default to PDA derived from 'recipientTokenAccount']`
     /// The address that receives the collected quote token fees
     #[inline(always)]
     pub fn recipient_token_account(
@@ -193,12 +186,6 @@ impl ClaimPlatformFeeBuilder {
         recipient_token_account: solana_address::Address,
     ) -> &mut Self {
         self.recipient_token_account = Some(recipient_token_account);
-        self
-    }
-    /// The mint of quote token vault
-    #[inline(always)]
-    pub fn quote_mint(&mut self, quote_mint: solana_address::Address) -> &mut Self {
-        self.quote_mint = Some(quote_mint);
         self
     }
     /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
@@ -242,27 +229,49 @@ impl ClaimPlatformFeeBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let platform_fee_wallet = self.platform_fee_wallet;
+        let authority = self.authority.unwrap_or(crate::pdas::AUTHORITY_ADDRESS);
+        let pool_state = self.pool_state;
+        let platform_config = self.platform_config;
+        let quote_vault = self.quote_vault;
+        let recipient_token_account = self.recipient_token_account.unwrap_or_else(|| {
+            solana_address::Address::find_program_address(
+                &[
+                    self.platform_fee_wallet.as_ref(),
+                    &[
+                        6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206, 235, 121,
+                        172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140, 245, 133, 126, 255, 0,
+                        169,
+                    ],
+                    self.quote_mint.as_ref(),
+                ],
+                &solana_address::address!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
+            )
+            .0
+        });
+        let quote_mint = self.quote_mint;
+        let token_program = self.token_program.unwrap_or(solana_address::address!(
+            "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        ));
+        let system_program = self
+            .system_program
+            .unwrap_or(solana_address::address!("11111111111111111111111111111111"));
+        let associated_token_program =
+            self.associated_token_program
+                .unwrap_or(solana_address::address!(
+                    "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+                ));
         let accounts = ClaimPlatformFee {
-            platform_fee_wallet: self
-                .platform_fee_wallet
-                .expect("platform_fee_wallet is not set"),
-            authority: self.authority.expect("authority is not set"),
-            pool_state: self.pool_state.expect("pool_state is not set"),
-            platform_config: self.platform_config.expect("platform_config is not set"),
-            quote_vault: self.quote_vault.expect("quote_vault is not set"),
-            recipient_token_account: self
-                .recipient_token_account
-                .expect("recipient_token_account is not set"),
-            quote_mint: self.quote_mint.expect("quote_mint is not set"),
-            token_program: self.token_program.unwrap_or(solana_address::address!(
-                "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-            )),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
-            associated_token_program: self.associated_token_program.unwrap_or(
-                solana_address::address!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
-            ),
+            platform_fee_wallet,
+            authority,
+            pool_state,
+            platform_config,
+            quote_vault,
+            recipient_token_account,
+            quote_mint,
+            token_program,
+            system_program,
+            associated_token_program,
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
@@ -464,110 +473,34 @@ pub struct ClaimPlatformFeeCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> ClaimPlatformFeeCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        platform_fee_wallet: &'b solana_account_info::AccountInfo<'a>,
+        authority: &'b solana_account_info::AccountInfo<'a>,
+        pool_state: &'b solana_account_info::AccountInfo<'a>,
+        platform_config: &'b solana_account_info::AccountInfo<'a>,
+        quote_vault: &'b solana_account_info::AccountInfo<'a>,
+        recipient_token_account: &'b solana_account_info::AccountInfo<'a>,
+        quote_mint: &'b solana_account_info::AccountInfo<'a>,
+        token_program: &'b solana_account_info::AccountInfo<'a>,
+        system_program: &'b solana_account_info::AccountInfo<'a>,
+        associated_token_program: &'b solana_account_info::AccountInfo<'a>,
+    ) -> Self {
         let instruction = Box::new(ClaimPlatformFeeCpiBuilderInstruction {
-            __program: program,
-            platform_fee_wallet: None,
-            authority: None,
-            pool_state: None,
-            platform_config: None,
-            quote_vault: None,
-            recipient_token_account: None,
-            quote_mint: None,
-            token_program: None,
-            system_program: None,
-            associated_token_program: None,
+            __program,
+            platform_fee_wallet,
+            authority,
+            pool_state,
+            platform_config,
+            quote_vault,
+            recipient_token_account,
+            quote_mint,
+            token_program,
+            system_program,
+            associated_token_program,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// Only the wallet stored in platform_config can collect platform fees
-    #[inline(always)]
-    pub fn platform_fee_wallet(
-        &mut self,
-        platform_fee_wallet: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.platform_fee_wallet = Some(platform_fee_wallet);
-        self
-    }
-    /// PDA that acts as the authority for pool vault and mint operations
-    /// Generated using AUTH_SEED
-    #[inline(always)]
-    pub fn authority(&mut self, authority: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.authority = Some(authority);
-        self
-    }
-    /// Account that stores the pool's state and parameters
-    /// PDA generated using POOL_SEED and both token mints
-    #[inline(always)]
-    pub fn pool_state(
-        &mut self,
-        pool_state: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.pool_state = Some(pool_state);
-        self
-    }
-    /// The platform config account
-    #[inline(always)]
-    pub fn platform_config(
-        &mut self,
-        platform_config: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.platform_config = Some(platform_config);
-        self
-    }
-    #[inline(always)]
-    pub fn quote_vault(
-        &mut self,
-        quote_vault: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.quote_vault = Some(quote_vault);
-        self
-    }
-    /// The address that receives the collected quote token fees
-    #[inline(always)]
-    pub fn recipient_token_account(
-        &mut self,
-        recipient_token_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.recipient_token_account = Some(recipient_token_account);
-        self
-    }
-    /// The mint of quote token vault
-    #[inline(always)]
-    pub fn quote_mint(
-        &mut self,
-        quote_mint: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.quote_mint = Some(quote_mint);
-        self
-    }
-    /// SPL program for input token transfers
-    #[inline(always)]
-    pub fn token_program(
-        &mut self,
-        token_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.token_program = Some(token_program);
-        self
-    }
-    /// Required for account creation
-    #[inline(always)]
-    pub fn system_program(
-        &mut self,
-        system_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.system_program = Some(system_program);
-        self
-    }
-    /// Required for associated token program
-    #[inline(always)]
-    pub fn associated_token_program(
-        &mut self,
-        associated_token_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.associated_token_program = Some(associated_token_program);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -605,47 +538,16 @@ impl<'a, 'b> ClaimPlatformFeeCpiBuilder<'a, 'b> {
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let instruction = ClaimPlatformFeeCpi {
             __program: self.instruction.__program,
-
-            platform_fee_wallet: self
-                .instruction
-                .platform_fee_wallet
-                .expect("platform_fee_wallet is not set"),
-
-            authority: self.instruction.authority.expect("authority is not set"),
-
-            pool_state: self.instruction.pool_state.expect("pool_state is not set"),
-
-            platform_config: self
-                .instruction
-                .platform_config
-                .expect("platform_config is not set"),
-
-            quote_vault: self
-                .instruction
-                .quote_vault
-                .expect("quote_vault is not set"),
-
-            recipient_token_account: self
-                .instruction
-                .recipient_token_account
-                .expect("recipient_token_account is not set"),
-
-            quote_mint: self.instruction.quote_mint.expect("quote_mint is not set"),
-
-            token_program: self
-                .instruction
-                .token_program
-                .expect("token_program is not set"),
-
-            system_program: self
-                .instruction
-                .system_program
-                .expect("system_program is not set"),
-
-            associated_token_program: self
-                .instruction
-                .associated_token_program
-                .expect("associated_token_program is not set"),
+            platform_fee_wallet: self.instruction.platform_fee_wallet,
+            authority: self.instruction.authority,
+            pool_state: self.instruction.pool_state,
+            platform_config: self.instruction.platform_config,
+            quote_vault: self.instruction.quote_vault,
+            recipient_token_account: self.instruction.recipient_token_account,
+            quote_mint: self.instruction.quote_mint,
+            token_program: self.instruction.token_program,
+            system_program: self.instruction.system_program,
+            associated_token_program: self.instruction.associated_token_program,
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -657,16 +559,16 @@ impl<'a, 'b> ClaimPlatformFeeCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct ClaimPlatformFeeCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    platform_fee_wallet: Option<&'b solana_account_info::AccountInfo<'a>>,
-    authority: Option<&'b solana_account_info::AccountInfo<'a>>,
-    pool_state: Option<&'b solana_account_info::AccountInfo<'a>>,
-    platform_config: Option<&'b solana_account_info::AccountInfo<'a>>,
-    quote_vault: Option<&'b solana_account_info::AccountInfo<'a>>,
-    recipient_token_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    quote_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
-    token_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    associated_token_program: Option<&'b solana_account_info::AccountInfo<'a>>,
+    platform_fee_wallet: &'b solana_account_info::AccountInfo<'a>,
+    authority: &'b solana_account_info::AccountInfo<'a>,
+    pool_state: &'b solana_account_info::AccountInfo<'a>,
+    platform_config: &'b solana_account_info::AccountInfo<'a>,
+    quote_vault: &'b solana_account_info::AccountInfo<'a>,
+    recipient_token_account: &'b solana_account_info::AccountInfo<'a>,
+    quote_mint: &'b solana_account_info::AccountInfo<'a>,
+    token_program: &'b solana_account_info::AccountInfo<'a>,
+    system_program: &'b solana_account_info::AccountInfo<'a>,
+    associated_token_program: &'b solana_account_info::AccountInfo<'a>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

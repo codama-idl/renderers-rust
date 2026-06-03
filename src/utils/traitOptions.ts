@@ -95,6 +95,17 @@ export function getTraitsFromNode(
         }),
     ];
 
+    // Add serde rename_all = "camelCase" container attribute for structs only.
+    // Enums keep PascalCase variant names to match the JS SDK.
+    const { featureName, hasSerde } = findSerdeFeature(allTraits, options.featureFlags);
+    if (hasSerde && nodeType === 'struct') {
+        if (featureName) {
+            traitLines.push(`#[cfg_attr(feature = "${featureName}", serde(rename_all = "camelCase"))]\n`);
+        } else {
+            traitLines.push(`#[serde(rename_all = "camelCase")]\n`);
+        }
+    }
+
     return { imports, render: traitLines.join('') };
 }
 
@@ -144,13 +155,26 @@ function partitionTraitsInFeatures(
 
     const unfeaturedTraits: string[] = [];
     const featuredTraits: Record<string, string[]> = {};
+    const seenTraits = new Set<string>();
+
     for (const trait of traits) {
+        seenTraits.add(trait);
         const feature: string | undefined = reverseFeatureFlags[trait];
         if (feature === undefined) {
             unfeaturedTraits.push(trait);
         } else {
             if (!featuredTraits[feature]) featuredTraits[feature] = [];
             featuredTraits[feature].push(trait);
+        }
+    }
+
+    // Inject feature-flagged traits that weren't already in the defaults/overrides.
+    for (const [feature, flaggedTraits] of Object.entries(featureFlags)) {
+        for (const trait of flaggedTraits) {
+            if (!seenTraits.has(trait)) {
+                if (!featuredTraits[feature]) featuredTraits[feature] = [];
+                featuredTraits[feature].push(trait);
+            }
         }
     }
 
@@ -164,6 +188,40 @@ function extractFullyQualifiedNames(traits: string[], imports: ImportMap): strin
         imports.add(trait);
         return trait.slice(index + 2);
     });
+}
+
+/**
+ * Determines whether serde traits are present and which feature flag (if any) they are behind.
+ */
+function findSerdeFeature(
+    allTraits: string[],
+    featureFlags: Record<string, string[]>,
+): { featureName: string | undefined; hasSerde: boolean } {
+    const allTraitsAndFeatured = [...allTraits, ...Object.values(featureFlags).flat()];
+    const hasSerde = allTraitsAndFeatured.some(
+        t => t === 'serde::Serialize' || t === 'Serialize' || t === 'serde::Deserialize' || t === 'Deserialize',
+    );
+
+    if (!hasSerde) {
+        return { featureName: undefined, hasSerde: false };
+    }
+
+    const partitioned = partitionTraitsInFeatures(allTraits, featureFlags);
+    const featured = partitioned[1];
+
+    let featureName: string | undefined;
+    for (const [feature, traits] of Object.entries(featured)) {
+        if (
+            traits.some(
+                t => t === 'serde::Serialize' || t === 'serde::Deserialize' || t === 'Serialize' || t === 'Deserialize',
+            )
+        ) {
+            featureName = feature;
+            break;
+        }
+    }
+
+    return { featureName, hasSerde: true };
 }
 
 /**
@@ -191,33 +249,13 @@ export function getSerdeFieldAttribute(
     const nodeOverrides: string[] | undefined = sanitizedOverrides[node.name];
     const allTraits = nodeOverrides === undefined ? getDefaultTraits(nodeType, options) : nodeOverrides;
 
-    // Check if serde traits are present.
-    const hasSerdeSerialize = allTraits.some(t => t === 'serde::Serialize' || t === 'Serialize');
-    const hasSerdeDeserialize = allTraits.some(t => t === 'serde::Deserialize' || t === 'Deserialize');
-
-    if (!hasSerdeSerialize && !hasSerdeDeserialize) {
+    const { featureName, hasSerde } = findSerdeFeature(allTraits, options.featureFlags);
+    if (!hasSerde) {
         return '';
     }
 
-    // Check if serde is feature-flagged.
-    const partitionedTraits = partitionTraitsInFeatures(allTraits, options.featureFlags);
-    const featuredTraits = partitionedTraits[1];
-
-    // Find which feature flag contains serde traits.
-    let serdeFeatureName: string | undefined;
-    for (const [feature, traits] of Object.entries(featuredTraits)) {
-        if (
-            traits.some(
-                t => t === 'serde::Serialize' || t === 'serde::Deserialize' || t === 'Serialize' || t === 'Deserialize',
-            )
-        ) {
-            serdeFeatureName = feature;
-            break;
-        }
-    }
-
-    if (serdeFeatureName) {
-        return `#[cfg_attr(feature = "${serdeFeatureName}", serde(with = "${serdeWith}"))]\n`;
+    if (featureName) {
+        return `#[cfg_attr(feature = "${featureName}", serde(with = "${serdeWith}"))]\n`;
     } else {
         return `#[serde(with = "${serdeWith}")]\n`;
     }

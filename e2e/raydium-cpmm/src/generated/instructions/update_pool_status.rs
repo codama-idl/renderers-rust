@@ -91,32 +91,27 @@ impl UpdatePoolStatusInstructionArgs {
 ///
 ///   0. `[signer, optional]` authority (default to `GThUX1Atko4tqhN2NaiTazWSeFWMuiUvfFnyJyUghFMJ`)
 ///   1. `[writable]` pool_state
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct UpdatePoolStatusBuilder {
     authority: Option<solana_address::Address>,
-    pool_state: Option<solana_address::Address>,
-    status: Option<u8>,
+    pool_state: solana_address::Address,
+    status: u8,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl UpdatePoolStatusBuilder {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(pool_state: solana_address::Address, status: u8) -> Self {
+        Self {
+            authority: None,
+            pool_state,
+            status,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// `[optional account, default to 'GThUX1Atko4tqhN2NaiTazWSeFWMuiUvfFnyJyUghFMJ']`
     #[inline(always)]
     pub fn authority(&mut self, authority: solana_address::Address) -> &mut Self {
         self.authority = Some(authority);
-        self
-    }
-    #[inline(always)]
-    pub fn pool_state(&mut self, pool_state: solana_address::Address) -> &mut Self {
-        self.pool_state = Some(pool_state);
-        self
-    }
-    #[inline(always)]
-    pub fn status(&mut self, status: u8) -> &mut Self {
-        self.status = Some(status);
         self
     }
     /// Add an additional account to the instruction.
@@ -136,14 +131,16 @@ impl UpdatePoolStatusBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let authority = self.authority.unwrap_or(solana_address::address!(
+            "GThUX1Atko4tqhN2NaiTazWSeFWMuiUvfFnyJyUghFMJ"
+        ));
+        let pool_state = self.pool_state;
         let accounts = UpdatePoolStatus {
-            authority: self.authority.unwrap_or(solana_address::address!(
-                "GThUX1Atko4tqhN2NaiTazWSeFWMuiUvfFnyJyUghFMJ"
-            )),
-            pool_state: self.pool_state.expect("pool_state is not set"),
+            authority,
+            pool_state,
         };
         let args = UpdatePoolStatusInstructionArgs {
-            status: self.status.clone().expect("status is not set"),
+            status: self.status.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -258,33 +255,20 @@ pub struct UpdatePoolStatusCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> UpdatePoolStatusCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        authority: &'b solana_account_info::AccountInfo<'a>,
+        pool_state: &'b solana_account_info::AccountInfo<'a>,
+        status: u8,
+    ) -> Self {
         let instruction = Box::new(UpdatePoolStatusCpiBuilderInstruction {
-            __program: program,
-            authority: None,
-            pool_state: None,
-            status: None,
+            __program,
+            authority,
+            pool_state,
+            status,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn authority(&mut self, authority: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.authority = Some(authority);
-        self
-    }
-    #[inline(always)]
-    pub fn pool_state(
-        &mut self,
-        pool_state: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.pool_state = Some(pool_state);
-        self
-    }
-    #[inline(always)]
-    pub fn status(&mut self, status: u8) -> &mut Self {
-        self.instruction.status = Some(status);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -321,14 +305,12 @@ impl<'a, 'b> UpdatePoolStatusCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = UpdatePoolStatusInstructionArgs {
-            status: self.instruction.status.clone().expect("status is not set"),
+            status: self.instruction.status.clone(),
         };
         let instruction = UpdatePoolStatusCpi {
             __program: self.instruction.__program,
-
-            authority: self.instruction.authority.expect("authority is not set"),
-
-            pool_state: self.instruction.pool_state.expect("pool_state is not set"),
+            authority: self.instruction.authority,
+            pool_state: self.instruction.pool_state,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -341,9 +323,9 @@ impl<'a, 'b> UpdatePoolStatusCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct UpdatePoolStatusCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    authority: Option<&'b solana_account_info::AccountInfo<'a>>,
-    pool_state: Option<&'b solana_account_info::AccountInfo<'a>>,
-    status: Option<u8>,
+    authority: &'b solana_account_info::AccountInfo<'a>,
+    pool_state: &'b solana_account_info::AccountInfo<'a>,
+    status: u8,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

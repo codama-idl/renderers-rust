@@ -195,76 +195,86 @@ impl InitializeInstructionArgs {
 ///   1. `[]` creator
 ///   2. `[]` global_config
 ///   3. `[]` platform_config
-///   4. `[]` authority
-///   5. `[writable]` pool_state
+///   4. `[optional]` authority (default to PDA derived from 'authority')
+///   5. `[writable, optional]` pool_state (default to PDA derived from 'poolState')
 ///   6. `[writable, signer]` base_mint
 ///   7. `[]` quote_mint
-///   8. `[writable]` base_vault
-///   9. `[writable]` quote_vault
+///   8. `[writable, optional]` base_vault (default to PDA derived from 'baseVault')
+///   9. `[writable, optional]` quote_vault (default to PDA derived from 'quoteVault')
 ///   10. `[writable]` metadata_account
 ///   11. `[optional]` base_token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 ///   12. `[optional]` quote_token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
 ///   13. `[optional]` metadata_program (default to `metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s`)
 ///   14. `[optional]` system_program (default to `11111111111111111111111111111111`)
 ///   15. `[optional]` rent_program (default to `SysvarRent111111111111111111111111111111111`)
-///   16. `[]` event_authority
+///   16. `[optional]` event_authority (default to PDA derived from 'eventAuthority')
 ///   17. `[]` program
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct InitializeBuilder {
-    payer: Option<solana_address::Address>,
-    creator: Option<solana_address::Address>,
-    global_config: Option<solana_address::Address>,
-    platform_config: Option<solana_address::Address>,
+    payer: solana_address::Address,
+    creator: solana_address::Address,
+    global_config: solana_address::Address,
+    platform_config: solana_address::Address,
     authority: Option<solana_address::Address>,
     pool_state: Option<solana_address::Address>,
-    base_mint: Option<solana_address::Address>,
-    quote_mint: Option<solana_address::Address>,
+    base_mint: solana_address::Address,
+    quote_mint: solana_address::Address,
     base_vault: Option<solana_address::Address>,
     quote_vault: Option<solana_address::Address>,
-    metadata_account: Option<solana_address::Address>,
+    metadata_account: solana_address::Address,
     base_token_program: Option<solana_address::Address>,
     quote_token_program: Option<solana_address::Address>,
     metadata_program: Option<solana_address::Address>,
     system_program: Option<solana_address::Address>,
     rent_program: Option<solana_address::Address>,
     event_authority: Option<solana_address::Address>,
-    program: Option<solana_address::Address>,
-    base_mint_param: Option<MintParams>,
-    curve_param: Option<CurveParams>,
-    vesting_param: Option<VestingParams>,
+    program: solana_address::Address,
+    base_mint_param: MintParams,
+    curve_param: CurveParams,
+    vesting_param: VestingParams,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl InitializeBuilder {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(
+        payer: solana_address::Address,
+        creator: solana_address::Address,
+        global_config: solana_address::Address,
+        platform_config: solana_address::Address,
+        base_mint: solana_address::Address,
+        quote_mint: solana_address::Address,
+        metadata_account: solana_address::Address,
+        program: solana_address::Address,
+        base_mint_param: MintParams,
+        curve_param: CurveParams,
+        vesting_param: VestingParams,
+    ) -> Self {
+        Self {
+            payer,
+            creator,
+            global_config,
+            platform_config,
+            authority: None,
+            pool_state: None,
+            base_mint,
+            quote_mint,
+            base_vault: None,
+            quote_vault: None,
+            metadata_account,
+            base_token_program: None,
+            quote_token_program: None,
+            metadata_program: None,
+            system_program: None,
+            rent_program: None,
+            event_authority: None,
+            program,
+            base_mint_param,
+            curve_param,
+            vesting_param,
+            __remaining_accounts: Vec::new(),
+        }
     }
-    /// The account paying for the initialization costs
-    /// This can be any account with sufficient SOL to cover the transaction
-    #[inline(always)]
-    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
-        self.payer = Some(payer);
-        self
-    }
-    #[inline(always)]
-    pub fn creator(&mut self, creator: solana_address::Address) -> &mut Self {
-        self.creator = Some(creator);
-        self
-    }
-    /// Global configuration account containing protocol-wide settings
-    /// Includes settings like quote token mint and fee parameters
-    #[inline(always)]
-    pub fn global_config(&mut self, global_config: solana_address::Address) -> &mut Self {
-        self.global_config = Some(global_config);
-        self
-    }
-    /// Platform configuration account containing platform info
-    /// Includes settings like the fee_rate, name, web, img of the platform
-    #[inline(always)]
-    pub fn platform_config(&mut self, platform_config: solana_address::Address) -> &mut Self {
-        self.platform_config = Some(platform_config);
-        self
-    }
+    /// `[optional account, default to PDA derived from 'authority']`
     /// PDA that acts as the authority for pool vault and mint operations
     /// Generated using AUTH_SEED
     #[inline(always)]
@@ -272,6 +282,7 @@ impl InitializeBuilder {
         self.authority = Some(authority);
         self
     }
+    /// `[optional account, default to PDA derived from 'poolState']`
     /// Account that stores the pool's state and parameters
     /// PDA generated using POOL_SEED and both token mints
     #[inline(always)]
@@ -279,20 +290,7 @@ impl InitializeBuilder {
         self.pool_state = Some(pool_state);
         self
     }
-    /// The mint for the base token (token being sold)
-    /// Created in this instruction with specified decimals
-    #[inline(always)]
-    pub fn base_mint(&mut self, base_mint: solana_address::Address) -> &mut Self {
-        self.base_mint = Some(base_mint);
-        self
-    }
-    /// The mint for the quote token (token used to buy)
-    /// Must match the quote_mint specified in global config
-    #[inline(always)]
-    pub fn quote_mint(&mut self, quote_mint: solana_address::Address) -> &mut Self {
-        self.quote_mint = Some(quote_mint);
-        self
-    }
+    /// `[optional account, default to PDA derived from 'baseVault']`
     /// Token account that holds the pool's base tokens
     /// PDA generated using POOL_VAULT_SEED
     #[inline(always)]
@@ -300,18 +298,12 @@ impl InitializeBuilder {
         self.base_vault = Some(base_vault);
         self
     }
+    /// `[optional account, default to PDA derived from 'quoteVault']`
     /// Token account that holds the pool's quote tokens
     /// PDA generated using POOL_VAULT_SEED
     #[inline(always)]
     pub fn quote_vault(&mut self, quote_vault: solana_address::Address) -> &mut Self {
         self.quote_vault = Some(quote_vault);
-        self
-    }
-    /// Account to store the base token's metadata
-    /// Created using Metaplex metadata program
-    #[inline(always)]
-    pub fn metadata_account(&mut self, metadata_account: solana_address::Address) -> &mut Self {
-        self.metadata_account = Some(metadata_account);
         self
     }
     /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
@@ -354,29 +346,10 @@ impl InitializeBuilder {
         self.rent_program = Some(rent_program);
         self
     }
+    /// `[optional account, default to PDA derived from 'eventAuthority']`
     #[inline(always)]
     pub fn event_authority(&mut self, event_authority: solana_address::Address) -> &mut Self {
         self.event_authority = Some(event_authority);
-        self
-    }
-    #[inline(always)]
-    pub fn program(&mut self, program: solana_address::Address) -> &mut Self {
-        self.program = Some(program);
-        self
-    }
-    #[inline(always)]
-    pub fn base_mint_param(&mut self, base_mint_param: MintParams) -> &mut Self {
-        self.base_mint_param = Some(base_mint_param);
-        self
-    }
-    #[inline(always)]
-    pub fn curve_param(&mut self, curve_param: CurveParams) -> &mut Self {
-        self.curve_param = Some(curve_param);
-        self
-    }
-    #[inline(always)]
-    pub fn vesting_param(&mut self, vesting_param: VestingParams) -> &mut Self {
-        self.vesting_param = Some(vesting_param);
         self
     }
     /// Add an additional account to the instruction.
@@ -396,46 +369,66 @@ impl InitializeBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let payer = self.payer;
+        let creator = self.creator;
+        let global_config = self.global_config;
+        let platform_config = self.platform_config;
+        let authority = self.authority.unwrap_or(crate::pdas::AUTHORITY_ADDRESS);
+        let pool_state = self.pool_state.unwrap_or_else(|| {
+            crate::pdas::find_pool_state_pda(&self.base_mint, &self.quote_mint).0
+        });
+        let base_mint = self.base_mint;
+        let quote_mint = self.quote_mint;
+        let base_vault = self
+            .base_vault
+            .unwrap_or_else(|| crate::pdas::find_base_vault_pda(&pool_state, &self.base_mint).0);
+        let quote_vault = self
+            .quote_vault
+            .unwrap_or_else(|| crate::pdas::find_quote_vault_pda(&pool_state, &self.quote_mint).0);
+        let metadata_account = self.metadata_account;
+        let base_token_program = self.base_token_program.unwrap_or(solana_address::address!(
+            "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        ));
+        let quote_token_program = self.quote_token_program.unwrap_or(solana_address::address!(
+            "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        ));
+        let metadata_program = self.metadata_program.unwrap_or(solana_address::address!(
+            "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+        ));
+        let system_program = self
+            .system_program
+            .unwrap_or(solana_address::address!("11111111111111111111111111111111"));
+        let rent_program = self.rent_program.unwrap_or(solana_address::address!(
+            "SysvarRent111111111111111111111111111111111"
+        ));
+        let event_authority = self
+            .event_authority
+            .unwrap_or(crate::pdas::EVENT_AUTHORITY_ADDRESS);
+        let program = self.program;
         let accounts = Initialize {
-            payer: self.payer.expect("payer is not set"),
-            creator: self.creator.expect("creator is not set"),
-            global_config: self.global_config.expect("global_config is not set"),
-            platform_config: self.platform_config.expect("platform_config is not set"),
-            authority: self.authority.expect("authority is not set"),
-            pool_state: self.pool_state.expect("pool_state is not set"),
-            base_mint: self.base_mint.expect("base_mint is not set"),
-            quote_mint: self.quote_mint.expect("quote_mint is not set"),
-            base_vault: self.base_vault.expect("base_vault is not set"),
-            quote_vault: self.quote_vault.expect("quote_vault is not set"),
-            metadata_account: self.metadata_account.expect("metadata_account is not set"),
-            base_token_program: self.base_token_program.unwrap_or(solana_address::address!(
-                "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-            )),
-            quote_token_program: self.quote_token_program.unwrap_or(solana_address::address!(
-                "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-            )),
-            metadata_program: self.metadata_program.unwrap_or(solana_address::address!(
-                "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
-            )),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
-            rent_program: self.rent_program.unwrap_or(solana_address::address!(
-                "SysvarRent111111111111111111111111111111111"
-            )),
-            event_authority: self.event_authority.expect("event_authority is not set"),
-            program: self.program.expect("program is not set"),
+            payer,
+            creator,
+            global_config,
+            platform_config,
+            authority,
+            pool_state,
+            base_mint,
+            quote_mint,
+            base_vault,
+            quote_vault,
+            metadata_account,
+            base_token_program,
+            quote_token_program,
+            metadata_program,
+            system_program,
+            rent_program,
+            event_authority,
+            program,
         };
         let args = InitializeInstructionArgs {
-            base_mint_param: self
-                .base_mint_param
-                .clone()
-                .expect("base_mint_param is not set"),
-            curve_param: self.curve_param.clone().expect("curve_param is not set"),
-            vesting_param: self
-                .vesting_param
-                .clone()
-                .expect("vesting_param is not set"),
+            base_mint_param: self.base_mint_param.clone(),
+            curve_param: self.curve_param.clone(),
+            vesting_param: self.vesting_param.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -748,204 +741,56 @@ pub struct InitializeCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> InitializeCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        payer: &'b solana_account_info::AccountInfo<'a>,
+        creator: &'b solana_account_info::AccountInfo<'a>,
+        global_config: &'b solana_account_info::AccountInfo<'a>,
+        platform_config: &'b solana_account_info::AccountInfo<'a>,
+        authority: &'b solana_account_info::AccountInfo<'a>,
+        pool_state: &'b solana_account_info::AccountInfo<'a>,
+        base_mint: &'b solana_account_info::AccountInfo<'a>,
+        quote_mint: &'b solana_account_info::AccountInfo<'a>,
+        base_vault: &'b solana_account_info::AccountInfo<'a>,
+        quote_vault: &'b solana_account_info::AccountInfo<'a>,
+        metadata_account: &'b solana_account_info::AccountInfo<'a>,
+        base_token_program: &'b solana_account_info::AccountInfo<'a>,
+        quote_token_program: &'b solana_account_info::AccountInfo<'a>,
+        metadata_program: &'b solana_account_info::AccountInfo<'a>,
+        system_program: &'b solana_account_info::AccountInfo<'a>,
+        rent_program: &'b solana_account_info::AccountInfo<'a>,
+        event_authority: &'b solana_account_info::AccountInfo<'a>,
+        program: &'b solana_account_info::AccountInfo<'a>,
+        base_mint_param: MintParams,
+        curve_param: CurveParams,
+        vesting_param: VestingParams,
+    ) -> Self {
         let instruction = Box::new(InitializeCpiBuilderInstruction {
-            __program: program,
-            payer: None,
-            creator: None,
-            global_config: None,
-            platform_config: None,
-            authority: None,
-            pool_state: None,
-            base_mint: None,
-            quote_mint: None,
-            base_vault: None,
-            quote_vault: None,
-            metadata_account: None,
-            base_token_program: None,
-            quote_token_program: None,
-            metadata_program: None,
-            system_program: None,
-            rent_program: None,
-            event_authority: None,
-            program: None,
-            base_mint_param: None,
-            curve_param: None,
-            vesting_param: None,
+            __program,
+            payer,
+            creator,
+            global_config,
+            platform_config,
+            authority,
+            pool_state,
+            base_mint,
+            quote_mint,
+            base_vault,
+            quote_vault,
+            metadata_account,
+            base_token_program,
+            quote_token_program,
+            metadata_program,
+            system_program,
+            rent_program,
+            event_authority,
+            program,
+            base_mint_param,
+            curve_param,
+            vesting_param,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// The account paying for the initialization costs
-    /// This can be any account with sufficient SOL to cover the transaction
-    #[inline(always)]
-    pub fn payer(&mut self, payer: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.payer = Some(payer);
-        self
-    }
-    #[inline(always)]
-    pub fn creator(&mut self, creator: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.creator = Some(creator);
-        self
-    }
-    /// Global configuration account containing protocol-wide settings
-    /// Includes settings like quote token mint and fee parameters
-    #[inline(always)]
-    pub fn global_config(
-        &mut self,
-        global_config: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.global_config = Some(global_config);
-        self
-    }
-    /// Platform configuration account containing platform info
-    /// Includes settings like the fee_rate, name, web, img of the platform
-    #[inline(always)]
-    pub fn platform_config(
-        &mut self,
-        platform_config: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.platform_config = Some(platform_config);
-        self
-    }
-    /// PDA that acts as the authority for pool vault and mint operations
-    /// Generated using AUTH_SEED
-    #[inline(always)]
-    pub fn authority(&mut self, authority: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.authority = Some(authority);
-        self
-    }
-    /// Account that stores the pool's state and parameters
-    /// PDA generated using POOL_SEED and both token mints
-    #[inline(always)]
-    pub fn pool_state(
-        &mut self,
-        pool_state: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.pool_state = Some(pool_state);
-        self
-    }
-    /// The mint for the base token (token being sold)
-    /// Created in this instruction with specified decimals
-    #[inline(always)]
-    pub fn base_mint(&mut self, base_mint: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.base_mint = Some(base_mint);
-        self
-    }
-    /// The mint for the quote token (token used to buy)
-    /// Must match the quote_mint specified in global config
-    #[inline(always)]
-    pub fn quote_mint(
-        &mut self,
-        quote_mint: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.quote_mint = Some(quote_mint);
-        self
-    }
-    /// Token account that holds the pool's base tokens
-    /// PDA generated using POOL_VAULT_SEED
-    #[inline(always)]
-    pub fn base_vault(
-        &mut self,
-        base_vault: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.base_vault = Some(base_vault);
-        self
-    }
-    /// Token account that holds the pool's quote tokens
-    /// PDA generated using POOL_VAULT_SEED
-    #[inline(always)]
-    pub fn quote_vault(
-        &mut self,
-        quote_vault: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.quote_vault = Some(quote_vault);
-        self
-    }
-    /// Account to store the base token's metadata
-    /// Created using Metaplex metadata program
-    #[inline(always)]
-    pub fn metadata_account(
-        &mut self,
-        metadata_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.metadata_account = Some(metadata_account);
-        self
-    }
-    /// SPL Token program for the base token
-    /// Must be the standard Token program
-    #[inline(always)]
-    pub fn base_token_program(
-        &mut self,
-        base_token_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.base_token_program = Some(base_token_program);
-        self
-    }
-    /// SPL Token program for the quote token
-    #[inline(always)]
-    pub fn quote_token_program(
-        &mut self,
-        quote_token_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.quote_token_program = Some(quote_token_program);
-        self
-    }
-    /// Metaplex Token Metadata program
-    /// Used to create metadata for the base token
-    #[inline(always)]
-    pub fn metadata_program(
-        &mut self,
-        metadata_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.metadata_program = Some(metadata_program);
-        self
-    }
-    /// Required for account creation
-    #[inline(always)]
-    pub fn system_program(
-        &mut self,
-        system_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.system_program = Some(system_program);
-        self
-    }
-    /// Required for rent exempt calculations
-    #[inline(always)]
-    pub fn rent_program(
-        &mut self,
-        rent_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.rent_program = Some(rent_program);
-        self
-    }
-    #[inline(always)]
-    pub fn event_authority(
-        &mut self,
-        event_authority: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.event_authority = Some(event_authority);
-        self
-    }
-    #[inline(always)]
-    pub fn program(&mut self, program: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.program = Some(program);
-        self
-    }
-    #[inline(always)]
-    pub fn base_mint_param(&mut self, base_mint_param: MintParams) -> &mut Self {
-        self.instruction.base_mint_param = Some(base_mint_param);
-        self
-    }
-    #[inline(always)]
-    pub fn curve_param(&mut self, curve_param: CurveParams) -> &mut Self {
-        self.instruction.curve_param = Some(curve_param);
-        self
-    }
-    #[inline(always)]
-    pub fn vesting_param(&mut self, vesting_param: VestingParams) -> &mut Self {
-        self.instruction.vesting_param = Some(vesting_param);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -982,90 +827,30 @@ impl<'a, 'b> InitializeCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = InitializeInstructionArgs {
-            base_mint_param: self
-                .instruction
-                .base_mint_param
-                .clone()
-                .expect("base_mint_param is not set"),
-            curve_param: self
-                .instruction
-                .curve_param
-                .clone()
-                .expect("curve_param is not set"),
-            vesting_param: self
-                .instruction
-                .vesting_param
-                .clone()
-                .expect("vesting_param is not set"),
+            base_mint_param: self.instruction.base_mint_param.clone(),
+            curve_param: self.instruction.curve_param.clone(),
+            vesting_param: self.instruction.vesting_param.clone(),
         };
         let instruction = InitializeCpi {
             __program: self.instruction.__program,
-
-            payer: self.instruction.payer.expect("payer is not set"),
-
-            creator: self.instruction.creator.expect("creator is not set"),
-
-            global_config: self
-                .instruction
-                .global_config
-                .expect("global_config is not set"),
-
-            platform_config: self
-                .instruction
-                .platform_config
-                .expect("platform_config is not set"),
-
-            authority: self.instruction.authority.expect("authority is not set"),
-
-            pool_state: self.instruction.pool_state.expect("pool_state is not set"),
-
-            base_mint: self.instruction.base_mint.expect("base_mint is not set"),
-
-            quote_mint: self.instruction.quote_mint.expect("quote_mint is not set"),
-
-            base_vault: self.instruction.base_vault.expect("base_vault is not set"),
-
-            quote_vault: self
-                .instruction
-                .quote_vault
-                .expect("quote_vault is not set"),
-
-            metadata_account: self
-                .instruction
-                .metadata_account
-                .expect("metadata_account is not set"),
-
-            base_token_program: self
-                .instruction
-                .base_token_program
-                .expect("base_token_program is not set"),
-
-            quote_token_program: self
-                .instruction
-                .quote_token_program
-                .expect("quote_token_program is not set"),
-
-            metadata_program: self
-                .instruction
-                .metadata_program
-                .expect("metadata_program is not set"),
-
-            system_program: self
-                .instruction
-                .system_program
-                .expect("system_program is not set"),
-
-            rent_program: self
-                .instruction
-                .rent_program
-                .expect("rent_program is not set"),
-
-            event_authority: self
-                .instruction
-                .event_authority
-                .expect("event_authority is not set"),
-
-            program: self.instruction.program.expect("program is not set"),
+            payer: self.instruction.payer,
+            creator: self.instruction.creator,
+            global_config: self.instruction.global_config,
+            platform_config: self.instruction.platform_config,
+            authority: self.instruction.authority,
+            pool_state: self.instruction.pool_state,
+            base_mint: self.instruction.base_mint,
+            quote_mint: self.instruction.quote_mint,
+            base_vault: self.instruction.base_vault,
+            quote_vault: self.instruction.quote_vault,
+            metadata_account: self.instruction.metadata_account,
+            base_token_program: self.instruction.base_token_program,
+            quote_token_program: self.instruction.quote_token_program,
+            metadata_program: self.instruction.metadata_program,
+            system_program: self.instruction.system_program,
+            rent_program: self.instruction.rent_program,
+            event_authority: self.instruction.event_authority,
+            program: self.instruction.program,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -1078,27 +863,27 @@ impl<'a, 'b> InitializeCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct InitializeCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    payer: Option<&'b solana_account_info::AccountInfo<'a>>,
-    creator: Option<&'b solana_account_info::AccountInfo<'a>>,
-    global_config: Option<&'b solana_account_info::AccountInfo<'a>>,
-    platform_config: Option<&'b solana_account_info::AccountInfo<'a>>,
-    authority: Option<&'b solana_account_info::AccountInfo<'a>>,
-    pool_state: Option<&'b solana_account_info::AccountInfo<'a>>,
-    base_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
-    quote_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
-    base_vault: Option<&'b solana_account_info::AccountInfo<'a>>,
-    quote_vault: Option<&'b solana_account_info::AccountInfo<'a>>,
-    metadata_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    base_token_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    quote_token_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    metadata_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    rent_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    event_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
-    program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    base_mint_param: Option<MintParams>,
-    curve_param: Option<CurveParams>,
-    vesting_param: Option<VestingParams>,
+    payer: &'b solana_account_info::AccountInfo<'a>,
+    creator: &'b solana_account_info::AccountInfo<'a>,
+    global_config: &'b solana_account_info::AccountInfo<'a>,
+    platform_config: &'b solana_account_info::AccountInfo<'a>,
+    authority: &'b solana_account_info::AccountInfo<'a>,
+    pool_state: &'b solana_account_info::AccountInfo<'a>,
+    base_mint: &'b solana_account_info::AccountInfo<'a>,
+    quote_mint: &'b solana_account_info::AccountInfo<'a>,
+    base_vault: &'b solana_account_info::AccountInfo<'a>,
+    quote_vault: &'b solana_account_info::AccountInfo<'a>,
+    metadata_account: &'b solana_account_info::AccountInfo<'a>,
+    base_token_program: &'b solana_account_info::AccountInfo<'a>,
+    quote_token_program: &'b solana_account_info::AccountInfo<'a>,
+    metadata_program: &'b solana_account_info::AccountInfo<'a>,
+    system_program: &'b solana_account_info::AccountInfo<'a>,
+    rent_program: &'b solana_account_info::AccountInfo<'a>,
+    event_authority: &'b solana_account_info::AccountInfo<'a>,
+    program: &'b solana_account_info::AccountInfo<'a>,
+    base_mint_param: MintParams,
+    curve_param: CurveParams,
+    vesting_param: VestingParams,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

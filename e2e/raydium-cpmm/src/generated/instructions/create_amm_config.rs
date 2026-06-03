@@ -98,24 +98,40 @@ impl CreateAmmConfigInstructionArgs {
 /// ### Accounts:
 ///
 ///   0. `[writable, signer, optional]` owner (default to `GThUX1Atko4tqhN2NaiTazWSeFWMuiUvfFnyJyUghFMJ`)
-///   1. `[writable]` amm_config
+///   1. `[writable, optional]` amm_config (default to PDA derived from 'ammConfig')
 ///   2. `[optional]` system_program (default to `11111111111111111111111111111111`)
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct CreateAmmConfigBuilder {
     owner: Option<solana_address::Address>,
     amm_config: Option<solana_address::Address>,
     system_program: Option<solana_address::Address>,
-    index: Option<u16>,
-    trade_fee_rate: Option<u64>,
-    protocol_fee_rate: Option<u64>,
-    fund_fee_rate: Option<u64>,
-    create_pool_fee: Option<u64>,
+    index: u16,
+    trade_fee_rate: u64,
+    protocol_fee_rate: u64,
+    fund_fee_rate: u64,
+    create_pool_fee: u64,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl CreateAmmConfigBuilder {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(
+        index: u16,
+        trade_fee_rate: u64,
+        protocol_fee_rate: u64,
+        fund_fee_rate: u64,
+        create_pool_fee: u64,
+    ) -> Self {
+        Self {
+            owner: None,
+            amm_config: None,
+            system_program: None,
+            index,
+            trade_fee_rate,
+            protocol_fee_rate,
+            fund_fee_rate,
+            create_pool_fee,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// `[optional account, default to 'GThUX1Atko4tqhN2NaiTazWSeFWMuiUvfFnyJyUghFMJ']`
     /// Address to be set as protocol owner.
@@ -124,6 +140,7 @@ impl CreateAmmConfigBuilder {
         self.owner = Some(owner);
         self
     }
+    /// `[optional account, default to PDA derived from 'ammConfig']`
     /// Initialize config state account to store protocol owner address and fee rates.
     #[inline(always)]
     pub fn amm_config(&mut self, amm_config: solana_address::Address) -> &mut Self {
@@ -134,31 +151,6 @@ impl CreateAmmConfigBuilder {
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_address::Address) -> &mut Self {
         self.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn index(&mut self, index: u16) -> &mut Self {
-        self.index = Some(index);
-        self
-    }
-    #[inline(always)]
-    pub fn trade_fee_rate(&mut self, trade_fee_rate: u64) -> &mut Self {
-        self.trade_fee_rate = Some(trade_fee_rate);
-        self
-    }
-    #[inline(always)]
-    pub fn protocol_fee_rate(&mut self, protocol_fee_rate: u64) -> &mut Self {
-        self.protocol_fee_rate = Some(protocol_fee_rate);
-        self
-    }
-    #[inline(always)]
-    pub fn fund_fee_rate(&mut self, fund_fee_rate: u64) -> &mut Self {
-        self.fund_fee_rate = Some(fund_fee_rate);
-        self
-    }
-    #[inline(always)]
-    pub fn create_pool_fee(&mut self, create_pool_fee: u64) -> &mut Self {
-        self.create_pool_fee = Some(create_pool_fee);
         self
     }
     /// Add an additional account to the instruction.
@@ -178,33 +170,26 @@ impl CreateAmmConfigBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let owner = self.owner.unwrap_or(solana_address::address!(
+            "GThUX1Atko4tqhN2NaiTazWSeFWMuiUvfFnyJyUghFMJ"
+        ));
+        let amm_config = self
+            .amm_config
+            .unwrap_or_else(|| crate::pdas::find_amm_config_pda(self.index.clone()).0);
+        let system_program = self
+            .system_program
+            .unwrap_or(solana_address::address!("11111111111111111111111111111111"));
         let accounts = CreateAmmConfig {
-            owner: self.owner.unwrap_or(solana_address::address!(
-                "GThUX1Atko4tqhN2NaiTazWSeFWMuiUvfFnyJyUghFMJ"
-            )),
-            amm_config: self.amm_config.expect("amm_config is not set"),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
+            owner,
+            amm_config,
+            system_program,
         };
         let args = CreateAmmConfigInstructionArgs {
-            index: self.index.clone().expect("index is not set"),
-            trade_fee_rate: self
-                .trade_fee_rate
-                .clone()
-                .expect("trade_fee_rate is not set"),
-            protocol_fee_rate: self
-                .protocol_fee_rate
-                .clone()
-                .expect("protocol_fee_rate is not set"),
-            fund_fee_rate: self
-                .fund_fee_rate
-                .clone()
-                .expect("fund_fee_rate is not set"),
-            create_pool_fee: self
-                .create_pool_fee
-                .clone()
-                .expect("create_pool_fee is not set"),
+            index: self.index.clone(),
+            trade_fee_rate: self.trade_fee_rate.clone(),
+            protocol_fee_rate: self.protocol_fee_rate.clone(),
+            fund_fee_rate: self.fund_fee_rate.clone(),
+            create_pool_fee: self.create_pool_fee.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -328,68 +313,30 @@ pub struct CreateAmmConfigCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> CreateAmmConfigCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        owner: &'b solana_account_info::AccountInfo<'a>,
+        amm_config: &'b solana_account_info::AccountInfo<'a>,
+        system_program: &'b solana_account_info::AccountInfo<'a>,
+        index: u16,
+        trade_fee_rate: u64,
+        protocol_fee_rate: u64,
+        fund_fee_rate: u64,
+        create_pool_fee: u64,
+    ) -> Self {
         let instruction = Box::new(CreateAmmConfigCpiBuilderInstruction {
-            __program: program,
-            owner: None,
-            amm_config: None,
-            system_program: None,
-            index: None,
-            trade_fee_rate: None,
-            protocol_fee_rate: None,
-            fund_fee_rate: None,
-            create_pool_fee: None,
+            __program,
+            owner,
+            amm_config,
+            system_program,
+            index,
+            trade_fee_rate,
+            protocol_fee_rate,
+            fund_fee_rate,
+            create_pool_fee,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// Address to be set as protocol owner.
-    #[inline(always)]
-    pub fn owner(&mut self, owner: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.owner = Some(owner);
-        self
-    }
-    /// Initialize config state account to store protocol owner address and fee rates.
-    #[inline(always)]
-    pub fn amm_config(
-        &mut self,
-        amm_config: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.amm_config = Some(amm_config);
-        self
-    }
-    #[inline(always)]
-    pub fn system_program(
-        &mut self,
-        system_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn index(&mut self, index: u16) -> &mut Self {
-        self.instruction.index = Some(index);
-        self
-    }
-    #[inline(always)]
-    pub fn trade_fee_rate(&mut self, trade_fee_rate: u64) -> &mut Self {
-        self.instruction.trade_fee_rate = Some(trade_fee_rate);
-        self
-    }
-    #[inline(always)]
-    pub fn protocol_fee_rate(&mut self, protocol_fee_rate: u64) -> &mut Self {
-        self.instruction.protocol_fee_rate = Some(protocol_fee_rate);
-        self
-    }
-    #[inline(always)]
-    pub fn fund_fee_rate(&mut self, fund_fee_rate: u64) -> &mut Self {
-        self.instruction.fund_fee_rate = Some(fund_fee_rate);
-        self
-    }
-    #[inline(always)]
-    pub fn create_pool_fee(&mut self, create_pool_fee: u64) -> &mut Self {
-        self.instruction.create_pool_fee = Some(create_pool_fee);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -426,39 +373,17 @@ impl<'a, 'b> CreateAmmConfigCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = CreateAmmConfigInstructionArgs {
-            index: self.instruction.index.clone().expect("index is not set"),
-            trade_fee_rate: self
-                .instruction
-                .trade_fee_rate
-                .clone()
-                .expect("trade_fee_rate is not set"),
-            protocol_fee_rate: self
-                .instruction
-                .protocol_fee_rate
-                .clone()
-                .expect("protocol_fee_rate is not set"),
-            fund_fee_rate: self
-                .instruction
-                .fund_fee_rate
-                .clone()
-                .expect("fund_fee_rate is not set"),
-            create_pool_fee: self
-                .instruction
-                .create_pool_fee
-                .clone()
-                .expect("create_pool_fee is not set"),
+            index: self.instruction.index.clone(),
+            trade_fee_rate: self.instruction.trade_fee_rate.clone(),
+            protocol_fee_rate: self.instruction.protocol_fee_rate.clone(),
+            fund_fee_rate: self.instruction.fund_fee_rate.clone(),
+            create_pool_fee: self.instruction.create_pool_fee.clone(),
         };
         let instruction = CreateAmmConfigCpi {
             __program: self.instruction.__program,
-
-            owner: self.instruction.owner.expect("owner is not set"),
-
-            amm_config: self.instruction.amm_config.expect("amm_config is not set"),
-
-            system_program: self
-                .instruction
-                .system_program
-                .expect("system_program is not set"),
+            owner: self.instruction.owner,
+            amm_config: self.instruction.amm_config,
+            system_program: self.instruction.system_program,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -471,14 +396,14 @@ impl<'a, 'b> CreateAmmConfigCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct CreateAmmConfigCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    owner: Option<&'b solana_account_info::AccountInfo<'a>>,
-    amm_config: Option<&'b solana_account_info::AccountInfo<'a>>,
-    system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    index: Option<u16>,
-    trade_fee_rate: Option<u64>,
-    protocol_fee_rate: Option<u64>,
-    fund_fee_rate: Option<u64>,
-    create_pool_fee: Option<u64>,
+    owner: &'b solana_account_info::AccountInfo<'a>,
+    amm_config: &'b solana_account_info::AccountInfo<'a>,
+    system_program: &'b solana_account_info::AccountInfo<'a>,
+    index: u16,
+    trade_fee_rate: u64,
+    protocol_fee_rate: u64,
+    fund_fee_rate: u64,
+    create_pool_fee: u64,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

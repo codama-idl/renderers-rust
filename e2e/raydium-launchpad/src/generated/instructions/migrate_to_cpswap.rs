@@ -242,18 +242,18 @@ impl Default for MigrateToCpswapInstructionData {
 ///   3. `[]` platform_config
 ///   4. `[optional]` cpswap_program (default to `CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C`)
 ///   5. `[writable]` cpswap_pool
-///   6. `[]` cpswap_authority
-///   7. `[writable]` cpswap_lp_mint
-///   8. `[writable]` cpswap_base_vault
-///   9. `[writable]` cpswap_quote_vault
+///   6. `[optional]` cpswap_authority (default to PDA derived from 'cpswapAuthority')
+///   7. `[writable, optional]` cpswap_lp_mint (default to PDA derived from 'cpswapLpMint')
+///   8. `[writable, optional]` cpswap_base_vault (default to PDA derived from 'cpswapBaseVault')
+///   9. `[writable, optional]` cpswap_quote_vault (default to PDA derived from 'cpswapQuoteVault')
 ///   10. `[]` cpswap_config
 ///   11. `[writable]` cpswap_create_pool_fee
-///   12. `[writable]` cpswap_observation
+///   12. `[writable, optional]` cpswap_observation (default to PDA derived from 'cpswapObservation')
 ///   13. `[optional]` lock_program (default to `LockrWmn6K5twhz3y9w1dQERbmgSaRkfnTeTKbpofwE`)
-///   14. `[]` lock_authority
+///   14. `[optional]` lock_authority (default to PDA derived from 'lockAuthority')
 ///   15. `[writable]` lock_lp_vault
-///   16. `[writable]` authority
-///   17. `[writable]` pool_state
+///   16. `[writable, optional]` authority (default to PDA derived from 'authority')
+///   17. `[writable, optional]` pool_state (default to PDA derived from 'poolState')
 ///   18. `[]` global_config
 ///   19. `[writable]` base_vault
 ///   20. `[writable]` quote_vault
@@ -264,30 +264,30 @@ impl Default for MigrateToCpswapInstructionData {
 ///   25. `[optional]` system_program (default to `11111111111111111111111111111111`)
 ///   26. `[optional]` rent_program (default to `SysvarRent111111111111111111111111111111111`)
 ///   27. `[optional]` metadata_program (default to `metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s`)
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct MigrateToCpswapBuilder {
-    payer: Option<solana_address::Address>,
-    base_mint: Option<solana_address::Address>,
-    quote_mint: Option<solana_address::Address>,
-    platform_config: Option<solana_address::Address>,
+    payer: solana_address::Address,
+    base_mint: solana_address::Address,
+    quote_mint: solana_address::Address,
+    platform_config: solana_address::Address,
     cpswap_program: Option<solana_address::Address>,
-    cpswap_pool: Option<solana_address::Address>,
+    cpswap_pool: solana_address::Address,
     cpswap_authority: Option<solana_address::Address>,
     cpswap_lp_mint: Option<solana_address::Address>,
     cpswap_base_vault: Option<solana_address::Address>,
     cpswap_quote_vault: Option<solana_address::Address>,
-    cpswap_config: Option<solana_address::Address>,
-    cpswap_create_pool_fee: Option<solana_address::Address>,
+    cpswap_config: solana_address::Address,
+    cpswap_create_pool_fee: solana_address::Address,
     cpswap_observation: Option<solana_address::Address>,
     lock_program: Option<solana_address::Address>,
     lock_authority: Option<solana_address::Address>,
-    lock_lp_vault: Option<solana_address::Address>,
+    lock_lp_vault: solana_address::Address,
     authority: Option<solana_address::Address>,
     pool_state: Option<solana_address::Address>,
-    global_config: Option<solana_address::Address>,
-    base_vault: Option<solana_address::Address>,
-    quote_vault: Option<solana_address::Address>,
-    pool_lp_token: Option<solana_address::Address>,
+    global_config: solana_address::Address,
+    base_vault: solana_address::Address,
+    quote_vault: solana_address::Address,
+    pool_lp_token: solana_address::Address,
     base_token_program: Option<solana_address::Address>,
     quote_token_program: Option<solana_address::Address>,
     associated_token_program: Option<solana_address::Address>,
@@ -298,34 +298,51 @@ pub struct MigrateToCpswapBuilder {
 }
 
 impl MigrateToCpswapBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    /// Only migrate_to_cpswap_wallet can migrate to cpswap pool
-    /// This signer must match the migrate_to_cpswap_wallet saved in global_config
-    #[inline(always)]
-    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
-        self.payer = Some(payer);
-        self
-    }
-    /// The mint for the base token (token being sold)
-    #[inline(always)]
-    pub fn base_mint(&mut self, base_mint: solana_address::Address) -> &mut Self {
-        self.base_mint = Some(base_mint);
-        self
-    }
-    /// The mint for the quote token (token used to buy)
-    #[inline(always)]
-    pub fn quote_mint(&mut self, quote_mint: solana_address::Address) -> &mut Self {
-        self.quote_mint = Some(quote_mint);
-        self
-    }
-    /// Platform configuration account containing platform-wide settings
-    /// Used to read platform fee rate
-    #[inline(always)]
-    pub fn platform_config(&mut self, platform_config: solana_address::Address) -> &mut Self {
-        self.platform_config = Some(platform_config);
-        self
+    pub fn new(
+        payer: solana_address::Address,
+        base_mint: solana_address::Address,
+        quote_mint: solana_address::Address,
+        platform_config: solana_address::Address,
+        cpswap_pool: solana_address::Address,
+        cpswap_config: solana_address::Address,
+        cpswap_create_pool_fee: solana_address::Address,
+        lock_lp_vault: solana_address::Address,
+        global_config: solana_address::Address,
+        base_vault: solana_address::Address,
+        quote_vault: solana_address::Address,
+        pool_lp_token: solana_address::Address,
+    ) -> Self {
+        Self {
+            payer,
+            base_mint,
+            quote_mint,
+            platform_config,
+            cpswap_program: None,
+            cpswap_pool,
+            cpswap_authority: None,
+            cpswap_lp_mint: None,
+            cpswap_base_vault: None,
+            cpswap_quote_vault: None,
+            cpswap_config,
+            cpswap_create_pool_fee,
+            cpswap_observation: None,
+            lock_program: None,
+            lock_authority: None,
+            lock_lp_vault,
+            authority: None,
+            pool_state: None,
+            global_config,
+            base_vault,
+            quote_vault,
+            pool_lp_token,
+            base_token_program: None,
+            quote_token_program: None,
+            associated_token_program: None,
+            system_program: None,
+            rent_program: None,
+            metadata_program: None,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// `[optional account, default to 'CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C']`
     #[inline(always)]
@@ -333,54 +350,31 @@ impl MigrateToCpswapBuilder {
         self.cpswap_program = Some(cpswap_program);
         self
     }
-    /// PDA account:
-    /// seeds = [
-    /// b"pool",
-    /// cpswap_config.key().as_ref(),
-    /// token_0_mint.key().as_ref(),
-    /// token_1_mint.key().as_ref(),
-    /// ],
-    /// seeds::program = cpswap_program,
-    ///
-    /// Or random account: must be signed by cli
-    #[inline(always)]
-    pub fn cpswap_pool(&mut self, cpswap_pool: solana_address::Address) -> &mut Self {
-        self.cpswap_pool = Some(cpswap_pool);
-        self
-    }
+    /// `[optional account, default to PDA derived from 'cpswapAuthority']`
     #[inline(always)]
     pub fn cpswap_authority(&mut self, cpswap_authority: solana_address::Address) -> &mut Self {
         self.cpswap_authority = Some(cpswap_authority);
         self
     }
+    /// `[optional account, default to PDA derived from 'cpswapLpMint']`
     #[inline(always)]
     pub fn cpswap_lp_mint(&mut self, cpswap_lp_mint: solana_address::Address) -> &mut Self {
         self.cpswap_lp_mint = Some(cpswap_lp_mint);
         self
     }
+    /// `[optional account, default to PDA derived from 'cpswapBaseVault']`
     #[inline(always)]
     pub fn cpswap_base_vault(&mut self, cpswap_base_vault: solana_address::Address) -> &mut Self {
         self.cpswap_base_vault = Some(cpswap_base_vault);
         self
     }
+    /// `[optional account, default to PDA derived from 'cpswapQuoteVault']`
     #[inline(always)]
     pub fn cpswap_quote_vault(&mut self, cpswap_quote_vault: solana_address::Address) -> &mut Self {
         self.cpswap_quote_vault = Some(cpswap_quote_vault);
         self
     }
-    #[inline(always)]
-    pub fn cpswap_config(&mut self, cpswap_config: solana_address::Address) -> &mut Self {
-        self.cpswap_config = Some(cpswap_config);
-        self
-    }
-    #[inline(always)]
-    pub fn cpswap_create_pool_fee(
-        &mut self,
-        cpswap_create_pool_fee: solana_address::Address,
-    ) -> &mut Self {
-        self.cpswap_create_pool_fee = Some(cpswap_create_pool_fee);
-        self
-    }
+    /// `[optional account, default to PDA derived from 'cpswapObservation']`
     #[inline(always)]
     pub fn cpswap_observation(&mut self, cpswap_observation: solana_address::Address) -> &mut Self {
         self.cpswap_observation = Some(cpswap_observation);
@@ -392,16 +386,13 @@ impl MigrateToCpswapBuilder {
         self.lock_program = Some(lock_program);
         self
     }
+    /// `[optional account, default to PDA derived from 'lockAuthority']`
     #[inline(always)]
     pub fn lock_authority(&mut self, lock_authority: solana_address::Address) -> &mut Self {
         self.lock_authority = Some(lock_authority);
         self
     }
-    #[inline(always)]
-    pub fn lock_lp_vault(&mut self, lock_lp_vault: solana_address::Address) -> &mut Self {
-        self.lock_lp_vault = Some(lock_lp_vault);
-        self
-    }
+    /// `[optional account, default to PDA derived from 'authority']`
     /// PDA that acts as the authority for pool vault operations
     /// Generated using AUTH_SEED
     #[inline(always)]
@@ -409,36 +400,12 @@ impl MigrateToCpswapBuilder {
         self.authority = Some(authority);
         self
     }
+    /// `[optional account, default to PDA derived from 'poolState']`
     /// Account that stores the pool's state and parameters
     /// PDA generated using POOL_SEED and both token mints
     #[inline(always)]
     pub fn pool_state(&mut self, pool_state: solana_address::Address) -> &mut Self {
         self.pool_state = Some(pool_state);
-        self
-    }
-    /// Global config account stores owner
-    #[inline(always)]
-    pub fn global_config(&mut self, global_config: solana_address::Address) -> &mut Self {
-        self.global_config = Some(global_config);
-        self
-    }
-    /// The pool's vault for base tokens
-    /// Will be fully drained during migration
-    #[inline(always)]
-    pub fn base_vault(&mut self, base_vault: solana_address::Address) -> &mut Self {
-        self.base_vault = Some(base_vault);
-        self
-    }
-    /// The pool's vault for quote tokens
-    /// Will be fully drained during migration
-    #[inline(always)]
-    pub fn quote_vault(&mut self, quote_vault: solana_address::Address) -> &mut Self {
-        self.quote_vault = Some(quote_vault);
-        self
-    }
-    #[inline(always)]
-    pub fn pool_lp_token(&mut self, pool_lp_token: solana_address::Address) -> &mut Self {
-        self.pool_lp_token = Some(pool_lp_token);
         self
     }
     /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
@@ -507,59 +474,95 @@ impl MigrateToCpswapBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let payer = self.payer;
+        let base_mint = self.base_mint;
+        let quote_mint = self.quote_mint;
+        let platform_config = self.platform_config;
+        let cpswap_program = self.cpswap_program.unwrap_or(solana_address::address!(
+            "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
+        ));
+        let cpswap_pool = self.cpswap_pool;
+        let cpswap_authority = self
+            .cpswap_authority
+            .unwrap_or(crate::pdas::CPSWAP_AUTHORITY_ADDRESS);
+        let cpswap_lp_mint = self
+            .cpswap_lp_mint
+            .unwrap_or_else(|| crate::pdas::find_cpswap_lp_mint_pda(&self.cpswap_pool).0);
+        let cpswap_base_vault = self.cpswap_base_vault.unwrap_or_else(|| {
+            crate::pdas::find_cpswap_base_vault_pda(&self.cpswap_pool, &self.base_mint).0
+        });
+        let cpswap_quote_vault = self.cpswap_quote_vault.unwrap_or_else(|| {
+            crate::pdas::find_cpswap_quote_vault_pda(&self.cpswap_pool, &self.quote_mint).0
+        });
+        let cpswap_config = self.cpswap_config;
+        let cpswap_create_pool_fee = self.cpswap_create_pool_fee;
+        let cpswap_observation = self
+            .cpswap_observation
+            .unwrap_or_else(|| crate::pdas::find_cpswap_observation_pda(&self.cpswap_pool).0);
+        let lock_program = self.lock_program.unwrap_or(solana_address::address!(
+            "LockrWmn6K5twhz3y9w1dQERbmgSaRkfnTeTKbpofwE"
+        ));
+        let lock_authority = self
+            .lock_authority
+            .unwrap_or(crate::pdas::LOCK_AUTHORITY_ADDRESS);
+        let lock_lp_vault = self.lock_lp_vault;
+        let authority = self.authority.unwrap_or(crate::pdas::AUTHORITY_ADDRESS);
+        let pool_state = self.pool_state.unwrap_or_else(|| {
+            crate::pdas::find_pool_state_pda(&self.base_mint, &self.quote_mint).0
+        });
+        let global_config = self.global_config;
+        let base_vault = self.base_vault;
+        let quote_vault = self.quote_vault;
+        let pool_lp_token = self.pool_lp_token;
+        let base_token_program = self.base_token_program.unwrap_or(solana_address::address!(
+            "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        ));
+        let quote_token_program = self.quote_token_program.unwrap_or(solana_address::address!(
+            "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        ));
+        let associated_token_program =
+            self.associated_token_program
+                .unwrap_or(solana_address::address!(
+                    "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+                ));
+        let system_program = self
+            .system_program
+            .unwrap_or(solana_address::address!("11111111111111111111111111111111"));
+        let rent_program = self.rent_program.unwrap_or(solana_address::address!(
+            "SysvarRent111111111111111111111111111111111"
+        ));
+        let metadata_program = self.metadata_program.unwrap_or(solana_address::address!(
+            "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+        ));
         let accounts = MigrateToCpswap {
-            payer: self.payer.expect("payer is not set"),
-            base_mint: self.base_mint.expect("base_mint is not set"),
-            quote_mint: self.quote_mint.expect("quote_mint is not set"),
-            platform_config: self.platform_config.expect("platform_config is not set"),
-            cpswap_program: self.cpswap_program.unwrap_or(solana_address::address!(
-                "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
-            )),
-            cpswap_pool: self.cpswap_pool.expect("cpswap_pool is not set"),
-            cpswap_authority: self.cpswap_authority.expect("cpswap_authority is not set"),
-            cpswap_lp_mint: self.cpswap_lp_mint.expect("cpswap_lp_mint is not set"),
-            cpswap_base_vault: self
-                .cpswap_base_vault
-                .expect("cpswap_base_vault is not set"),
-            cpswap_quote_vault: self
-                .cpswap_quote_vault
-                .expect("cpswap_quote_vault is not set"),
-            cpswap_config: self.cpswap_config.expect("cpswap_config is not set"),
-            cpswap_create_pool_fee: self
-                .cpswap_create_pool_fee
-                .expect("cpswap_create_pool_fee is not set"),
-            cpswap_observation: self
-                .cpswap_observation
-                .expect("cpswap_observation is not set"),
-            lock_program: self.lock_program.unwrap_or(solana_address::address!(
-                "LockrWmn6K5twhz3y9w1dQERbmgSaRkfnTeTKbpofwE"
-            )),
-            lock_authority: self.lock_authority.expect("lock_authority is not set"),
-            lock_lp_vault: self.lock_lp_vault.expect("lock_lp_vault is not set"),
-            authority: self.authority.expect("authority is not set"),
-            pool_state: self.pool_state.expect("pool_state is not set"),
-            global_config: self.global_config.expect("global_config is not set"),
-            base_vault: self.base_vault.expect("base_vault is not set"),
-            quote_vault: self.quote_vault.expect("quote_vault is not set"),
-            pool_lp_token: self.pool_lp_token.expect("pool_lp_token is not set"),
-            base_token_program: self.base_token_program.unwrap_or(solana_address::address!(
-                "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-            )),
-            quote_token_program: self.quote_token_program.unwrap_or(solana_address::address!(
-                "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-            )),
-            associated_token_program: self.associated_token_program.unwrap_or(
-                solana_address::address!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
-            ),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
-            rent_program: self.rent_program.unwrap_or(solana_address::address!(
-                "SysvarRent111111111111111111111111111111111"
-            )),
-            metadata_program: self.metadata_program.unwrap_or(solana_address::address!(
-                "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
-            )),
+            payer,
+            base_mint,
+            quote_mint,
+            platform_config,
+            cpswap_program,
+            cpswap_pool,
+            cpswap_authority,
+            cpswap_lp_mint,
+            cpswap_base_vault,
+            cpswap_quote_vault,
+            cpswap_config,
+            cpswap_create_pool_fee,
+            cpswap_observation,
+            lock_program,
+            lock_authority,
+            lock_lp_vault,
+            authority,
+            pool_state,
+            global_config,
+            base_vault,
+            quote_vault,
+            pool_lp_token,
+            base_token_program,
+            quote_token_program,
+            associated_token_program,
+            system_program,
+            rent_program,
+            metadata_program,
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
@@ -984,287 +987,70 @@ pub struct MigrateToCpswapCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> MigrateToCpswapCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        payer: &'b solana_account_info::AccountInfo<'a>,
+        base_mint: &'b solana_account_info::AccountInfo<'a>,
+        quote_mint: &'b solana_account_info::AccountInfo<'a>,
+        platform_config: &'b solana_account_info::AccountInfo<'a>,
+        cpswap_program: &'b solana_account_info::AccountInfo<'a>,
+        cpswap_pool: &'b solana_account_info::AccountInfo<'a>,
+        cpswap_authority: &'b solana_account_info::AccountInfo<'a>,
+        cpswap_lp_mint: &'b solana_account_info::AccountInfo<'a>,
+        cpswap_base_vault: &'b solana_account_info::AccountInfo<'a>,
+        cpswap_quote_vault: &'b solana_account_info::AccountInfo<'a>,
+        cpswap_config: &'b solana_account_info::AccountInfo<'a>,
+        cpswap_create_pool_fee: &'b solana_account_info::AccountInfo<'a>,
+        cpswap_observation: &'b solana_account_info::AccountInfo<'a>,
+        lock_program: &'b solana_account_info::AccountInfo<'a>,
+        lock_authority: &'b solana_account_info::AccountInfo<'a>,
+        lock_lp_vault: &'b solana_account_info::AccountInfo<'a>,
+        authority: &'b solana_account_info::AccountInfo<'a>,
+        pool_state: &'b solana_account_info::AccountInfo<'a>,
+        global_config: &'b solana_account_info::AccountInfo<'a>,
+        base_vault: &'b solana_account_info::AccountInfo<'a>,
+        quote_vault: &'b solana_account_info::AccountInfo<'a>,
+        pool_lp_token: &'b solana_account_info::AccountInfo<'a>,
+        base_token_program: &'b solana_account_info::AccountInfo<'a>,
+        quote_token_program: &'b solana_account_info::AccountInfo<'a>,
+        associated_token_program: &'b solana_account_info::AccountInfo<'a>,
+        system_program: &'b solana_account_info::AccountInfo<'a>,
+        rent_program: &'b solana_account_info::AccountInfo<'a>,
+        metadata_program: &'b solana_account_info::AccountInfo<'a>,
+    ) -> Self {
         let instruction = Box::new(MigrateToCpswapCpiBuilderInstruction {
-            __program: program,
-            payer: None,
-            base_mint: None,
-            quote_mint: None,
-            platform_config: None,
-            cpswap_program: None,
-            cpswap_pool: None,
-            cpswap_authority: None,
-            cpswap_lp_mint: None,
-            cpswap_base_vault: None,
-            cpswap_quote_vault: None,
-            cpswap_config: None,
-            cpswap_create_pool_fee: None,
-            cpswap_observation: None,
-            lock_program: None,
-            lock_authority: None,
-            lock_lp_vault: None,
-            authority: None,
-            pool_state: None,
-            global_config: None,
-            base_vault: None,
-            quote_vault: None,
-            pool_lp_token: None,
-            base_token_program: None,
-            quote_token_program: None,
-            associated_token_program: None,
-            system_program: None,
-            rent_program: None,
-            metadata_program: None,
+            __program,
+            payer,
+            base_mint,
+            quote_mint,
+            platform_config,
+            cpswap_program,
+            cpswap_pool,
+            cpswap_authority,
+            cpswap_lp_mint,
+            cpswap_base_vault,
+            cpswap_quote_vault,
+            cpswap_config,
+            cpswap_create_pool_fee,
+            cpswap_observation,
+            lock_program,
+            lock_authority,
+            lock_lp_vault,
+            authority,
+            pool_state,
+            global_config,
+            base_vault,
+            quote_vault,
+            pool_lp_token,
+            base_token_program,
+            quote_token_program,
+            associated_token_program,
+            system_program,
+            rent_program,
+            metadata_program,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// Only migrate_to_cpswap_wallet can migrate to cpswap pool
-    /// This signer must match the migrate_to_cpswap_wallet saved in global_config
-    #[inline(always)]
-    pub fn payer(&mut self, payer: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.payer = Some(payer);
-        self
-    }
-    /// The mint for the base token (token being sold)
-    #[inline(always)]
-    pub fn base_mint(&mut self, base_mint: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.base_mint = Some(base_mint);
-        self
-    }
-    /// The mint for the quote token (token used to buy)
-    #[inline(always)]
-    pub fn quote_mint(
-        &mut self,
-        quote_mint: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.quote_mint = Some(quote_mint);
-        self
-    }
-    /// Platform configuration account containing platform-wide settings
-    /// Used to read platform fee rate
-    #[inline(always)]
-    pub fn platform_config(
-        &mut self,
-        platform_config: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.platform_config = Some(platform_config);
-        self
-    }
-    #[inline(always)]
-    pub fn cpswap_program(
-        &mut self,
-        cpswap_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.cpswap_program = Some(cpswap_program);
-        self
-    }
-    /// PDA account:
-    /// seeds = [
-    /// b"pool",
-    /// cpswap_config.key().as_ref(),
-    /// token_0_mint.key().as_ref(),
-    /// token_1_mint.key().as_ref(),
-    /// ],
-    /// seeds::program = cpswap_program,
-    ///
-    /// Or random account: must be signed by cli
-    #[inline(always)]
-    pub fn cpswap_pool(
-        &mut self,
-        cpswap_pool: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.cpswap_pool = Some(cpswap_pool);
-        self
-    }
-    #[inline(always)]
-    pub fn cpswap_authority(
-        &mut self,
-        cpswap_authority: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.cpswap_authority = Some(cpswap_authority);
-        self
-    }
-    #[inline(always)]
-    pub fn cpswap_lp_mint(
-        &mut self,
-        cpswap_lp_mint: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.cpswap_lp_mint = Some(cpswap_lp_mint);
-        self
-    }
-    #[inline(always)]
-    pub fn cpswap_base_vault(
-        &mut self,
-        cpswap_base_vault: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.cpswap_base_vault = Some(cpswap_base_vault);
-        self
-    }
-    #[inline(always)]
-    pub fn cpswap_quote_vault(
-        &mut self,
-        cpswap_quote_vault: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.cpswap_quote_vault = Some(cpswap_quote_vault);
-        self
-    }
-    #[inline(always)]
-    pub fn cpswap_config(
-        &mut self,
-        cpswap_config: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.cpswap_config = Some(cpswap_config);
-        self
-    }
-    #[inline(always)]
-    pub fn cpswap_create_pool_fee(
-        &mut self,
-        cpswap_create_pool_fee: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.cpswap_create_pool_fee = Some(cpswap_create_pool_fee);
-        self
-    }
-    #[inline(always)]
-    pub fn cpswap_observation(
-        &mut self,
-        cpswap_observation: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.cpswap_observation = Some(cpswap_observation);
-        self
-    }
-    #[inline(always)]
-    pub fn lock_program(
-        &mut self,
-        lock_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.lock_program = Some(lock_program);
-        self
-    }
-    #[inline(always)]
-    pub fn lock_authority(
-        &mut self,
-        lock_authority: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.lock_authority = Some(lock_authority);
-        self
-    }
-    #[inline(always)]
-    pub fn lock_lp_vault(
-        &mut self,
-        lock_lp_vault: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.lock_lp_vault = Some(lock_lp_vault);
-        self
-    }
-    /// PDA that acts as the authority for pool vault operations
-    /// Generated using AUTH_SEED
-    #[inline(always)]
-    pub fn authority(&mut self, authority: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.authority = Some(authority);
-        self
-    }
-    /// Account that stores the pool's state and parameters
-    /// PDA generated using POOL_SEED and both token mints
-    #[inline(always)]
-    pub fn pool_state(
-        &mut self,
-        pool_state: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.pool_state = Some(pool_state);
-        self
-    }
-    /// Global config account stores owner
-    #[inline(always)]
-    pub fn global_config(
-        &mut self,
-        global_config: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.global_config = Some(global_config);
-        self
-    }
-    /// The pool's vault for base tokens
-    /// Will be fully drained during migration
-    #[inline(always)]
-    pub fn base_vault(
-        &mut self,
-        base_vault: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.base_vault = Some(base_vault);
-        self
-    }
-    /// The pool's vault for quote tokens
-    /// Will be fully drained during migration
-    #[inline(always)]
-    pub fn quote_vault(
-        &mut self,
-        quote_vault: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.quote_vault = Some(quote_vault);
-        self
-    }
-    #[inline(always)]
-    pub fn pool_lp_token(
-        &mut self,
-        pool_lp_token: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.pool_lp_token = Some(pool_lp_token);
-        self
-    }
-    /// SPL Token program for the base token
-    /// Must be the standard Token program
-    #[inline(always)]
-    pub fn base_token_program(
-        &mut self,
-        base_token_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.base_token_program = Some(base_token_program);
-        self
-    }
-    /// SPL Token program for the quote token
-    #[inline(always)]
-    pub fn quote_token_program(
-        &mut self,
-        quote_token_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.quote_token_program = Some(quote_token_program);
-        self
-    }
-    /// Program to create an ATA for receiving fee NFT
-    #[inline(always)]
-    pub fn associated_token_program(
-        &mut self,
-        associated_token_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.associated_token_program = Some(associated_token_program);
-        self
-    }
-    /// Required for account creation
-    #[inline(always)]
-    pub fn system_program(
-        &mut self,
-        system_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.system_program = Some(system_program);
-        self
-    }
-    /// Required for rent exempt calculations
-    #[inline(always)]
-    pub fn rent_program(
-        &mut self,
-        rent_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.rent_program = Some(rent_program);
-        self
-    }
-    /// Program to create NFT metadata accunt
-    #[inline(always)]
-    pub fn metadata_program(
-        &mut self,
-        metadata_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.metadata_program = Some(metadata_program);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -1302,128 +1088,34 @@ impl<'a, 'b> MigrateToCpswapCpiBuilder<'a, 'b> {
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let instruction = MigrateToCpswapCpi {
             __program: self.instruction.__program,
-
-            payer: self.instruction.payer.expect("payer is not set"),
-
-            base_mint: self.instruction.base_mint.expect("base_mint is not set"),
-
-            quote_mint: self.instruction.quote_mint.expect("quote_mint is not set"),
-
-            platform_config: self
-                .instruction
-                .platform_config
-                .expect("platform_config is not set"),
-
-            cpswap_program: self
-                .instruction
-                .cpswap_program
-                .expect("cpswap_program is not set"),
-
-            cpswap_pool: self
-                .instruction
-                .cpswap_pool
-                .expect("cpswap_pool is not set"),
-
-            cpswap_authority: self
-                .instruction
-                .cpswap_authority
-                .expect("cpswap_authority is not set"),
-
-            cpswap_lp_mint: self
-                .instruction
-                .cpswap_lp_mint
-                .expect("cpswap_lp_mint is not set"),
-
-            cpswap_base_vault: self
-                .instruction
-                .cpswap_base_vault
-                .expect("cpswap_base_vault is not set"),
-
-            cpswap_quote_vault: self
-                .instruction
-                .cpswap_quote_vault
-                .expect("cpswap_quote_vault is not set"),
-
-            cpswap_config: self
-                .instruction
-                .cpswap_config
-                .expect("cpswap_config is not set"),
-
-            cpswap_create_pool_fee: self
-                .instruction
-                .cpswap_create_pool_fee
-                .expect("cpswap_create_pool_fee is not set"),
-
-            cpswap_observation: self
-                .instruction
-                .cpswap_observation
-                .expect("cpswap_observation is not set"),
-
-            lock_program: self
-                .instruction
-                .lock_program
-                .expect("lock_program is not set"),
-
-            lock_authority: self
-                .instruction
-                .lock_authority
-                .expect("lock_authority is not set"),
-
-            lock_lp_vault: self
-                .instruction
-                .lock_lp_vault
-                .expect("lock_lp_vault is not set"),
-
-            authority: self.instruction.authority.expect("authority is not set"),
-
-            pool_state: self.instruction.pool_state.expect("pool_state is not set"),
-
-            global_config: self
-                .instruction
-                .global_config
-                .expect("global_config is not set"),
-
-            base_vault: self.instruction.base_vault.expect("base_vault is not set"),
-
-            quote_vault: self
-                .instruction
-                .quote_vault
-                .expect("quote_vault is not set"),
-
-            pool_lp_token: self
-                .instruction
-                .pool_lp_token
-                .expect("pool_lp_token is not set"),
-
-            base_token_program: self
-                .instruction
-                .base_token_program
-                .expect("base_token_program is not set"),
-
-            quote_token_program: self
-                .instruction
-                .quote_token_program
-                .expect("quote_token_program is not set"),
-
-            associated_token_program: self
-                .instruction
-                .associated_token_program
-                .expect("associated_token_program is not set"),
-
-            system_program: self
-                .instruction
-                .system_program
-                .expect("system_program is not set"),
-
-            rent_program: self
-                .instruction
-                .rent_program
-                .expect("rent_program is not set"),
-
-            metadata_program: self
-                .instruction
-                .metadata_program
-                .expect("metadata_program is not set"),
+            payer: self.instruction.payer,
+            base_mint: self.instruction.base_mint,
+            quote_mint: self.instruction.quote_mint,
+            platform_config: self.instruction.platform_config,
+            cpswap_program: self.instruction.cpswap_program,
+            cpswap_pool: self.instruction.cpswap_pool,
+            cpswap_authority: self.instruction.cpswap_authority,
+            cpswap_lp_mint: self.instruction.cpswap_lp_mint,
+            cpswap_base_vault: self.instruction.cpswap_base_vault,
+            cpswap_quote_vault: self.instruction.cpswap_quote_vault,
+            cpswap_config: self.instruction.cpswap_config,
+            cpswap_create_pool_fee: self.instruction.cpswap_create_pool_fee,
+            cpswap_observation: self.instruction.cpswap_observation,
+            lock_program: self.instruction.lock_program,
+            lock_authority: self.instruction.lock_authority,
+            lock_lp_vault: self.instruction.lock_lp_vault,
+            authority: self.instruction.authority,
+            pool_state: self.instruction.pool_state,
+            global_config: self.instruction.global_config,
+            base_vault: self.instruction.base_vault,
+            quote_vault: self.instruction.quote_vault,
+            pool_lp_token: self.instruction.pool_lp_token,
+            base_token_program: self.instruction.base_token_program,
+            quote_token_program: self.instruction.quote_token_program,
+            associated_token_program: self.instruction.associated_token_program,
+            system_program: self.instruction.system_program,
+            rent_program: self.instruction.rent_program,
+            metadata_program: self.instruction.metadata_program,
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -1435,34 +1127,34 @@ impl<'a, 'b> MigrateToCpswapCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct MigrateToCpswapCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    payer: Option<&'b solana_account_info::AccountInfo<'a>>,
-    base_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
-    quote_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
-    platform_config: Option<&'b solana_account_info::AccountInfo<'a>>,
-    cpswap_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    cpswap_pool: Option<&'b solana_account_info::AccountInfo<'a>>,
-    cpswap_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
-    cpswap_lp_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
-    cpswap_base_vault: Option<&'b solana_account_info::AccountInfo<'a>>,
-    cpswap_quote_vault: Option<&'b solana_account_info::AccountInfo<'a>>,
-    cpswap_config: Option<&'b solana_account_info::AccountInfo<'a>>,
-    cpswap_create_pool_fee: Option<&'b solana_account_info::AccountInfo<'a>>,
-    cpswap_observation: Option<&'b solana_account_info::AccountInfo<'a>>,
-    lock_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    lock_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
-    lock_lp_vault: Option<&'b solana_account_info::AccountInfo<'a>>,
-    authority: Option<&'b solana_account_info::AccountInfo<'a>>,
-    pool_state: Option<&'b solana_account_info::AccountInfo<'a>>,
-    global_config: Option<&'b solana_account_info::AccountInfo<'a>>,
-    base_vault: Option<&'b solana_account_info::AccountInfo<'a>>,
-    quote_vault: Option<&'b solana_account_info::AccountInfo<'a>>,
-    pool_lp_token: Option<&'b solana_account_info::AccountInfo<'a>>,
-    base_token_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    quote_token_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    associated_token_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    rent_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    metadata_program: Option<&'b solana_account_info::AccountInfo<'a>>,
+    payer: &'b solana_account_info::AccountInfo<'a>,
+    base_mint: &'b solana_account_info::AccountInfo<'a>,
+    quote_mint: &'b solana_account_info::AccountInfo<'a>,
+    platform_config: &'b solana_account_info::AccountInfo<'a>,
+    cpswap_program: &'b solana_account_info::AccountInfo<'a>,
+    cpswap_pool: &'b solana_account_info::AccountInfo<'a>,
+    cpswap_authority: &'b solana_account_info::AccountInfo<'a>,
+    cpswap_lp_mint: &'b solana_account_info::AccountInfo<'a>,
+    cpswap_base_vault: &'b solana_account_info::AccountInfo<'a>,
+    cpswap_quote_vault: &'b solana_account_info::AccountInfo<'a>,
+    cpswap_config: &'b solana_account_info::AccountInfo<'a>,
+    cpswap_create_pool_fee: &'b solana_account_info::AccountInfo<'a>,
+    cpswap_observation: &'b solana_account_info::AccountInfo<'a>,
+    lock_program: &'b solana_account_info::AccountInfo<'a>,
+    lock_authority: &'b solana_account_info::AccountInfo<'a>,
+    lock_lp_vault: &'b solana_account_info::AccountInfo<'a>,
+    authority: &'b solana_account_info::AccountInfo<'a>,
+    pool_state: &'b solana_account_info::AccountInfo<'a>,
+    global_config: &'b solana_account_info::AccountInfo<'a>,
+    base_vault: &'b solana_account_info::AccountInfo<'a>,
+    quote_vault: &'b solana_account_info::AccountInfo<'a>,
+    pool_lp_token: &'b solana_account_info::AccountInfo<'a>,
+    base_token_program: &'b solana_account_info::AccountInfo<'a>,
+    quote_token_program: &'b solana_account_info::AccountInfo<'a>,
+    associated_token_program: &'b solana_account_info::AccountInfo<'a>,
+    system_program: &'b solana_account_info::AccountInfo<'a>,
+    rent_program: &'b solana_account_info::AccountInfo<'a>,
+    metadata_program: &'b solana_account_info::AccountInfo<'a>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

@@ -121,49 +121,49 @@ impl CreatePlatformConfigInstructionArgs {
 ///   0. `[writable, signer]` platform_admin
 ///   1. `[]` platform_fee_wallet
 ///   2. `[]` platform_nft_wallet
-///   3. `[writable]` platform_config
+///   3. `[writable, optional]` platform_config (default to PDA derived from 'platformConfig')
 ///   4. `[optional]` system_program (default to `11111111111111111111111111111111`)
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct CreatePlatformConfigBuilder {
-    platform_admin: Option<solana_address::Address>,
-    platform_fee_wallet: Option<solana_address::Address>,
-    platform_nft_wallet: Option<solana_address::Address>,
+    platform_admin: solana_address::Address,
+    platform_fee_wallet: solana_address::Address,
+    platform_nft_wallet: solana_address::Address,
     platform_config: Option<solana_address::Address>,
     system_program: Option<solana_address::Address>,
-    migrate_nft_info: Option<MigrateNftInfo>,
-    fee_rate: Option<u64>,
-    name: Option<String>,
-    web: Option<String>,
-    img: Option<String>,
+    migrate_nft_info: MigrateNftInfo,
+    fee_rate: u64,
+    name: String,
+    web: String,
+    img: String,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl CreatePlatformConfigBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    /// The account paying for the initialization costs
-    #[inline(always)]
-    pub fn platform_admin(&mut self, platform_admin: solana_address::Address) -> &mut Self {
-        self.platform_admin = Some(platform_admin);
-        self
-    }
-    #[inline(always)]
-    pub fn platform_fee_wallet(
-        &mut self,
+    pub fn new(
+        platform_admin: solana_address::Address,
         platform_fee_wallet: solana_address::Address,
-    ) -> &mut Self {
-        self.platform_fee_wallet = Some(platform_fee_wallet);
-        self
-    }
-    #[inline(always)]
-    pub fn platform_nft_wallet(
-        &mut self,
         platform_nft_wallet: solana_address::Address,
-    ) -> &mut Self {
-        self.platform_nft_wallet = Some(platform_nft_wallet);
-        self
+        migrate_nft_info: MigrateNftInfo,
+        fee_rate: u64,
+        name: String,
+        web: String,
+        img: String,
+    ) -> Self {
+        Self {
+            platform_admin,
+            platform_fee_wallet,
+            platform_nft_wallet,
+            platform_config: None,
+            system_program: None,
+            migrate_nft_info,
+            fee_rate,
+            name,
+            web,
+            img,
+            __remaining_accounts: Vec::new(),
+        }
     }
+    /// `[optional account, default to PDA derived from 'platformConfig']`
     /// The platform config account
     #[inline(always)]
     pub fn platform_config(&mut self, platform_config: solana_address::Address) -> &mut Self {
@@ -175,31 +175,6 @@ impl CreatePlatformConfigBuilder {
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_address::Address) -> &mut Self {
         self.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn migrate_nft_info(&mut self, migrate_nft_info: MigrateNftInfo) -> &mut Self {
-        self.migrate_nft_info = Some(migrate_nft_info);
-        self
-    }
-    #[inline(always)]
-    pub fn fee_rate(&mut self, fee_rate: u64) -> &mut Self {
-        self.fee_rate = Some(fee_rate);
-        self
-    }
-    #[inline(always)]
-    pub fn name(&mut self, name: String) -> &mut Self {
-        self.name = Some(name);
-        self
-    }
-    #[inline(always)]
-    pub fn web(&mut self, web: String) -> &mut Self {
-        self.web = Some(web);
-        self
-    }
-    #[inline(always)]
-    pub fn img(&mut self, img: String) -> &mut Self {
-        self.img = Some(img);
         self
     }
     /// Add an additional account to the instruction.
@@ -219,28 +194,28 @@ impl CreatePlatformConfigBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let platform_admin = self.platform_admin;
+        let platform_fee_wallet = self.platform_fee_wallet;
+        let platform_nft_wallet = self.platform_nft_wallet;
+        let platform_config = self
+            .platform_config
+            .unwrap_or_else(|| crate::pdas::find_platform_config_pda(&self.platform_admin).0);
+        let system_program = self
+            .system_program
+            .unwrap_or(solana_address::address!("11111111111111111111111111111111"));
         let accounts = CreatePlatformConfig {
-            platform_admin: self.platform_admin.expect("platform_admin is not set"),
-            platform_fee_wallet: self
-                .platform_fee_wallet
-                .expect("platform_fee_wallet is not set"),
-            platform_nft_wallet: self
-                .platform_nft_wallet
-                .expect("platform_nft_wallet is not set"),
-            platform_config: self.platform_config.expect("platform_config is not set"),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
+            platform_admin,
+            platform_fee_wallet,
+            platform_nft_wallet,
+            platform_config,
+            system_program,
         };
         let args = CreatePlatformConfigInstructionArgs {
-            migrate_nft_info: self
-                .migrate_nft_info
-                .clone()
-                .expect("migrate_nft_info is not set"),
-            fee_rate: self.fee_rate.clone().expect("fee_rate is not set"),
-            name: self.name.clone().expect("name is not set"),
-            web: self.web.clone().expect("web is not set"),
-            img: self.img.clone().expect("img is not set"),
+            migrate_nft_info: self.migrate_nft_info.clone(),
+            fee_rate: self.fee_rate.clone(),
+            name: self.name.clone(),
+            web: self.web.clone(),
+            img: self.img.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -391,90 +366,34 @@ pub struct CreatePlatformConfigCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> CreatePlatformConfigCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        platform_admin: &'b solana_account_info::AccountInfo<'a>,
+        platform_fee_wallet: &'b solana_account_info::AccountInfo<'a>,
+        platform_nft_wallet: &'b solana_account_info::AccountInfo<'a>,
+        platform_config: &'b solana_account_info::AccountInfo<'a>,
+        system_program: &'b solana_account_info::AccountInfo<'a>,
+        migrate_nft_info: MigrateNftInfo,
+        fee_rate: u64,
+        name: String,
+        web: String,
+        img: String,
+    ) -> Self {
         let instruction = Box::new(CreatePlatformConfigCpiBuilderInstruction {
-            __program: program,
-            platform_admin: None,
-            platform_fee_wallet: None,
-            platform_nft_wallet: None,
-            platform_config: None,
-            system_program: None,
-            migrate_nft_info: None,
-            fee_rate: None,
-            name: None,
-            web: None,
-            img: None,
+            __program,
+            platform_admin,
+            platform_fee_wallet,
+            platform_nft_wallet,
+            platform_config,
+            system_program,
+            migrate_nft_info,
+            fee_rate,
+            name,
+            web,
+            img,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// The account paying for the initialization costs
-    #[inline(always)]
-    pub fn platform_admin(
-        &mut self,
-        platform_admin: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.platform_admin = Some(platform_admin);
-        self
-    }
-    #[inline(always)]
-    pub fn platform_fee_wallet(
-        &mut self,
-        platform_fee_wallet: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.platform_fee_wallet = Some(platform_fee_wallet);
-        self
-    }
-    #[inline(always)]
-    pub fn platform_nft_wallet(
-        &mut self,
-        platform_nft_wallet: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.platform_nft_wallet = Some(platform_nft_wallet);
-        self
-    }
-    /// The platform config account
-    #[inline(always)]
-    pub fn platform_config(
-        &mut self,
-        platform_config: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.platform_config = Some(platform_config);
-        self
-    }
-    /// Required for account creation
-    #[inline(always)]
-    pub fn system_program(
-        &mut self,
-        system_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn migrate_nft_info(&mut self, migrate_nft_info: MigrateNftInfo) -> &mut Self {
-        self.instruction.migrate_nft_info = Some(migrate_nft_info);
-        self
-    }
-    #[inline(always)]
-    pub fn fee_rate(&mut self, fee_rate: u64) -> &mut Self {
-        self.instruction.fee_rate = Some(fee_rate);
-        self
-    }
-    #[inline(always)]
-    pub fn name(&mut self, name: String) -> &mut Self {
-        self.instruction.name = Some(name);
-        self
-    }
-    #[inline(always)]
-    pub fn web(&mut self, web: String) -> &mut Self {
-        self.instruction.web = Some(web);
-        self
-    }
-    #[inline(always)]
-    pub fn img(&mut self, img: String) -> &mut Self {
-        self.instruction.img = Some(img);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -511,47 +430,19 @@ impl<'a, 'b> CreatePlatformConfigCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = CreatePlatformConfigInstructionArgs {
-            migrate_nft_info: self
-                .instruction
-                .migrate_nft_info
-                .clone()
-                .expect("migrate_nft_info is not set"),
-            fee_rate: self
-                .instruction
-                .fee_rate
-                .clone()
-                .expect("fee_rate is not set"),
-            name: self.instruction.name.clone().expect("name is not set"),
-            web: self.instruction.web.clone().expect("web is not set"),
-            img: self.instruction.img.clone().expect("img is not set"),
+            migrate_nft_info: self.instruction.migrate_nft_info.clone(),
+            fee_rate: self.instruction.fee_rate.clone(),
+            name: self.instruction.name.clone(),
+            web: self.instruction.web.clone(),
+            img: self.instruction.img.clone(),
         };
         let instruction = CreatePlatformConfigCpi {
             __program: self.instruction.__program,
-
-            platform_admin: self
-                .instruction
-                .platform_admin
-                .expect("platform_admin is not set"),
-
-            platform_fee_wallet: self
-                .instruction
-                .platform_fee_wallet
-                .expect("platform_fee_wallet is not set"),
-
-            platform_nft_wallet: self
-                .instruction
-                .platform_nft_wallet
-                .expect("platform_nft_wallet is not set"),
-
-            platform_config: self
-                .instruction
-                .platform_config
-                .expect("platform_config is not set"),
-
-            system_program: self
-                .instruction
-                .system_program
-                .expect("system_program is not set"),
+            platform_admin: self.instruction.platform_admin,
+            platform_fee_wallet: self.instruction.platform_fee_wallet,
+            platform_nft_wallet: self.instruction.platform_nft_wallet,
+            platform_config: self.instruction.platform_config,
+            system_program: self.instruction.system_program,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -564,16 +455,16 @@ impl<'a, 'b> CreatePlatformConfigCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct CreatePlatformConfigCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    platform_admin: Option<&'b solana_account_info::AccountInfo<'a>>,
-    platform_fee_wallet: Option<&'b solana_account_info::AccountInfo<'a>>,
-    platform_nft_wallet: Option<&'b solana_account_info::AccountInfo<'a>>,
-    platform_config: Option<&'b solana_account_info::AccountInfo<'a>>,
-    system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    migrate_nft_info: Option<MigrateNftInfo>,
-    fee_rate: Option<u64>,
-    name: Option<String>,
-    web: Option<String>,
-    img: Option<String>,
+    platform_admin: &'b solana_account_info::AccountInfo<'a>,
+    platform_fee_wallet: &'b solana_account_info::AccountInfo<'a>,
+    platform_nft_wallet: &'b solana_account_info::AccountInfo<'a>,
+    platform_config: &'b solana_account_info::AccountInfo<'a>,
+    system_program: &'b solana_account_info::AccountInfo<'a>,
+    migrate_nft_info: MigrateNftInfo,
+    fee_rate: u64,
+    name: String,
+    web: String,
+    img: String,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

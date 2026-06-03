@@ -85,6 +85,12 @@ impl PoolState {
 
     #[inline(always)]
     pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {
+        if data.get(..POOL_STATE_DISCRIMINATOR.len()) != Some(&POOL_STATE_DISCRIMINATOR[..]) {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "invalid account discriminator",
+            ));
+        }
         let mut data = data;
         Self::deserialize(&mut data)
     }
@@ -94,14 +100,20 @@ impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for PoolState {
     type Error = std::io::Error;
 
     fn try_from(account_info: &solana_account_info::AccountInfo<'a>) -> Result<Self, Self::Error> {
-        let mut data: &[u8] = &(*account_info.data).borrow();
-        Self::deserialize(&mut data)
+        if account_info.owner != &crate::RAYDIUM_LAUNCHPAD_ID {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "invalid account owner",
+            ));
+        }
+        let data: &[u8] = &(*account_info.data).borrow();
+        Self::from_bytes(data)
     }
 }
 
 #[cfg(feature = "fetch")]
 pub fn fetch_pool_state(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     address: &solana_address::Address,
 ) -> Result<crate::shared::DecodedAccount<PoolState>, std::io::Error> {
     let accounts = fetch_all_pool_state(rpc, &[*address])?;
@@ -110,7 +122,7 @@ pub fn fetch_pool_state(
 
 #[cfg(feature = "fetch")]
 pub fn fetch_all_pool_state(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::DecodedAccount<PoolState>>, std::io::Error> {
     let accounts = rpc
@@ -122,6 +134,11 @@ pub fn fetch_all_pool_state(
         let account = accounts[i].as_ref().ok_or(std::io::Error::other(format!(
             "Account not found: {address}"
         )))?;
+        if account.owner != crate::RAYDIUM_LAUNCHPAD_ID {
+            return Err(std::io::Error::other(format!(
+                "Invalid owner for account: {address}"
+            )));
+        }
         let data = PoolState::from_bytes(&account.data)?;
         decoded_accounts.push(crate::shared::DecodedAccount {
             address,
@@ -134,7 +151,7 @@ pub fn fetch_all_pool_state(
 
 #[cfg(feature = "fetch")]
 pub fn fetch_maybe_pool_state(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     address: &solana_address::Address,
 ) -> Result<crate::shared::MaybeAccount<PoolState>, std::io::Error> {
     let accounts = fetch_all_maybe_pool_state(rpc, &[*address])?;
@@ -143,7 +160,7 @@ pub fn fetch_maybe_pool_state(
 
 #[cfg(feature = "fetch")]
 pub fn fetch_all_maybe_pool_state(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::MaybeAccount<PoolState>>, std::io::Error> {
     let accounts = rpc
@@ -153,6 +170,11 @@ pub fn fetch_all_maybe_pool_state(
     for i in 0..addresses.len() {
         let address = addresses[i];
         if let Some(account) = accounts[i].as_ref() {
+            if account.owner != crate::RAYDIUM_LAUNCHPAD_ID {
+                return Err(std::io::Error::other(format!(
+                    "Invalid owner for account: {address}"
+                )));
+            }
             let data = PoolState::from_bytes(&account.data)?;
             decoded_accounts.push(crate::shared::MaybeAccount::Exists(
                 crate::shared::DecodedAccount {
@@ -170,6 +192,15 @@ pub fn fetch_all_maybe_pool_state(
 
 #[cfg(feature = "anchor")]
 impl anchor_lang::AccountDeserialize for PoolState {
+    fn try_deserialize(buf: &mut &[u8]) -> anchor_lang::Result<Self> {
+        if buf.len() < POOL_STATE_DISCRIMINATOR.len()
+            || buf[..POOL_STATE_DISCRIMINATOR.len()] != POOL_STATE_DISCRIMINATOR[..]
+        {
+            return Err(anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch.into());
+        }
+        Self::try_deserialize_unchecked(buf)
+    }
+
     fn try_deserialize_unchecked(buf: &mut &[u8]) -> anchor_lang::Result<Self> {
         Ok(Self::deserialize(buf)?)
     }
@@ -190,5 +221,5 @@ impl anchor_lang::IdlBuild for PoolState {}
 
 #[cfg(feature = "anchor-idl-build")]
 impl anchor_lang::Discriminator for PoolState {
-    const DISCRIMINATOR: &[u8] = &[0; 8];
+    const DISCRIMINATOR: &[u8] = &POOL_STATE_DISCRIMINATOR;
 }

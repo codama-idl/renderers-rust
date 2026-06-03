@@ -270,17 +270,17 @@ impl MigrateToAmmInstructionArgs {
 ///   10. `[writable]` market_base_vault
 ///   11. `[writable]` market_quote_vault
 ///   12. `[optional]` amm_program (default to `675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8`)
-///   13. `[writable]` amm_pool
-///   14. `[]` amm_authority
-///   15. `[writable]` amm_open_orders
-///   16. `[writable]` amm_lp_mint
-///   17. `[writable]` amm_base_vault
-///   18. `[writable]` amm_quote_vault
-///   19. `[writable]` amm_target_orders
-///   20. `[]` amm_config
+///   13. `[writable, optional]` amm_pool (default to PDA derived from 'ammPool')
+///   14. `[optional]` amm_authority (default to PDA derived from 'ammAuthority')
+///   15. `[writable, optional]` amm_open_orders (default to PDA derived from 'ammOpenOrders')
+///   16. `[writable, optional]` amm_lp_mint (default to PDA derived from 'ammLpMint')
+///   17. `[writable, optional]` amm_base_vault (default to PDA derived from 'ammBaseVault')
+///   18. `[writable, optional]` amm_quote_vault (default to PDA derived from 'ammQuoteVault')
+///   19. `[writable, optional]` amm_target_orders (default to PDA derived from 'ammTargetOrders')
+///   20. `[optional]` amm_config (default to PDA derived from 'ammConfig')
 ///   21. `[writable]` amm_create_fee_destination
-///   22. `[writable]` authority
-///   23. `[writable]` pool_state
+///   22. `[writable, optional]` authority (default to PDA derived from 'authority')
+///   23. `[writable, optional]` pool_state (default to PDA derived from 'poolState')
 ///   24. `[]` global_config
 ///   25. `[writable]` base_vault
 ///   26. `[writable]` quote_vault
@@ -289,20 +289,20 @@ impl MigrateToAmmInstructionArgs {
 ///   29. `[optional]` associated_token_program (default to `ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL`)
 ///   30. `[optional]` system_program (default to `11111111111111111111111111111111`)
 ///   31. `[optional]` rent_program (default to `SysvarRent111111111111111111111111111111111`)
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct MigrateToAmmBuilder {
-    payer: Option<solana_address::Address>,
-    base_mint: Option<solana_address::Address>,
-    quote_mint: Option<solana_address::Address>,
+    payer: solana_address::Address,
+    base_mint: solana_address::Address,
+    quote_mint: solana_address::Address,
     openbook_program: Option<solana_address::Address>,
-    market: Option<solana_address::Address>,
-    request_queue: Option<solana_address::Address>,
-    event_queue: Option<solana_address::Address>,
-    bids: Option<solana_address::Address>,
-    asks: Option<solana_address::Address>,
-    market_vault_signer: Option<solana_address::Address>,
-    market_base_vault: Option<solana_address::Address>,
-    market_quote_vault: Option<solana_address::Address>,
+    market: solana_address::Address,
+    request_queue: solana_address::Address,
+    event_queue: solana_address::Address,
+    bids: solana_address::Address,
+    asks: solana_address::Address,
+    market_vault_signer: solana_address::Address,
+    market_base_vault: solana_address::Address,
+    market_quote_vault: solana_address::Address,
     amm_program: Option<solana_address::Address>,
     amm_pool: Option<solana_address::Address>,
     amm_authority: Option<solana_address::Address>,
@@ -312,100 +312,88 @@ pub struct MigrateToAmmBuilder {
     amm_quote_vault: Option<solana_address::Address>,
     amm_target_orders: Option<solana_address::Address>,
     amm_config: Option<solana_address::Address>,
-    amm_create_fee_destination: Option<solana_address::Address>,
+    amm_create_fee_destination: solana_address::Address,
     authority: Option<solana_address::Address>,
     pool_state: Option<solana_address::Address>,
-    global_config: Option<solana_address::Address>,
-    base_vault: Option<solana_address::Address>,
-    quote_vault: Option<solana_address::Address>,
-    pool_lp_token: Option<solana_address::Address>,
+    global_config: solana_address::Address,
+    base_vault: solana_address::Address,
+    quote_vault: solana_address::Address,
+    pool_lp_token: solana_address::Address,
     spl_token_program: Option<solana_address::Address>,
     associated_token_program: Option<solana_address::Address>,
     system_program: Option<solana_address::Address>,
     rent_program: Option<solana_address::Address>,
-    base_lot_size: Option<u64>,
-    quote_lot_size: Option<u64>,
-    market_vault_signer_nonce: Option<u8>,
+    base_lot_size: u64,
+    quote_lot_size: u64,
+    market_vault_signer_nonce: u8,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl MigrateToAmmBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    /// Only migrate_to_amm_wallet can migrate to cpswap pool
-    /// This signer must match the migrate_to_amm_wallet saved in global_config
-    #[inline(always)]
-    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
-        self.payer = Some(payer);
-        self
-    }
-    /// The mint for the base token (token being sold)
-    #[inline(always)]
-    pub fn base_mint(&mut self, base_mint: solana_address::Address) -> &mut Self {
-        self.base_mint = Some(base_mint);
-        self
-    }
-    /// The mint for the quote token (token used to buy)
-    #[inline(always)]
-    pub fn quote_mint(&mut self, quote_mint: solana_address::Address) -> &mut Self {
-        self.quote_mint = Some(quote_mint);
-        self
+    pub fn new(
+        payer: solana_address::Address,
+        base_mint: solana_address::Address,
+        quote_mint: solana_address::Address,
+        market: solana_address::Address,
+        request_queue: solana_address::Address,
+        event_queue: solana_address::Address,
+        bids: solana_address::Address,
+        asks: solana_address::Address,
+        market_vault_signer: solana_address::Address,
+        market_base_vault: solana_address::Address,
+        market_quote_vault: solana_address::Address,
+        amm_create_fee_destination: solana_address::Address,
+        global_config: solana_address::Address,
+        base_vault: solana_address::Address,
+        quote_vault: solana_address::Address,
+        pool_lp_token: solana_address::Address,
+        base_lot_size: u64,
+        quote_lot_size: u64,
+        market_vault_signer_nonce: u8,
+    ) -> Self {
+        Self {
+            payer,
+            base_mint,
+            quote_mint,
+            openbook_program: None,
+            market,
+            request_queue,
+            event_queue,
+            bids,
+            asks,
+            market_vault_signer,
+            market_base_vault,
+            market_quote_vault,
+            amm_program: None,
+            amm_pool: None,
+            amm_authority: None,
+            amm_open_orders: None,
+            amm_lp_mint: None,
+            amm_base_vault: None,
+            amm_quote_vault: None,
+            amm_target_orders: None,
+            amm_config: None,
+            amm_create_fee_destination,
+            authority: None,
+            pool_state: None,
+            global_config,
+            base_vault,
+            quote_vault,
+            pool_lp_token,
+            spl_token_program: None,
+            associated_token_program: None,
+            system_program: None,
+            rent_program: None,
+            base_lot_size,
+            quote_lot_size,
+            market_vault_signer_nonce,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// `[optional account, default to 'srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX']`
     #[inline(always)]
     pub fn openbook_program(&mut self, openbook_program: solana_address::Address) -> &mut Self {
         self.openbook_program = Some(openbook_program);
-        self
-    }
-    /// Account created and asigned to openbook_program but not been initialized
-    #[inline(always)]
-    pub fn market(&mut self, market: solana_address::Address) -> &mut Self {
-        self.market = Some(market);
-        self
-    }
-    /// Account created and asigned to openbook_program but not been initialized
-    #[inline(always)]
-    pub fn request_queue(&mut self, request_queue: solana_address::Address) -> &mut Self {
-        self.request_queue = Some(request_queue);
-        self
-    }
-    /// Account created and asigned to openbook_program but not been initialized
-    #[inline(always)]
-    pub fn event_queue(&mut self, event_queue: solana_address::Address) -> &mut Self {
-        self.event_queue = Some(event_queue);
-        self
-    }
-    /// Account created and asigned to openbook_program but not been initialized
-    #[inline(always)]
-    pub fn bids(&mut self, bids: solana_address::Address) -> &mut Self {
-        self.bids = Some(bids);
-        self
-    }
-    /// Account created and asigned to openbook_program but not been initialized
-    #[inline(always)]
-    pub fn asks(&mut self, asks: solana_address::Address) -> &mut Self {
-        self.asks = Some(asks);
-        self
-    }
-    #[inline(always)]
-    pub fn market_vault_signer(
-        &mut self,
-        market_vault_signer: solana_address::Address,
-    ) -> &mut Self {
-        self.market_vault_signer = Some(market_vault_signer);
-        self
-    }
-    /// Token account that holds the market's base tokens
-    #[inline(always)]
-    pub fn market_base_vault(&mut self, market_base_vault: solana_address::Address) -> &mut Self {
-        self.market_base_vault = Some(market_base_vault);
-        self
-    }
-    /// Token account that holds the market's quote tokens
-    #[inline(always)]
-    pub fn market_quote_vault(&mut self, market_quote_vault: solana_address::Address) -> &mut Self {
-        self.market_quote_vault = Some(market_quote_vault);
         self
     }
     /// `[optional account, default to '675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8']`
@@ -414,54 +402,55 @@ impl MigrateToAmmBuilder {
         self.amm_program = Some(amm_program);
         self
     }
+    /// `[optional account, default to PDA derived from 'ammPool']`
     #[inline(always)]
     pub fn amm_pool(&mut self, amm_pool: solana_address::Address) -> &mut Self {
         self.amm_pool = Some(amm_pool);
         self
     }
+    /// `[optional account, default to PDA derived from 'ammAuthority']`
     #[inline(always)]
     pub fn amm_authority(&mut self, amm_authority: solana_address::Address) -> &mut Self {
         self.amm_authority = Some(amm_authority);
         self
     }
+    /// `[optional account, default to PDA derived from 'ammOpenOrders']`
     #[inline(always)]
     pub fn amm_open_orders(&mut self, amm_open_orders: solana_address::Address) -> &mut Self {
         self.amm_open_orders = Some(amm_open_orders);
         self
     }
+    /// `[optional account, default to PDA derived from 'ammLpMint']`
     #[inline(always)]
     pub fn amm_lp_mint(&mut self, amm_lp_mint: solana_address::Address) -> &mut Self {
         self.amm_lp_mint = Some(amm_lp_mint);
         self
     }
+    /// `[optional account, default to PDA derived from 'ammBaseVault']`
     #[inline(always)]
     pub fn amm_base_vault(&mut self, amm_base_vault: solana_address::Address) -> &mut Self {
         self.amm_base_vault = Some(amm_base_vault);
         self
     }
+    /// `[optional account, default to PDA derived from 'ammQuoteVault']`
     #[inline(always)]
     pub fn amm_quote_vault(&mut self, amm_quote_vault: solana_address::Address) -> &mut Self {
         self.amm_quote_vault = Some(amm_quote_vault);
         self
     }
+    /// `[optional account, default to PDA derived from 'ammTargetOrders']`
     #[inline(always)]
     pub fn amm_target_orders(&mut self, amm_target_orders: solana_address::Address) -> &mut Self {
         self.amm_target_orders = Some(amm_target_orders);
         self
     }
+    /// `[optional account, default to PDA derived from 'ammConfig']`
     #[inline(always)]
     pub fn amm_config(&mut self, amm_config: solana_address::Address) -> &mut Self {
         self.amm_config = Some(amm_config);
         self
     }
-    #[inline(always)]
-    pub fn amm_create_fee_destination(
-        &mut self,
-        amm_create_fee_destination: solana_address::Address,
-    ) -> &mut Self {
-        self.amm_create_fee_destination = Some(amm_create_fee_destination);
-        self
-    }
+    /// `[optional account, default to PDA derived from 'authority']`
     /// PDA that acts as the authority for pool vault operations
     /// Generated using AUTH_SEED
     #[inline(always)]
@@ -469,36 +458,12 @@ impl MigrateToAmmBuilder {
         self.authority = Some(authority);
         self
     }
+    /// `[optional account, default to PDA derived from 'poolState']`
     /// Account that stores the pool's state and parameters
     /// PDA generated using POOL_SEED and both token mints
     #[inline(always)]
     pub fn pool_state(&mut self, pool_state: solana_address::Address) -> &mut Self {
         self.pool_state = Some(pool_state);
-        self
-    }
-    /// Global config account stores owner
-    #[inline(always)]
-    pub fn global_config(&mut self, global_config: solana_address::Address) -> &mut Self {
-        self.global_config = Some(global_config);
-        self
-    }
-    /// The pool's vault for base tokens
-    /// Will be fully drained during migration
-    #[inline(always)]
-    pub fn base_vault(&mut self, base_vault: solana_address::Address) -> &mut Self {
-        self.base_vault = Some(base_vault);
-        self
-    }
-    /// The pool's vault for quote tokens
-    /// Will be fully drained during migration
-    #[inline(always)]
-    pub fn quote_vault(&mut self, quote_vault: solana_address::Address) -> &mut Self {
-        self.quote_vault = Some(quote_vault);
-        self
-    }
-    #[inline(always)]
-    pub fn pool_lp_token(&mut self, pool_lp_token: solana_address::Address) -> &mut Self {
-        self.pool_lp_token = Some(pool_lp_token);
         self
     }
     /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
@@ -533,21 +498,6 @@ impl MigrateToAmmBuilder {
         self.rent_program = Some(rent_program);
         self
     }
-    #[inline(always)]
-    pub fn base_lot_size(&mut self, base_lot_size: u64) -> &mut Self {
-        self.base_lot_size = Some(base_lot_size);
-        self
-    }
-    #[inline(always)]
-    pub fn quote_lot_size(&mut self, quote_lot_size: u64) -> &mut Self {
-        self.quote_lot_size = Some(quote_lot_size);
-        self
-    }
-    #[inline(always)]
-    pub fn market_vault_signer_nonce(&mut self, market_vault_signer_nonce: u8) -> &mut Self {
-        self.market_vault_signer_nonce = Some(market_vault_signer_nonce);
-        self
-    }
     /// Add an additional account to the instruction.
     #[inline(always)]
     pub fn add_remaining_account(&mut self, account: solana_instruction::AccountMeta) -> &mut Self {
@@ -565,75 +515,142 @@ impl MigrateToAmmBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let payer = self.payer;
+        let base_mint = self.base_mint;
+        let quote_mint = self.quote_mint;
+        let openbook_program = self.openbook_program.unwrap_or(solana_address::address!(
+            "srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX"
+        ));
+        let market = self.market;
+        let request_queue = self.request_queue;
+        let event_queue = self.event_queue;
+        let bids = self.bids;
+        let asks = self.asks;
+        let market_vault_signer = self.market_vault_signer;
+        let market_base_vault = self.market_base_vault;
+        let market_quote_vault = self.market_quote_vault;
+        let amm_program = self.amm_program.unwrap_or(solana_address::address!(
+            "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
+        ));
+        let amm_pool = self.amm_pool.unwrap_or_else(|| {
+            crate::pdas::find_amm_pool_pda(
+                &self.amm_program.unwrap_or(solana_address::address!(
+                    "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
+                )),
+                &self.market,
+            )
+            .0
+        });
+        let amm_authority = self
+            .amm_authority
+            .unwrap_or(crate::pdas::AMM_AUTHORITY_ADDRESS);
+        let amm_open_orders = self.amm_open_orders.unwrap_or_else(|| {
+            crate::pdas::find_amm_open_orders_pda(
+                &self.amm_program.unwrap_or(solana_address::address!(
+                    "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
+                )),
+                &self.market,
+            )
+            .0
+        });
+        let amm_lp_mint = self.amm_lp_mint.unwrap_or_else(|| {
+            crate::pdas::find_amm_lp_mint_pda(
+                &self.amm_program.unwrap_or(solana_address::address!(
+                    "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
+                )),
+                &self.market,
+            )
+            .0
+        });
+        let amm_base_vault = self.amm_base_vault.unwrap_or_else(|| {
+            crate::pdas::find_amm_base_vault_pda(
+                &self.amm_program.unwrap_or(solana_address::address!(
+                    "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
+                )),
+                &self.market,
+            )
+            .0
+        });
+        let amm_quote_vault = self.amm_quote_vault.unwrap_or_else(|| {
+            crate::pdas::find_amm_quote_vault_pda(
+                &self.amm_program.unwrap_or(solana_address::address!(
+                    "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
+                )),
+                &self.market,
+            )
+            .0
+        });
+        let amm_target_orders = self.amm_target_orders.unwrap_or_else(|| {
+            crate::pdas::find_amm_target_orders_pda(
+                &self.amm_program.unwrap_or(solana_address::address!(
+                    "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
+                )),
+                &self.market,
+            )
+            .0
+        });
+        let amm_config = self.amm_config.unwrap_or(crate::pdas::AMM_CONFIG_ADDRESS);
+        let amm_create_fee_destination = self.amm_create_fee_destination;
+        let authority = self.authority.unwrap_or(crate::pdas::AUTHORITY_ADDRESS);
+        let pool_state = self.pool_state.unwrap_or_else(|| {
+            crate::pdas::find_pool_state_pda(&self.base_mint, &self.quote_mint).0
+        });
+        let global_config = self.global_config;
+        let base_vault = self.base_vault;
+        let quote_vault = self.quote_vault;
+        let pool_lp_token = self.pool_lp_token;
+        let spl_token_program = self.spl_token_program.unwrap_or(solana_address::address!(
+            "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        ));
+        let associated_token_program =
+            self.associated_token_program
+                .unwrap_or(solana_address::address!(
+                    "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+                ));
+        let system_program = self
+            .system_program
+            .unwrap_or(solana_address::address!("11111111111111111111111111111111"));
+        let rent_program = self.rent_program.unwrap_or(solana_address::address!(
+            "SysvarRent111111111111111111111111111111111"
+        ));
         let accounts = MigrateToAmm {
-            payer: self.payer.expect("payer is not set"),
-            base_mint: self.base_mint.expect("base_mint is not set"),
-            quote_mint: self.quote_mint.expect("quote_mint is not set"),
-            openbook_program: self.openbook_program.unwrap_or(solana_address::address!(
-                "srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX"
-            )),
-            market: self.market.expect("market is not set"),
-            request_queue: self.request_queue.expect("request_queue is not set"),
-            event_queue: self.event_queue.expect("event_queue is not set"),
-            bids: self.bids.expect("bids is not set"),
-            asks: self.asks.expect("asks is not set"),
-            market_vault_signer: self
-                .market_vault_signer
-                .expect("market_vault_signer is not set"),
-            market_base_vault: self
-                .market_base_vault
-                .expect("market_base_vault is not set"),
-            market_quote_vault: self
-                .market_quote_vault
-                .expect("market_quote_vault is not set"),
-            amm_program: self.amm_program.unwrap_or(solana_address::address!(
-                "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
-            )),
-            amm_pool: self.amm_pool.expect("amm_pool is not set"),
-            amm_authority: self.amm_authority.expect("amm_authority is not set"),
-            amm_open_orders: self.amm_open_orders.expect("amm_open_orders is not set"),
-            amm_lp_mint: self.amm_lp_mint.expect("amm_lp_mint is not set"),
-            amm_base_vault: self.amm_base_vault.expect("amm_base_vault is not set"),
-            amm_quote_vault: self.amm_quote_vault.expect("amm_quote_vault is not set"),
-            amm_target_orders: self
-                .amm_target_orders
-                .expect("amm_target_orders is not set"),
-            amm_config: self.amm_config.expect("amm_config is not set"),
-            amm_create_fee_destination: self
-                .amm_create_fee_destination
-                .expect("amm_create_fee_destination is not set"),
-            authority: self.authority.expect("authority is not set"),
-            pool_state: self.pool_state.expect("pool_state is not set"),
-            global_config: self.global_config.expect("global_config is not set"),
-            base_vault: self.base_vault.expect("base_vault is not set"),
-            quote_vault: self.quote_vault.expect("quote_vault is not set"),
-            pool_lp_token: self.pool_lp_token.expect("pool_lp_token is not set"),
-            spl_token_program: self.spl_token_program.unwrap_or(solana_address::address!(
-                "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-            )),
-            associated_token_program: self.associated_token_program.unwrap_or(
-                solana_address::address!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
-            ),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
-            rent_program: self.rent_program.unwrap_or(solana_address::address!(
-                "SysvarRent111111111111111111111111111111111"
-            )),
+            payer,
+            base_mint,
+            quote_mint,
+            openbook_program,
+            market,
+            request_queue,
+            event_queue,
+            bids,
+            asks,
+            market_vault_signer,
+            market_base_vault,
+            market_quote_vault,
+            amm_program,
+            amm_pool,
+            amm_authority,
+            amm_open_orders,
+            amm_lp_mint,
+            amm_base_vault,
+            amm_quote_vault,
+            amm_target_orders,
+            amm_config,
+            amm_create_fee_destination,
+            authority,
+            pool_state,
+            global_config,
+            base_vault,
+            quote_vault,
+            pool_lp_token,
+            spl_token_program,
+            associated_token_program,
+            system_program,
+            rent_program,
         };
         let args = MigrateToAmmInstructionArgs {
-            base_lot_size: self
-                .base_lot_size
-                .clone()
-                .expect("base_lot_size is not set"),
-            quote_lot_size: self
-                .quote_lot_size
-                .clone()
-                .expect("quote_lot_size is not set"),
-            market_vault_signer_nonce: self
-                .market_vault_signer_nonce
-                .clone()
-                .expect("market_vault_signer_nonce is not set"),
+            base_lot_size: self.base_lot_size.clone(),
+            quote_lot_size: self.quote_lot_size.clone(),
+            market_vault_signer_nonce: self.market_vault_signer_nonce.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -1082,322 +1099,84 @@ pub struct MigrateToAmmCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> MigrateToAmmCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        payer: &'b solana_account_info::AccountInfo<'a>,
+        base_mint: &'b solana_account_info::AccountInfo<'a>,
+        quote_mint: &'b solana_account_info::AccountInfo<'a>,
+        openbook_program: &'b solana_account_info::AccountInfo<'a>,
+        market: &'b solana_account_info::AccountInfo<'a>,
+        request_queue: &'b solana_account_info::AccountInfo<'a>,
+        event_queue: &'b solana_account_info::AccountInfo<'a>,
+        bids: &'b solana_account_info::AccountInfo<'a>,
+        asks: &'b solana_account_info::AccountInfo<'a>,
+        market_vault_signer: &'b solana_account_info::AccountInfo<'a>,
+        market_base_vault: &'b solana_account_info::AccountInfo<'a>,
+        market_quote_vault: &'b solana_account_info::AccountInfo<'a>,
+        amm_program: &'b solana_account_info::AccountInfo<'a>,
+        amm_pool: &'b solana_account_info::AccountInfo<'a>,
+        amm_authority: &'b solana_account_info::AccountInfo<'a>,
+        amm_open_orders: &'b solana_account_info::AccountInfo<'a>,
+        amm_lp_mint: &'b solana_account_info::AccountInfo<'a>,
+        amm_base_vault: &'b solana_account_info::AccountInfo<'a>,
+        amm_quote_vault: &'b solana_account_info::AccountInfo<'a>,
+        amm_target_orders: &'b solana_account_info::AccountInfo<'a>,
+        amm_config: &'b solana_account_info::AccountInfo<'a>,
+        amm_create_fee_destination: &'b solana_account_info::AccountInfo<'a>,
+        authority: &'b solana_account_info::AccountInfo<'a>,
+        pool_state: &'b solana_account_info::AccountInfo<'a>,
+        global_config: &'b solana_account_info::AccountInfo<'a>,
+        base_vault: &'b solana_account_info::AccountInfo<'a>,
+        quote_vault: &'b solana_account_info::AccountInfo<'a>,
+        pool_lp_token: &'b solana_account_info::AccountInfo<'a>,
+        spl_token_program: &'b solana_account_info::AccountInfo<'a>,
+        associated_token_program: &'b solana_account_info::AccountInfo<'a>,
+        system_program: &'b solana_account_info::AccountInfo<'a>,
+        rent_program: &'b solana_account_info::AccountInfo<'a>,
+        base_lot_size: u64,
+        quote_lot_size: u64,
+        market_vault_signer_nonce: u8,
+    ) -> Self {
         let instruction = Box::new(MigrateToAmmCpiBuilderInstruction {
-            __program: program,
-            payer: None,
-            base_mint: None,
-            quote_mint: None,
-            openbook_program: None,
-            market: None,
-            request_queue: None,
-            event_queue: None,
-            bids: None,
-            asks: None,
-            market_vault_signer: None,
-            market_base_vault: None,
-            market_quote_vault: None,
-            amm_program: None,
-            amm_pool: None,
-            amm_authority: None,
-            amm_open_orders: None,
-            amm_lp_mint: None,
-            amm_base_vault: None,
-            amm_quote_vault: None,
-            amm_target_orders: None,
-            amm_config: None,
-            amm_create_fee_destination: None,
-            authority: None,
-            pool_state: None,
-            global_config: None,
-            base_vault: None,
-            quote_vault: None,
-            pool_lp_token: None,
-            spl_token_program: None,
-            associated_token_program: None,
-            system_program: None,
-            rent_program: None,
-            base_lot_size: None,
-            quote_lot_size: None,
-            market_vault_signer_nonce: None,
+            __program,
+            payer,
+            base_mint,
+            quote_mint,
+            openbook_program,
+            market,
+            request_queue,
+            event_queue,
+            bids,
+            asks,
+            market_vault_signer,
+            market_base_vault,
+            market_quote_vault,
+            amm_program,
+            amm_pool,
+            amm_authority,
+            amm_open_orders,
+            amm_lp_mint,
+            amm_base_vault,
+            amm_quote_vault,
+            amm_target_orders,
+            amm_config,
+            amm_create_fee_destination,
+            authority,
+            pool_state,
+            global_config,
+            base_vault,
+            quote_vault,
+            pool_lp_token,
+            spl_token_program,
+            associated_token_program,
+            system_program,
+            rent_program,
+            base_lot_size,
+            quote_lot_size,
+            market_vault_signer_nonce,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// Only migrate_to_amm_wallet can migrate to cpswap pool
-    /// This signer must match the migrate_to_amm_wallet saved in global_config
-    #[inline(always)]
-    pub fn payer(&mut self, payer: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.payer = Some(payer);
-        self
-    }
-    /// The mint for the base token (token being sold)
-    #[inline(always)]
-    pub fn base_mint(&mut self, base_mint: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.base_mint = Some(base_mint);
-        self
-    }
-    /// The mint for the quote token (token used to buy)
-    #[inline(always)]
-    pub fn quote_mint(
-        &mut self,
-        quote_mint: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.quote_mint = Some(quote_mint);
-        self
-    }
-    #[inline(always)]
-    pub fn openbook_program(
-        &mut self,
-        openbook_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.openbook_program = Some(openbook_program);
-        self
-    }
-    /// Account created and asigned to openbook_program but not been initialized
-    #[inline(always)]
-    pub fn market(&mut self, market: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.market = Some(market);
-        self
-    }
-    /// Account created and asigned to openbook_program but not been initialized
-    #[inline(always)]
-    pub fn request_queue(
-        &mut self,
-        request_queue: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.request_queue = Some(request_queue);
-        self
-    }
-    /// Account created and asigned to openbook_program but not been initialized
-    #[inline(always)]
-    pub fn event_queue(
-        &mut self,
-        event_queue: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.event_queue = Some(event_queue);
-        self
-    }
-    /// Account created and asigned to openbook_program but not been initialized
-    #[inline(always)]
-    pub fn bids(&mut self, bids: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.bids = Some(bids);
-        self
-    }
-    /// Account created and asigned to openbook_program but not been initialized
-    #[inline(always)]
-    pub fn asks(&mut self, asks: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.asks = Some(asks);
-        self
-    }
-    #[inline(always)]
-    pub fn market_vault_signer(
-        &mut self,
-        market_vault_signer: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.market_vault_signer = Some(market_vault_signer);
-        self
-    }
-    /// Token account that holds the market's base tokens
-    #[inline(always)]
-    pub fn market_base_vault(
-        &mut self,
-        market_base_vault: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.market_base_vault = Some(market_base_vault);
-        self
-    }
-    /// Token account that holds the market's quote tokens
-    #[inline(always)]
-    pub fn market_quote_vault(
-        &mut self,
-        market_quote_vault: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.market_quote_vault = Some(market_quote_vault);
-        self
-    }
-    #[inline(always)]
-    pub fn amm_program(
-        &mut self,
-        amm_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.amm_program = Some(amm_program);
-        self
-    }
-    #[inline(always)]
-    pub fn amm_pool(&mut self, amm_pool: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.amm_pool = Some(amm_pool);
-        self
-    }
-    #[inline(always)]
-    pub fn amm_authority(
-        &mut self,
-        amm_authority: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.amm_authority = Some(amm_authority);
-        self
-    }
-    #[inline(always)]
-    pub fn amm_open_orders(
-        &mut self,
-        amm_open_orders: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.amm_open_orders = Some(amm_open_orders);
-        self
-    }
-    #[inline(always)]
-    pub fn amm_lp_mint(
-        &mut self,
-        amm_lp_mint: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.amm_lp_mint = Some(amm_lp_mint);
-        self
-    }
-    #[inline(always)]
-    pub fn amm_base_vault(
-        &mut self,
-        amm_base_vault: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.amm_base_vault = Some(amm_base_vault);
-        self
-    }
-    #[inline(always)]
-    pub fn amm_quote_vault(
-        &mut self,
-        amm_quote_vault: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.amm_quote_vault = Some(amm_quote_vault);
-        self
-    }
-    #[inline(always)]
-    pub fn amm_target_orders(
-        &mut self,
-        amm_target_orders: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.amm_target_orders = Some(amm_target_orders);
-        self
-    }
-    #[inline(always)]
-    pub fn amm_config(
-        &mut self,
-        amm_config: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.amm_config = Some(amm_config);
-        self
-    }
-    #[inline(always)]
-    pub fn amm_create_fee_destination(
-        &mut self,
-        amm_create_fee_destination: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.amm_create_fee_destination = Some(amm_create_fee_destination);
-        self
-    }
-    /// PDA that acts as the authority for pool vault operations
-    /// Generated using AUTH_SEED
-    #[inline(always)]
-    pub fn authority(&mut self, authority: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.authority = Some(authority);
-        self
-    }
-    /// Account that stores the pool's state and parameters
-    /// PDA generated using POOL_SEED and both token mints
-    #[inline(always)]
-    pub fn pool_state(
-        &mut self,
-        pool_state: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.pool_state = Some(pool_state);
-        self
-    }
-    /// Global config account stores owner
-    #[inline(always)]
-    pub fn global_config(
-        &mut self,
-        global_config: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.global_config = Some(global_config);
-        self
-    }
-    /// The pool's vault for base tokens
-    /// Will be fully drained during migration
-    #[inline(always)]
-    pub fn base_vault(
-        &mut self,
-        base_vault: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.base_vault = Some(base_vault);
-        self
-    }
-    /// The pool's vault for quote tokens
-    /// Will be fully drained during migration
-    #[inline(always)]
-    pub fn quote_vault(
-        &mut self,
-        quote_vault: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.quote_vault = Some(quote_vault);
-        self
-    }
-    #[inline(always)]
-    pub fn pool_lp_token(
-        &mut self,
-        pool_lp_token: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.pool_lp_token = Some(pool_lp_token);
-        self
-    }
-    /// SPL Token program for the base token
-    /// Must be the standard Token program
-    #[inline(always)]
-    pub fn spl_token_program(
-        &mut self,
-        spl_token_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.spl_token_program = Some(spl_token_program);
-        self
-    }
-    /// Program to create an ATA for receiving fee NFT
-    #[inline(always)]
-    pub fn associated_token_program(
-        &mut self,
-        associated_token_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.associated_token_program = Some(associated_token_program);
-        self
-    }
-    /// Required for account creation
-    #[inline(always)]
-    pub fn system_program(
-        &mut self,
-        system_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.system_program = Some(system_program);
-        self
-    }
-    /// Required for rent exempt calculations
-    #[inline(always)]
-    pub fn rent_program(
-        &mut self,
-        rent_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.rent_program = Some(rent_program);
-        self
-    }
-    #[inline(always)]
-    pub fn base_lot_size(&mut self, base_lot_size: u64) -> &mut Self {
-        self.instruction.base_lot_size = Some(base_lot_size);
-        self
-    }
-    #[inline(always)]
-    pub fn quote_lot_size(&mut self, quote_lot_size: u64) -> &mut Self {
-        self.instruction.quote_lot_size = Some(quote_lot_size);
-        self
-    }
-    #[inline(always)]
-    pub fn market_vault_signer_nonce(&mut self, market_vault_signer_nonce: u8) -> &mut Self {
-        self.instruction.market_vault_signer_nonce = Some(market_vault_signer_nonce);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -1434,151 +1213,44 @@ impl<'a, 'b> MigrateToAmmCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = MigrateToAmmInstructionArgs {
-            base_lot_size: self
-                .instruction
-                .base_lot_size
-                .clone()
-                .expect("base_lot_size is not set"),
-            quote_lot_size: self
-                .instruction
-                .quote_lot_size
-                .clone()
-                .expect("quote_lot_size is not set"),
-            market_vault_signer_nonce: self
-                .instruction
-                .market_vault_signer_nonce
-                .clone()
-                .expect("market_vault_signer_nonce is not set"),
+            base_lot_size: self.instruction.base_lot_size.clone(),
+            quote_lot_size: self.instruction.quote_lot_size.clone(),
+            market_vault_signer_nonce: self.instruction.market_vault_signer_nonce.clone(),
         };
         let instruction = MigrateToAmmCpi {
             __program: self.instruction.__program,
-
-            payer: self.instruction.payer.expect("payer is not set"),
-
-            base_mint: self.instruction.base_mint.expect("base_mint is not set"),
-
-            quote_mint: self.instruction.quote_mint.expect("quote_mint is not set"),
-
-            openbook_program: self
-                .instruction
-                .openbook_program
-                .expect("openbook_program is not set"),
-
-            market: self.instruction.market.expect("market is not set"),
-
-            request_queue: self
-                .instruction
-                .request_queue
-                .expect("request_queue is not set"),
-
-            event_queue: self
-                .instruction
-                .event_queue
-                .expect("event_queue is not set"),
-
-            bids: self.instruction.bids.expect("bids is not set"),
-
-            asks: self.instruction.asks.expect("asks is not set"),
-
-            market_vault_signer: self
-                .instruction
-                .market_vault_signer
-                .expect("market_vault_signer is not set"),
-
-            market_base_vault: self
-                .instruction
-                .market_base_vault
-                .expect("market_base_vault is not set"),
-
-            market_quote_vault: self
-                .instruction
-                .market_quote_vault
-                .expect("market_quote_vault is not set"),
-
-            amm_program: self
-                .instruction
-                .amm_program
-                .expect("amm_program is not set"),
-
-            amm_pool: self.instruction.amm_pool.expect("amm_pool is not set"),
-
-            amm_authority: self
-                .instruction
-                .amm_authority
-                .expect("amm_authority is not set"),
-
-            amm_open_orders: self
-                .instruction
-                .amm_open_orders
-                .expect("amm_open_orders is not set"),
-
-            amm_lp_mint: self
-                .instruction
-                .amm_lp_mint
-                .expect("amm_lp_mint is not set"),
-
-            amm_base_vault: self
-                .instruction
-                .amm_base_vault
-                .expect("amm_base_vault is not set"),
-
-            amm_quote_vault: self
-                .instruction
-                .amm_quote_vault
-                .expect("amm_quote_vault is not set"),
-
-            amm_target_orders: self
-                .instruction
-                .amm_target_orders
-                .expect("amm_target_orders is not set"),
-
-            amm_config: self.instruction.amm_config.expect("amm_config is not set"),
-
-            amm_create_fee_destination: self
-                .instruction
-                .amm_create_fee_destination
-                .expect("amm_create_fee_destination is not set"),
-
-            authority: self.instruction.authority.expect("authority is not set"),
-
-            pool_state: self.instruction.pool_state.expect("pool_state is not set"),
-
-            global_config: self
-                .instruction
-                .global_config
-                .expect("global_config is not set"),
-
-            base_vault: self.instruction.base_vault.expect("base_vault is not set"),
-
-            quote_vault: self
-                .instruction
-                .quote_vault
-                .expect("quote_vault is not set"),
-
-            pool_lp_token: self
-                .instruction
-                .pool_lp_token
-                .expect("pool_lp_token is not set"),
-
-            spl_token_program: self
-                .instruction
-                .spl_token_program
-                .expect("spl_token_program is not set"),
-
-            associated_token_program: self
-                .instruction
-                .associated_token_program
-                .expect("associated_token_program is not set"),
-
-            system_program: self
-                .instruction
-                .system_program
-                .expect("system_program is not set"),
-
-            rent_program: self
-                .instruction
-                .rent_program
-                .expect("rent_program is not set"),
+            payer: self.instruction.payer,
+            base_mint: self.instruction.base_mint,
+            quote_mint: self.instruction.quote_mint,
+            openbook_program: self.instruction.openbook_program,
+            market: self.instruction.market,
+            request_queue: self.instruction.request_queue,
+            event_queue: self.instruction.event_queue,
+            bids: self.instruction.bids,
+            asks: self.instruction.asks,
+            market_vault_signer: self.instruction.market_vault_signer,
+            market_base_vault: self.instruction.market_base_vault,
+            market_quote_vault: self.instruction.market_quote_vault,
+            amm_program: self.instruction.amm_program,
+            amm_pool: self.instruction.amm_pool,
+            amm_authority: self.instruction.amm_authority,
+            amm_open_orders: self.instruction.amm_open_orders,
+            amm_lp_mint: self.instruction.amm_lp_mint,
+            amm_base_vault: self.instruction.amm_base_vault,
+            amm_quote_vault: self.instruction.amm_quote_vault,
+            amm_target_orders: self.instruction.amm_target_orders,
+            amm_config: self.instruction.amm_config,
+            amm_create_fee_destination: self.instruction.amm_create_fee_destination,
+            authority: self.instruction.authority,
+            pool_state: self.instruction.pool_state,
+            global_config: self.instruction.global_config,
+            base_vault: self.instruction.base_vault,
+            quote_vault: self.instruction.quote_vault,
+            pool_lp_token: self.instruction.pool_lp_token,
+            spl_token_program: self.instruction.spl_token_program,
+            associated_token_program: self.instruction.associated_token_program,
+            system_program: self.instruction.system_program,
+            rent_program: self.instruction.rent_program,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -1591,41 +1263,41 @@ impl<'a, 'b> MigrateToAmmCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct MigrateToAmmCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    payer: Option<&'b solana_account_info::AccountInfo<'a>>,
-    base_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
-    quote_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
-    openbook_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    market: Option<&'b solana_account_info::AccountInfo<'a>>,
-    request_queue: Option<&'b solana_account_info::AccountInfo<'a>>,
-    event_queue: Option<&'b solana_account_info::AccountInfo<'a>>,
-    bids: Option<&'b solana_account_info::AccountInfo<'a>>,
-    asks: Option<&'b solana_account_info::AccountInfo<'a>>,
-    market_vault_signer: Option<&'b solana_account_info::AccountInfo<'a>>,
-    market_base_vault: Option<&'b solana_account_info::AccountInfo<'a>>,
-    market_quote_vault: Option<&'b solana_account_info::AccountInfo<'a>>,
-    amm_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    amm_pool: Option<&'b solana_account_info::AccountInfo<'a>>,
-    amm_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
-    amm_open_orders: Option<&'b solana_account_info::AccountInfo<'a>>,
-    amm_lp_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
-    amm_base_vault: Option<&'b solana_account_info::AccountInfo<'a>>,
-    amm_quote_vault: Option<&'b solana_account_info::AccountInfo<'a>>,
-    amm_target_orders: Option<&'b solana_account_info::AccountInfo<'a>>,
-    amm_config: Option<&'b solana_account_info::AccountInfo<'a>>,
-    amm_create_fee_destination: Option<&'b solana_account_info::AccountInfo<'a>>,
-    authority: Option<&'b solana_account_info::AccountInfo<'a>>,
-    pool_state: Option<&'b solana_account_info::AccountInfo<'a>>,
-    global_config: Option<&'b solana_account_info::AccountInfo<'a>>,
-    base_vault: Option<&'b solana_account_info::AccountInfo<'a>>,
-    quote_vault: Option<&'b solana_account_info::AccountInfo<'a>>,
-    pool_lp_token: Option<&'b solana_account_info::AccountInfo<'a>>,
-    spl_token_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    associated_token_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    rent_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    base_lot_size: Option<u64>,
-    quote_lot_size: Option<u64>,
-    market_vault_signer_nonce: Option<u8>,
+    payer: &'b solana_account_info::AccountInfo<'a>,
+    base_mint: &'b solana_account_info::AccountInfo<'a>,
+    quote_mint: &'b solana_account_info::AccountInfo<'a>,
+    openbook_program: &'b solana_account_info::AccountInfo<'a>,
+    market: &'b solana_account_info::AccountInfo<'a>,
+    request_queue: &'b solana_account_info::AccountInfo<'a>,
+    event_queue: &'b solana_account_info::AccountInfo<'a>,
+    bids: &'b solana_account_info::AccountInfo<'a>,
+    asks: &'b solana_account_info::AccountInfo<'a>,
+    market_vault_signer: &'b solana_account_info::AccountInfo<'a>,
+    market_base_vault: &'b solana_account_info::AccountInfo<'a>,
+    market_quote_vault: &'b solana_account_info::AccountInfo<'a>,
+    amm_program: &'b solana_account_info::AccountInfo<'a>,
+    amm_pool: &'b solana_account_info::AccountInfo<'a>,
+    amm_authority: &'b solana_account_info::AccountInfo<'a>,
+    amm_open_orders: &'b solana_account_info::AccountInfo<'a>,
+    amm_lp_mint: &'b solana_account_info::AccountInfo<'a>,
+    amm_base_vault: &'b solana_account_info::AccountInfo<'a>,
+    amm_quote_vault: &'b solana_account_info::AccountInfo<'a>,
+    amm_target_orders: &'b solana_account_info::AccountInfo<'a>,
+    amm_config: &'b solana_account_info::AccountInfo<'a>,
+    amm_create_fee_destination: &'b solana_account_info::AccountInfo<'a>,
+    authority: &'b solana_account_info::AccountInfo<'a>,
+    pool_state: &'b solana_account_info::AccountInfo<'a>,
+    global_config: &'b solana_account_info::AccountInfo<'a>,
+    base_vault: &'b solana_account_info::AccountInfo<'a>,
+    quote_vault: &'b solana_account_info::AccountInfo<'a>,
+    pool_lp_token: &'b solana_account_info::AccountInfo<'a>,
+    spl_token_program: &'b solana_account_info::AccountInfo<'a>,
+    associated_token_program: &'b solana_account_info::AccountInfo<'a>,
+    system_program: &'b solana_account_info::AccountInfo<'a>,
+    rent_program: &'b solana_account_info::AccountInfo<'a>,
+    base_lot_size: u64,
+    quote_lot_size: u64,
+    market_vault_signer_nonce: u8,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

@@ -31,6 +31,14 @@ impl ObservationState {
 
     #[inline(always)]
     pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {
+        if data.get(..OBSERVATION_STATE_DISCRIMINATOR.len())
+            != Some(&OBSERVATION_STATE_DISCRIMINATOR[..])
+        {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "invalid account discriminator",
+            ));
+        }
         let mut data = data;
         Self::deserialize(&mut data)
     }
@@ -40,14 +48,20 @@ impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for ObservationState {
     type Error = std::io::Error;
 
     fn try_from(account_info: &solana_account_info::AccountInfo<'a>) -> Result<Self, Self::Error> {
-        let mut data: &[u8] = &(*account_info.data).borrow();
-        Self::deserialize(&mut data)
+        if account_info.owner != &crate::RAYDIUM_CP_SWAP_ID {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "invalid account owner",
+            ));
+        }
+        let data: &[u8] = &(*account_info.data).borrow();
+        Self::from_bytes(data)
     }
 }
 
 #[cfg(feature = "fetch")]
 pub fn fetch_observation_state(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     address: &solana_address::Address,
 ) -> Result<crate::shared::DecodedAccount<ObservationState>, std::io::Error> {
     let accounts = fetch_all_observation_state(rpc, &[*address])?;
@@ -56,7 +70,7 @@ pub fn fetch_observation_state(
 
 #[cfg(feature = "fetch")]
 pub fn fetch_all_observation_state(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::DecodedAccount<ObservationState>>, std::io::Error> {
     let accounts = rpc
@@ -68,6 +82,11 @@ pub fn fetch_all_observation_state(
         let account = accounts[i].as_ref().ok_or(std::io::Error::other(format!(
             "Account not found: {address}"
         )))?;
+        if account.owner != crate::RAYDIUM_CP_SWAP_ID {
+            return Err(std::io::Error::other(format!(
+                "Invalid owner for account: {address}"
+            )));
+        }
         let data = ObservationState::from_bytes(&account.data)?;
         decoded_accounts.push(crate::shared::DecodedAccount {
             address,
@@ -80,7 +99,7 @@ pub fn fetch_all_observation_state(
 
 #[cfg(feature = "fetch")]
 pub fn fetch_maybe_observation_state(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     address: &solana_address::Address,
 ) -> Result<crate::shared::MaybeAccount<ObservationState>, std::io::Error> {
     let accounts = fetch_all_maybe_observation_state(rpc, &[*address])?;
@@ -89,7 +108,7 @@ pub fn fetch_maybe_observation_state(
 
 #[cfg(feature = "fetch")]
 pub fn fetch_all_maybe_observation_state(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::MaybeAccount<ObservationState>>, std::io::Error> {
     let accounts = rpc
@@ -99,6 +118,11 @@ pub fn fetch_all_maybe_observation_state(
     for i in 0..addresses.len() {
         let address = addresses[i];
         if let Some(account) = accounts[i].as_ref() {
+            if account.owner != crate::RAYDIUM_CP_SWAP_ID {
+                return Err(std::io::Error::other(format!(
+                    "Invalid owner for account: {address}"
+                )));
+            }
             let data = ObservationState::from_bytes(&account.data)?;
             decoded_accounts.push(crate::shared::MaybeAccount::Exists(
                 crate::shared::DecodedAccount {
@@ -116,6 +140,15 @@ pub fn fetch_all_maybe_observation_state(
 
 #[cfg(feature = "anchor")]
 impl anchor_lang::AccountDeserialize for ObservationState {
+    fn try_deserialize(buf: &mut &[u8]) -> anchor_lang::Result<Self> {
+        if buf.len() < OBSERVATION_STATE_DISCRIMINATOR.len()
+            || buf[..OBSERVATION_STATE_DISCRIMINATOR.len()] != OBSERVATION_STATE_DISCRIMINATOR[..]
+        {
+            return Err(anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch.into());
+        }
+        Self::try_deserialize_unchecked(buf)
+    }
+
     fn try_deserialize_unchecked(buf: &mut &[u8]) -> anchor_lang::Result<Self> {
         Ok(Self::deserialize(buf)?)
     }
@@ -136,5 +169,5 @@ impl anchor_lang::IdlBuild for ObservationState {}
 
 #[cfg(feature = "anchor-idl-build")]
 impl anchor_lang::Discriminator for ObservationState {
-    const DISCRIMINATOR: &[u8] = &[0; 8];
+    const DISCRIMINATOR: &[u8] = &OBSERVATION_STATE_DISCRIMINATOR;
 }

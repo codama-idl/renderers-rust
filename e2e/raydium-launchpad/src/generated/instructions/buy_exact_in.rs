@@ -174,7 +174,7 @@ impl BuyExactInInstructionArgs {
 /// ### Accounts:
 ///
 ///   0. `[signer]` payer
-///   1. `[]` authority
+///   1. `[optional]` authority (default to PDA derived from 'authority')
 ///   2. `[]` global_config
 ///   3. `[]` platform_config
 ///   4. `[writable]` pool_state
@@ -186,115 +186,77 @@ impl BuyExactInInstructionArgs {
 ///   10. `[]` quote_token_mint
 ///   11. `[]` base_token_program
 ///   12. `[optional]` quote_token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
-///   13. `[]` event_authority
+///   13. `[optional]` event_authority (default to PDA derived from 'eventAuthority')
 ///   14. `[]` program
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct BuyExactInBuilder {
-    payer: Option<solana_address::Address>,
+    payer: solana_address::Address,
     authority: Option<solana_address::Address>,
-    global_config: Option<solana_address::Address>,
-    platform_config: Option<solana_address::Address>,
-    pool_state: Option<solana_address::Address>,
-    user_base_token: Option<solana_address::Address>,
-    user_quote_token: Option<solana_address::Address>,
-    base_vault: Option<solana_address::Address>,
-    quote_vault: Option<solana_address::Address>,
-    base_token_mint: Option<solana_address::Address>,
-    quote_token_mint: Option<solana_address::Address>,
-    base_token_program: Option<solana_address::Address>,
+    global_config: solana_address::Address,
+    platform_config: solana_address::Address,
+    pool_state: solana_address::Address,
+    user_base_token: solana_address::Address,
+    user_quote_token: solana_address::Address,
+    base_vault: solana_address::Address,
+    quote_vault: solana_address::Address,
+    base_token_mint: solana_address::Address,
+    quote_token_mint: solana_address::Address,
+    base_token_program: solana_address::Address,
     quote_token_program: Option<solana_address::Address>,
     event_authority: Option<solana_address::Address>,
-    program: Option<solana_address::Address>,
-    amount_in: Option<u64>,
-    minimum_amount_out: Option<u64>,
-    share_fee_rate: Option<u64>,
+    program: solana_address::Address,
+    amount_in: u64,
+    minimum_amount_out: u64,
+    share_fee_rate: u64,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl BuyExactInBuilder {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(
+        payer: solana_address::Address,
+        global_config: solana_address::Address,
+        platform_config: solana_address::Address,
+        pool_state: solana_address::Address,
+        user_base_token: solana_address::Address,
+        user_quote_token: solana_address::Address,
+        base_vault: solana_address::Address,
+        quote_vault: solana_address::Address,
+        base_token_mint: solana_address::Address,
+        quote_token_mint: solana_address::Address,
+        base_token_program: solana_address::Address,
+        program: solana_address::Address,
+        amount_in: u64,
+        minimum_amount_out: u64,
+        share_fee_rate: u64,
+    ) -> Self {
+        Self {
+            payer,
+            authority: None,
+            global_config,
+            platform_config,
+            pool_state,
+            user_base_token,
+            user_quote_token,
+            base_vault,
+            quote_vault,
+            base_token_mint,
+            quote_token_mint,
+            base_token_program,
+            quote_token_program: None,
+            event_authority: None,
+            program,
+            amount_in,
+            minimum_amount_out,
+            share_fee_rate,
+            __remaining_accounts: Vec::new(),
+        }
     }
-    /// The user performing the swap operation
-    /// Must sign the transaction and pay for fees
-    #[inline(always)]
-    pub fn payer(&mut self, payer: solana_address::Address) -> &mut Self {
-        self.payer = Some(payer);
-        self
-    }
+    /// `[optional account, default to PDA derived from 'authority']`
     /// PDA that acts as the authority for pool vault operations
     /// Generated using AUTH_SEED
     #[inline(always)]
     pub fn authority(&mut self, authority: solana_address::Address) -> &mut Self {
         self.authority = Some(authority);
-        self
-    }
-    /// Global configuration account containing protocol-wide settings
-    /// Used to read protocol fee rates and curve type
-    #[inline(always)]
-    pub fn global_config(&mut self, global_config: solana_address::Address) -> &mut Self {
-        self.global_config = Some(global_config);
-        self
-    }
-    /// Platform configuration account containing platform-wide settings
-    /// Used to read platform fee rate
-    #[inline(always)]
-    pub fn platform_config(&mut self, platform_config: solana_address::Address) -> &mut Self {
-        self.platform_config = Some(platform_config);
-        self
-    }
-    /// The pool state account where the swap will be performed
-    /// Contains current pool parameters and balances
-    #[inline(always)]
-    pub fn pool_state(&mut self, pool_state: solana_address::Address) -> &mut Self {
-        self.pool_state = Some(pool_state);
-        self
-    }
-    /// The user's token account for base tokens (tokens being bought)
-    /// Will receive the output tokens after the swap
-    #[inline(always)]
-    pub fn user_base_token(&mut self, user_base_token: solana_address::Address) -> &mut Self {
-        self.user_base_token = Some(user_base_token);
-        self
-    }
-    /// The user's token account for quote tokens (tokens being sold)
-    /// Will be debited for the input amount
-    #[inline(always)]
-    pub fn user_quote_token(&mut self, user_quote_token: solana_address::Address) -> &mut Self {
-        self.user_quote_token = Some(user_quote_token);
-        self
-    }
-    /// The pool's vault for base tokens
-    /// Will be debited to send tokens to the user
-    #[inline(always)]
-    pub fn base_vault(&mut self, base_vault: solana_address::Address) -> &mut Self {
-        self.base_vault = Some(base_vault);
-        self
-    }
-    /// The pool's vault for quote tokens
-    /// Will receive the input tokens from the user
-    #[inline(always)]
-    pub fn quote_vault(&mut self, quote_vault: solana_address::Address) -> &mut Self {
-        self.quote_vault = Some(quote_vault);
-        self
-    }
-    /// The mint of the base token
-    /// Used for transfer fee calculations if applicable
-    #[inline(always)]
-    pub fn base_token_mint(&mut self, base_token_mint: solana_address::Address) -> &mut Self {
-        self.base_token_mint = Some(base_token_mint);
-        self
-    }
-    /// The mint of the quote token
-    #[inline(always)]
-    pub fn quote_token_mint(&mut self, quote_token_mint: solana_address::Address) -> &mut Self {
-        self.quote_token_mint = Some(quote_token_mint);
-        self
-    }
-    /// SPL Token program for base token transfers
-    #[inline(always)]
-    pub fn base_token_program(&mut self, base_token_program: solana_address::Address) -> &mut Self {
-        self.base_token_program = Some(base_token_program);
         self
     }
     /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
@@ -307,29 +269,10 @@ impl BuyExactInBuilder {
         self.quote_token_program = Some(quote_token_program);
         self
     }
+    /// `[optional account, default to PDA derived from 'eventAuthority']`
     #[inline(always)]
     pub fn event_authority(&mut self, event_authority: solana_address::Address) -> &mut Self {
         self.event_authority = Some(event_authority);
-        self
-    }
-    #[inline(always)]
-    pub fn program(&mut self, program: solana_address::Address) -> &mut Self {
-        self.program = Some(program);
-        self
-    }
-    #[inline(always)]
-    pub fn amount_in(&mut self, amount_in: u64) -> &mut Self {
-        self.amount_in = Some(amount_in);
-        self
-    }
-    #[inline(always)]
-    pub fn minimum_amount_out(&mut self, minimum_amount_out: u64) -> &mut Self {
-        self.minimum_amount_out = Some(minimum_amount_out);
-        self
-    }
-    #[inline(always)]
-    pub fn share_fee_rate(&mut self, share_fee_rate: u64) -> &mut Self {
-        self.share_fee_rate = Some(share_fee_rate);
         self
     }
     /// Add an additional account to the instruction.
@@ -349,37 +292,46 @@ impl BuyExactInBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let payer = self.payer;
+        let authority = self.authority.unwrap_or(crate::pdas::AUTHORITY_ADDRESS);
+        let global_config = self.global_config;
+        let platform_config = self.platform_config;
+        let pool_state = self.pool_state;
+        let user_base_token = self.user_base_token;
+        let user_quote_token = self.user_quote_token;
+        let base_vault = self.base_vault;
+        let quote_vault = self.quote_vault;
+        let base_token_mint = self.base_token_mint;
+        let quote_token_mint = self.quote_token_mint;
+        let base_token_program = self.base_token_program;
+        let quote_token_program = self.quote_token_program.unwrap_or(solana_address::address!(
+            "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        ));
+        let event_authority = self
+            .event_authority
+            .unwrap_or(crate::pdas::EVENT_AUTHORITY_ADDRESS);
+        let program = self.program;
         let accounts = BuyExactIn {
-            payer: self.payer.expect("payer is not set"),
-            authority: self.authority.expect("authority is not set"),
-            global_config: self.global_config.expect("global_config is not set"),
-            platform_config: self.platform_config.expect("platform_config is not set"),
-            pool_state: self.pool_state.expect("pool_state is not set"),
-            user_base_token: self.user_base_token.expect("user_base_token is not set"),
-            user_quote_token: self.user_quote_token.expect("user_quote_token is not set"),
-            base_vault: self.base_vault.expect("base_vault is not set"),
-            quote_vault: self.quote_vault.expect("quote_vault is not set"),
-            base_token_mint: self.base_token_mint.expect("base_token_mint is not set"),
-            quote_token_mint: self.quote_token_mint.expect("quote_token_mint is not set"),
-            base_token_program: self
-                .base_token_program
-                .expect("base_token_program is not set"),
-            quote_token_program: self.quote_token_program.unwrap_or(solana_address::address!(
-                "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-            )),
-            event_authority: self.event_authority.expect("event_authority is not set"),
-            program: self.program.expect("program is not set"),
+            payer,
+            authority,
+            global_config,
+            platform_config,
+            pool_state,
+            user_base_token,
+            user_quote_token,
+            base_vault,
+            quote_vault,
+            base_token_mint,
+            quote_token_mint,
+            base_token_program,
+            quote_token_program,
+            event_authority,
+            program,
         };
         let args = BuyExactInInstructionArgs {
-            amount_in: self.amount_in.clone().expect("amount_in is not set"),
-            minimum_amount_out: self
-                .minimum_amount_out
-                .clone()
-                .expect("minimum_amount_out is not set"),
-            share_fee_rate: self
-                .share_fee_rate
-                .clone()
-                .expect("share_fee_rate is not set"),
+            amount_in: self.amount_in.clone(),
+            minimum_amount_out: self.minimum_amount_out.clone(),
+            share_fee_rate: self.share_fee_rate.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -658,179 +610,50 @@ pub struct BuyExactInCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> BuyExactInCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        payer: &'b solana_account_info::AccountInfo<'a>,
+        authority: &'b solana_account_info::AccountInfo<'a>,
+        global_config: &'b solana_account_info::AccountInfo<'a>,
+        platform_config: &'b solana_account_info::AccountInfo<'a>,
+        pool_state: &'b solana_account_info::AccountInfo<'a>,
+        user_base_token: &'b solana_account_info::AccountInfo<'a>,
+        user_quote_token: &'b solana_account_info::AccountInfo<'a>,
+        base_vault: &'b solana_account_info::AccountInfo<'a>,
+        quote_vault: &'b solana_account_info::AccountInfo<'a>,
+        base_token_mint: &'b solana_account_info::AccountInfo<'a>,
+        quote_token_mint: &'b solana_account_info::AccountInfo<'a>,
+        base_token_program: &'b solana_account_info::AccountInfo<'a>,
+        quote_token_program: &'b solana_account_info::AccountInfo<'a>,
+        event_authority: &'b solana_account_info::AccountInfo<'a>,
+        program: &'b solana_account_info::AccountInfo<'a>,
+        amount_in: u64,
+        minimum_amount_out: u64,
+        share_fee_rate: u64,
+    ) -> Self {
         let instruction = Box::new(BuyExactInCpiBuilderInstruction {
-            __program: program,
-            payer: None,
-            authority: None,
-            global_config: None,
-            platform_config: None,
-            pool_state: None,
-            user_base_token: None,
-            user_quote_token: None,
-            base_vault: None,
-            quote_vault: None,
-            base_token_mint: None,
-            quote_token_mint: None,
-            base_token_program: None,
-            quote_token_program: None,
-            event_authority: None,
-            program: None,
-            amount_in: None,
-            minimum_amount_out: None,
-            share_fee_rate: None,
+            __program,
+            payer,
+            authority,
+            global_config,
+            platform_config,
+            pool_state,
+            user_base_token,
+            user_quote_token,
+            base_vault,
+            quote_vault,
+            base_token_mint,
+            quote_token_mint,
+            base_token_program,
+            quote_token_program,
+            event_authority,
+            program,
+            amount_in,
+            minimum_amount_out,
+            share_fee_rate,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// The user performing the swap operation
-    /// Must sign the transaction and pay for fees
-    #[inline(always)]
-    pub fn payer(&mut self, payer: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.payer = Some(payer);
-        self
-    }
-    /// PDA that acts as the authority for pool vault operations
-    /// Generated using AUTH_SEED
-    #[inline(always)]
-    pub fn authority(&mut self, authority: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.authority = Some(authority);
-        self
-    }
-    /// Global configuration account containing protocol-wide settings
-    /// Used to read protocol fee rates and curve type
-    #[inline(always)]
-    pub fn global_config(
-        &mut self,
-        global_config: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.global_config = Some(global_config);
-        self
-    }
-    /// Platform configuration account containing platform-wide settings
-    /// Used to read platform fee rate
-    #[inline(always)]
-    pub fn platform_config(
-        &mut self,
-        platform_config: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.platform_config = Some(platform_config);
-        self
-    }
-    /// The pool state account where the swap will be performed
-    /// Contains current pool parameters and balances
-    #[inline(always)]
-    pub fn pool_state(
-        &mut self,
-        pool_state: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.pool_state = Some(pool_state);
-        self
-    }
-    /// The user's token account for base tokens (tokens being bought)
-    /// Will receive the output tokens after the swap
-    #[inline(always)]
-    pub fn user_base_token(
-        &mut self,
-        user_base_token: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.user_base_token = Some(user_base_token);
-        self
-    }
-    /// The user's token account for quote tokens (tokens being sold)
-    /// Will be debited for the input amount
-    #[inline(always)]
-    pub fn user_quote_token(
-        &mut self,
-        user_quote_token: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.user_quote_token = Some(user_quote_token);
-        self
-    }
-    /// The pool's vault for base tokens
-    /// Will be debited to send tokens to the user
-    #[inline(always)]
-    pub fn base_vault(
-        &mut self,
-        base_vault: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.base_vault = Some(base_vault);
-        self
-    }
-    /// The pool's vault for quote tokens
-    /// Will receive the input tokens from the user
-    #[inline(always)]
-    pub fn quote_vault(
-        &mut self,
-        quote_vault: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.quote_vault = Some(quote_vault);
-        self
-    }
-    /// The mint of the base token
-    /// Used for transfer fee calculations if applicable
-    #[inline(always)]
-    pub fn base_token_mint(
-        &mut self,
-        base_token_mint: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.base_token_mint = Some(base_token_mint);
-        self
-    }
-    /// The mint of the quote token
-    #[inline(always)]
-    pub fn quote_token_mint(
-        &mut self,
-        quote_token_mint: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.quote_token_mint = Some(quote_token_mint);
-        self
-    }
-    /// SPL Token program for base token transfers
-    #[inline(always)]
-    pub fn base_token_program(
-        &mut self,
-        base_token_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.base_token_program = Some(base_token_program);
-        self
-    }
-    /// SPL Token program for quote token transfers
-    #[inline(always)]
-    pub fn quote_token_program(
-        &mut self,
-        quote_token_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.quote_token_program = Some(quote_token_program);
-        self
-    }
-    #[inline(always)]
-    pub fn event_authority(
-        &mut self,
-        event_authority: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.event_authority = Some(event_authority);
-        self
-    }
-    #[inline(always)]
-    pub fn program(&mut self, program: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.program = Some(program);
-        self
-    }
-    #[inline(always)]
-    pub fn amount_in(&mut self, amount_in: u64) -> &mut Self {
-        self.instruction.amount_in = Some(amount_in);
-        self
-    }
-    #[inline(always)]
-    pub fn minimum_amount_out(&mut self, minimum_amount_out: u64) -> &mut Self {
-        self.instruction.minimum_amount_out = Some(minimum_amount_out);
-        self
-    }
-    #[inline(always)]
-    pub fn share_fee_rate(&mut self, share_fee_rate: u64) -> &mut Self {
-        self.instruction.share_fee_rate = Some(share_fee_rate);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -867,84 +690,27 @@ impl<'a, 'b> BuyExactInCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = BuyExactInInstructionArgs {
-            amount_in: self
-                .instruction
-                .amount_in
-                .clone()
-                .expect("amount_in is not set"),
-            minimum_amount_out: self
-                .instruction
-                .minimum_amount_out
-                .clone()
-                .expect("minimum_amount_out is not set"),
-            share_fee_rate: self
-                .instruction
-                .share_fee_rate
-                .clone()
-                .expect("share_fee_rate is not set"),
+            amount_in: self.instruction.amount_in.clone(),
+            minimum_amount_out: self.instruction.minimum_amount_out.clone(),
+            share_fee_rate: self.instruction.share_fee_rate.clone(),
         };
         let instruction = BuyExactInCpi {
             __program: self.instruction.__program,
-
-            payer: self.instruction.payer.expect("payer is not set"),
-
-            authority: self.instruction.authority.expect("authority is not set"),
-
-            global_config: self
-                .instruction
-                .global_config
-                .expect("global_config is not set"),
-
-            platform_config: self
-                .instruction
-                .platform_config
-                .expect("platform_config is not set"),
-
-            pool_state: self.instruction.pool_state.expect("pool_state is not set"),
-
-            user_base_token: self
-                .instruction
-                .user_base_token
-                .expect("user_base_token is not set"),
-
-            user_quote_token: self
-                .instruction
-                .user_quote_token
-                .expect("user_quote_token is not set"),
-
-            base_vault: self.instruction.base_vault.expect("base_vault is not set"),
-
-            quote_vault: self
-                .instruction
-                .quote_vault
-                .expect("quote_vault is not set"),
-
-            base_token_mint: self
-                .instruction
-                .base_token_mint
-                .expect("base_token_mint is not set"),
-
-            quote_token_mint: self
-                .instruction
-                .quote_token_mint
-                .expect("quote_token_mint is not set"),
-
-            base_token_program: self
-                .instruction
-                .base_token_program
-                .expect("base_token_program is not set"),
-
-            quote_token_program: self
-                .instruction
-                .quote_token_program
-                .expect("quote_token_program is not set"),
-
-            event_authority: self
-                .instruction
-                .event_authority
-                .expect("event_authority is not set"),
-
-            program: self.instruction.program.expect("program is not set"),
+            payer: self.instruction.payer,
+            authority: self.instruction.authority,
+            global_config: self.instruction.global_config,
+            platform_config: self.instruction.platform_config,
+            pool_state: self.instruction.pool_state,
+            user_base_token: self.instruction.user_base_token,
+            user_quote_token: self.instruction.user_quote_token,
+            base_vault: self.instruction.base_vault,
+            quote_vault: self.instruction.quote_vault,
+            base_token_mint: self.instruction.base_token_mint,
+            quote_token_mint: self.instruction.quote_token_mint,
+            base_token_program: self.instruction.base_token_program,
+            quote_token_program: self.instruction.quote_token_program,
+            event_authority: self.instruction.event_authority,
+            program: self.instruction.program,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -957,24 +723,24 @@ impl<'a, 'b> BuyExactInCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct BuyExactInCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    payer: Option<&'b solana_account_info::AccountInfo<'a>>,
-    authority: Option<&'b solana_account_info::AccountInfo<'a>>,
-    global_config: Option<&'b solana_account_info::AccountInfo<'a>>,
-    platform_config: Option<&'b solana_account_info::AccountInfo<'a>>,
-    pool_state: Option<&'b solana_account_info::AccountInfo<'a>>,
-    user_base_token: Option<&'b solana_account_info::AccountInfo<'a>>,
-    user_quote_token: Option<&'b solana_account_info::AccountInfo<'a>>,
-    base_vault: Option<&'b solana_account_info::AccountInfo<'a>>,
-    quote_vault: Option<&'b solana_account_info::AccountInfo<'a>>,
-    base_token_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
-    quote_token_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
-    base_token_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    quote_token_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    event_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
-    program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    amount_in: Option<u64>,
-    minimum_amount_out: Option<u64>,
-    share_fee_rate: Option<u64>,
+    payer: &'b solana_account_info::AccountInfo<'a>,
+    authority: &'b solana_account_info::AccountInfo<'a>,
+    global_config: &'b solana_account_info::AccountInfo<'a>,
+    platform_config: &'b solana_account_info::AccountInfo<'a>,
+    pool_state: &'b solana_account_info::AccountInfo<'a>,
+    user_base_token: &'b solana_account_info::AccountInfo<'a>,
+    user_quote_token: &'b solana_account_info::AccountInfo<'a>,
+    base_vault: &'b solana_account_info::AccountInfo<'a>,
+    quote_vault: &'b solana_account_info::AccountInfo<'a>,
+    base_token_mint: &'b solana_account_info::AccountInfo<'a>,
+    quote_token_mint: &'b solana_account_info::AccountInfo<'a>,
+    base_token_program: &'b solana_account_info::AccountInfo<'a>,
+    quote_token_program: &'b solana_account_info::AccountInfo<'a>,
+    event_authority: &'b solana_account_info::AccountInfo<'a>,
+    program: &'b solana_account_info::AccountInfo<'a>,
+    amount_in: u64,
+    minimum_amount_out: u64,
+    share_fee_rate: u64,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

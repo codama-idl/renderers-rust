@@ -9,6 +9,7 @@ pub mod accounts;
 pub mod errors;
 pub mod events;
 pub mod instructions;
+pub mod pdas;
 pub mod programs;
 pub mod shared;
 pub mod types;

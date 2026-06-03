@@ -109,72 +109,51 @@ impl Default for CollectFeeInstructionData {
 /// ### Accounts:
 ///
 ///   0. `[signer]` owner
-///   1. `[]` authority
+///   1. `[optional]` authority (default to PDA derived from 'authority')
 ///   2. `[writable]` pool_state
 ///   3. `[]` global_config
 ///   4. `[writable]` quote_vault
 ///   5. `[]` quote_mint
 ///   6. `[writable]` recipient_token_account
 ///   7. `[optional]` token_program (default to `TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`)
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct CollectFeeBuilder {
-    owner: Option<solana_address::Address>,
+    owner: solana_address::Address,
     authority: Option<solana_address::Address>,
-    pool_state: Option<solana_address::Address>,
-    global_config: Option<solana_address::Address>,
-    quote_vault: Option<solana_address::Address>,
-    quote_mint: Option<solana_address::Address>,
-    recipient_token_account: Option<solana_address::Address>,
+    pool_state: solana_address::Address,
+    global_config: solana_address::Address,
+    quote_vault: solana_address::Address,
+    quote_mint: solana_address::Address,
+    recipient_token_account: solana_address::Address,
     token_program: Option<solana_address::Address>,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl CollectFeeBuilder {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(
+        owner: solana_address::Address,
+        pool_state: solana_address::Address,
+        global_config: solana_address::Address,
+        quote_vault: solana_address::Address,
+        quote_mint: solana_address::Address,
+        recipient_token_account: solana_address::Address,
+    ) -> Self {
+        Self {
+            owner,
+            authority: None,
+            pool_state,
+            global_config,
+            quote_vault,
+            quote_mint,
+            recipient_token_account,
+            token_program: None,
+            __remaining_accounts: Vec::new(),
+        }
     }
-    /// Only protocol_fee_owner saved in global_config can collect protocol fee now
-    #[inline(always)]
-    pub fn owner(&mut self, owner: solana_address::Address) -> &mut Self {
-        self.owner = Some(owner);
-        self
-    }
+    /// `[optional account, default to PDA derived from 'authority']`
     #[inline(always)]
     pub fn authority(&mut self, authority: solana_address::Address) -> &mut Self {
         self.authority = Some(authority);
-        self
-    }
-    /// Pool state stores accumulated protocol fee amount
-    #[inline(always)]
-    pub fn pool_state(&mut self, pool_state: solana_address::Address) -> &mut Self {
-        self.pool_state = Some(pool_state);
-        self
-    }
-    /// Global config account stores owner
-    #[inline(always)]
-    pub fn global_config(&mut self, global_config: solana_address::Address) -> &mut Self {
-        self.global_config = Some(global_config);
-        self
-    }
-    /// The address that holds pool tokens for quote token
-    #[inline(always)]
-    pub fn quote_vault(&mut self, quote_vault: solana_address::Address) -> &mut Self {
-        self.quote_vault = Some(quote_vault);
-        self
-    }
-    /// The mint of quote token vault
-    #[inline(always)]
-    pub fn quote_mint(&mut self, quote_mint: solana_address::Address) -> &mut Self {
-        self.quote_mint = Some(quote_mint);
-        self
-    }
-    /// The address that receives the collected quote token fees
-    #[inline(always)]
-    pub fn recipient_token_account(
-        &mut self,
-        recipient_token_account: solana_address::Address,
-    ) -> &mut Self {
-        self.recipient_token_account = Some(recipient_token_account);
         self
     }
     /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
@@ -201,19 +180,25 @@ impl CollectFeeBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let owner = self.owner;
+        let authority = self.authority.unwrap_or(crate::pdas::AUTHORITY_ADDRESS);
+        let pool_state = self.pool_state;
+        let global_config = self.global_config;
+        let quote_vault = self.quote_vault;
+        let quote_mint = self.quote_mint;
+        let recipient_token_account = self.recipient_token_account;
+        let token_program = self.token_program.unwrap_or(solana_address::address!(
+            "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        ));
         let accounts = CollectFee {
-            owner: self.owner.expect("owner is not set"),
-            authority: self.authority.expect("authority is not set"),
-            pool_state: self.pool_state.expect("pool_state is not set"),
-            global_config: self.global_config.expect("global_config is not set"),
-            quote_vault: self.quote_vault.expect("quote_vault is not set"),
-            quote_mint: self.quote_mint.expect("quote_mint is not set"),
-            recipient_token_account: self
-                .recipient_token_account
-                .expect("recipient_token_account is not set"),
-            token_program: self.token_program.unwrap_or(solana_address::address!(
-                "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-            )),
+            owner,
+            authority,
+            pool_state,
+            global_config,
+            quote_vault,
+            quote_mint,
+            recipient_token_account,
+            token_program,
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)
@@ -389,85 +374,30 @@ pub struct CollectFeeCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> CollectFeeCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        owner: &'b solana_account_info::AccountInfo<'a>,
+        authority: &'b solana_account_info::AccountInfo<'a>,
+        pool_state: &'b solana_account_info::AccountInfo<'a>,
+        global_config: &'b solana_account_info::AccountInfo<'a>,
+        quote_vault: &'b solana_account_info::AccountInfo<'a>,
+        quote_mint: &'b solana_account_info::AccountInfo<'a>,
+        recipient_token_account: &'b solana_account_info::AccountInfo<'a>,
+        token_program: &'b solana_account_info::AccountInfo<'a>,
+    ) -> Self {
         let instruction = Box::new(CollectFeeCpiBuilderInstruction {
-            __program: program,
-            owner: None,
-            authority: None,
-            pool_state: None,
-            global_config: None,
-            quote_vault: None,
-            quote_mint: None,
-            recipient_token_account: None,
-            token_program: None,
+            __program,
+            owner,
+            authority,
+            pool_state,
+            global_config,
+            quote_vault,
+            quote_mint,
+            recipient_token_account,
+            token_program,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// Only protocol_fee_owner saved in global_config can collect protocol fee now
-    #[inline(always)]
-    pub fn owner(&mut self, owner: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.owner = Some(owner);
-        self
-    }
-    #[inline(always)]
-    pub fn authority(&mut self, authority: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.authority = Some(authority);
-        self
-    }
-    /// Pool state stores accumulated protocol fee amount
-    #[inline(always)]
-    pub fn pool_state(
-        &mut self,
-        pool_state: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.pool_state = Some(pool_state);
-        self
-    }
-    /// Global config account stores owner
-    #[inline(always)]
-    pub fn global_config(
-        &mut self,
-        global_config: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.global_config = Some(global_config);
-        self
-    }
-    /// The address that holds pool tokens for quote token
-    #[inline(always)]
-    pub fn quote_vault(
-        &mut self,
-        quote_vault: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.quote_vault = Some(quote_vault);
-        self
-    }
-    /// The mint of quote token vault
-    #[inline(always)]
-    pub fn quote_mint(
-        &mut self,
-        quote_mint: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.quote_mint = Some(quote_mint);
-        self
-    }
-    /// The address that receives the collected quote token fees
-    #[inline(always)]
-    pub fn recipient_token_account(
-        &mut self,
-        recipient_token_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.recipient_token_account = Some(recipient_token_account);
-        self
-    }
-    /// SPL program for input token transfers
-    #[inline(always)]
-    pub fn token_program(
-        &mut self,
-        token_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.token_program = Some(token_program);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -505,34 +435,14 @@ impl<'a, 'b> CollectFeeCpiBuilder<'a, 'b> {
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let instruction = CollectFeeCpi {
             __program: self.instruction.__program,
-
-            owner: self.instruction.owner.expect("owner is not set"),
-
-            authority: self.instruction.authority.expect("authority is not set"),
-
-            pool_state: self.instruction.pool_state.expect("pool_state is not set"),
-
-            global_config: self
-                .instruction
-                .global_config
-                .expect("global_config is not set"),
-
-            quote_vault: self
-                .instruction
-                .quote_vault
-                .expect("quote_vault is not set"),
-
-            quote_mint: self.instruction.quote_mint.expect("quote_mint is not set"),
-
-            recipient_token_account: self
-                .instruction
-                .recipient_token_account
-                .expect("recipient_token_account is not set"),
-
-            token_program: self
-                .instruction
-                .token_program
-                .expect("token_program is not set"),
+            owner: self.instruction.owner,
+            authority: self.instruction.authority,
+            pool_state: self.instruction.pool_state,
+            global_config: self.instruction.global_config,
+            quote_vault: self.instruction.quote_vault,
+            quote_mint: self.instruction.quote_mint,
+            recipient_token_account: self.instruction.recipient_token_account,
+            token_program: self.instruction.token_program,
         };
         instruction.invoke_signed_with_remaining_accounts(
             signers_seeds,
@@ -544,14 +454,14 @@ impl<'a, 'b> CollectFeeCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct CollectFeeCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    owner: Option<&'b solana_account_info::AccountInfo<'a>>,
-    authority: Option<&'b solana_account_info::AccountInfo<'a>>,
-    pool_state: Option<&'b solana_account_info::AccountInfo<'a>>,
-    global_config: Option<&'b solana_account_info::AccountInfo<'a>>,
-    quote_vault: Option<&'b solana_account_info::AccountInfo<'a>>,
-    quote_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
-    recipient_token_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    token_program: Option<&'b solana_account_info::AccountInfo<'a>>,
+    owner: &'b solana_account_info::AccountInfo<'a>,
+    authority: &'b solana_account_info::AccountInfo<'a>,
+    pool_state: &'b solana_account_info::AccountInfo<'a>,
+    global_config: &'b solana_account_info::AccountInfo<'a>,
+    quote_vault: &'b solana_account_info::AccountInfo<'a>,
+    quote_mint: &'b solana_account_info::AccountInfo<'a>,
+    recipient_token_account: &'b solana_account_info::AccountInfo<'a>,
+    token_program: &'b solana_account_info::AccountInfo<'a>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

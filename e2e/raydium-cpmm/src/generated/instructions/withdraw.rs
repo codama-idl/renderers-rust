@@ -158,7 +158,7 @@ impl WithdrawInstructionArgs {
 /// ### Accounts:
 ///
 ///   0. `[signer]` owner
-///   1. `[]` authority
+///   1. `[optional]` authority (default to PDA derived from 'authority')
 ///   2. `[writable]` pool_state
 ///   3. `[writable]` owner_lp_token
 ///   4. `[writable]` token0_account
@@ -171,77 +171,69 @@ impl WithdrawInstructionArgs {
 ///   11. `[]` vault1_mint
 ///   12. `[writable]` lp_mint
 ///   13. `[optional]` memo_program (default to `MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr`)
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct WithdrawBuilder {
-    owner: Option<solana_address::Address>,
+    owner: solana_address::Address,
     authority: Option<solana_address::Address>,
-    pool_state: Option<solana_address::Address>,
-    owner_lp_token: Option<solana_address::Address>,
-    token0_account: Option<solana_address::Address>,
-    token1_account: Option<solana_address::Address>,
-    token0_vault: Option<solana_address::Address>,
-    token1_vault: Option<solana_address::Address>,
+    pool_state: solana_address::Address,
+    owner_lp_token: solana_address::Address,
+    token0_account: solana_address::Address,
+    token1_account: solana_address::Address,
+    token0_vault: solana_address::Address,
+    token1_vault: solana_address::Address,
     token_program: Option<solana_address::Address>,
     token_program2022: Option<solana_address::Address>,
-    vault0_mint: Option<solana_address::Address>,
-    vault1_mint: Option<solana_address::Address>,
-    lp_mint: Option<solana_address::Address>,
+    vault0_mint: solana_address::Address,
+    vault1_mint: solana_address::Address,
+    lp_mint: solana_address::Address,
     memo_program: Option<solana_address::Address>,
-    lp_token_amount: Option<u64>,
-    minimum_token0_amount: Option<u64>,
-    minimum_token1_amount: Option<u64>,
+    lp_token_amount: u64,
+    minimum_token0_amount: u64,
+    minimum_token1_amount: u64,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl WithdrawBuilder {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(
+        owner: solana_address::Address,
+        pool_state: solana_address::Address,
+        owner_lp_token: solana_address::Address,
+        token0_account: solana_address::Address,
+        token1_account: solana_address::Address,
+        token0_vault: solana_address::Address,
+        token1_vault: solana_address::Address,
+        vault0_mint: solana_address::Address,
+        vault1_mint: solana_address::Address,
+        lp_mint: solana_address::Address,
+        lp_token_amount: u64,
+        minimum_token0_amount: u64,
+        minimum_token1_amount: u64,
+    ) -> Self {
+        Self {
+            owner,
+            authority: None,
+            pool_state,
+            owner_lp_token,
+            token0_account,
+            token1_account,
+            token0_vault,
+            token1_vault,
+            token_program: None,
+            token_program2022: None,
+            vault0_mint,
+            vault1_mint,
+            lp_mint,
+            memo_program: None,
+            lp_token_amount,
+            minimum_token0_amount,
+            minimum_token1_amount,
+            __remaining_accounts: Vec::new(),
+        }
     }
-    /// Pays to mint the position
-    #[inline(always)]
-    pub fn owner(&mut self, owner: solana_address::Address) -> &mut Self {
-        self.owner = Some(owner);
-        self
-    }
+    /// `[optional account, default to PDA derived from 'authority']`
     #[inline(always)]
     pub fn authority(&mut self, authority: solana_address::Address) -> &mut Self {
         self.authority = Some(authority);
-        self
-    }
-    /// Pool state account
-    #[inline(always)]
-    pub fn pool_state(&mut self, pool_state: solana_address::Address) -> &mut Self {
-        self.pool_state = Some(pool_state);
-        self
-    }
-    /// Owner lp token account
-    #[inline(always)]
-    pub fn owner_lp_token(&mut self, owner_lp_token: solana_address::Address) -> &mut Self {
-        self.owner_lp_token = Some(owner_lp_token);
-        self
-    }
-    /// The token account for receive token_0,
-    #[inline(always)]
-    pub fn token0_account(&mut self, token0_account: solana_address::Address) -> &mut Self {
-        self.token0_account = Some(token0_account);
-        self
-    }
-    /// The token account for receive token_1
-    #[inline(always)]
-    pub fn token1_account(&mut self, token1_account: solana_address::Address) -> &mut Self {
-        self.token1_account = Some(token1_account);
-        self
-    }
-    /// The address that holds pool tokens for token_0
-    #[inline(always)]
-    pub fn token0_vault(&mut self, token0_vault: solana_address::Address) -> &mut Self {
-        self.token0_vault = Some(token0_vault);
-        self
-    }
-    /// The address that holds pool tokens for token_1
-    #[inline(always)]
-    pub fn token1_vault(&mut self, token1_vault: solana_address::Address) -> &mut Self {
-        self.token1_vault = Some(token1_vault);
         self
     }
     /// `[optional account, default to 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA']`
@@ -258,44 +250,11 @@ impl WithdrawBuilder {
         self.token_program2022 = Some(token_program2022);
         self
     }
-    /// The mint of token_0 vault
-    #[inline(always)]
-    pub fn vault0_mint(&mut self, vault0_mint: solana_address::Address) -> &mut Self {
-        self.vault0_mint = Some(vault0_mint);
-        self
-    }
-    /// The mint of token_1 vault
-    #[inline(always)]
-    pub fn vault1_mint(&mut self, vault1_mint: solana_address::Address) -> &mut Self {
-        self.vault1_mint = Some(vault1_mint);
-        self
-    }
-    /// Pool lp token mint
-    #[inline(always)]
-    pub fn lp_mint(&mut self, lp_mint: solana_address::Address) -> &mut Self {
-        self.lp_mint = Some(lp_mint);
-        self
-    }
     /// `[optional account, default to 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr']`
     /// memo program
     #[inline(always)]
     pub fn memo_program(&mut self, memo_program: solana_address::Address) -> &mut Self {
         self.memo_program = Some(memo_program);
-        self
-    }
-    #[inline(always)]
-    pub fn lp_token_amount(&mut self, lp_token_amount: u64) -> &mut Self {
-        self.lp_token_amount = Some(lp_token_amount);
-        self
-    }
-    #[inline(always)]
-    pub fn minimum_token0_amount(&mut self, minimum_token0_amount: u64) -> &mut Self {
-        self.minimum_token0_amount = Some(minimum_token0_amount);
-        self
-    }
-    #[inline(always)]
-    pub fn minimum_token1_amount(&mut self, minimum_token1_amount: u64) -> &mut Self {
-        self.minimum_token1_amount = Some(minimum_token1_amount);
         self
     }
     /// Add an additional account to the instruction.
@@ -315,41 +274,46 @@ impl WithdrawBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let owner = self.owner;
+        let authority = self.authority.unwrap_or(crate::pdas::AUTHORITY_ADDRESS);
+        let pool_state = self.pool_state;
+        let owner_lp_token = self.owner_lp_token;
+        let token0_account = self.token0_account;
+        let token1_account = self.token1_account;
+        let token0_vault = self.token0_vault;
+        let token1_vault = self.token1_vault;
+        let token_program = self.token_program.unwrap_or(solana_address::address!(
+            "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        ));
+        let token_program2022 = self.token_program2022.unwrap_or(solana_address::address!(
+            "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
+        ));
+        let vault0_mint = self.vault0_mint;
+        let vault1_mint = self.vault1_mint;
+        let lp_mint = self.lp_mint;
+        let memo_program = self.memo_program.unwrap_or(solana_address::address!(
+            "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
+        ));
         let accounts = Withdraw {
-            owner: self.owner.expect("owner is not set"),
-            authority: self.authority.expect("authority is not set"),
-            pool_state: self.pool_state.expect("pool_state is not set"),
-            owner_lp_token: self.owner_lp_token.expect("owner_lp_token is not set"),
-            token0_account: self.token0_account.expect("token0_account is not set"),
-            token1_account: self.token1_account.expect("token1_account is not set"),
-            token0_vault: self.token0_vault.expect("token0_vault is not set"),
-            token1_vault: self.token1_vault.expect("token1_vault is not set"),
-            token_program: self.token_program.unwrap_or(solana_address::address!(
-                "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-            )),
-            token_program2022: self.token_program2022.unwrap_or(solana_address::address!(
-                "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
-            )),
-            vault0_mint: self.vault0_mint.expect("vault0_mint is not set"),
-            vault1_mint: self.vault1_mint.expect("vault1_mint is not set"),
-            lp_mint: self.lp_mint.expect("lp_mint is not set"),
-            memo_program: self.memo_program.unwrap_or(solana_address::address!(
-                "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
-            )),
+            owner,
+            authority,
+            pool_state,
+            owner_lp_token,
+            token0_account,
+            token1_account,
+            token0_vault,
+            token1_vault,
+            token_program,
+            token_program2022,
+            vault0_mint,
+            vault1_mint,
+            lp_mint,
+            memo_program,
         };
         let args = WithdrawInstructionArgs {
-            lp_token_amount: self
-                .lp_token_amount
-                .clone()
-                .expect("lp_token_amount is not set"),
-            minimum_token0_amount: self
-                .minimum_token0_amount
-                .clone()
-                .expect("minimum_token0_amount is not set"),
-            minimum_token1_amount: self
-                .minimum_token1_amount
-                .clone()
-                .expect("minimum_token1_amount is not set"),
+            lp_token_amount: self.lp_token_amount.clone(),
+            minimum_token0_amount: self.minimum_token0_amount.clone(),
+            minimum_token1_amount: self.minimum_token1_amount.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -597,160 +561,48 @@ pub struct WithdrawCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> WithdrawCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        owner: &'b solana_account_info::AccountInfo<'a>,
+        authority: &'b solana_account_info::AccountInfo<'a>,
+        pool_state: &'b solana_account_info::AccountInfo<'a>,
+        owner_lp_token: &'b solana_account_info::AccountInfo<'a>,
+        token0_account: &'b solana_account_info::AccountInfo<'a>,
+        token1_account: &'b solana_account_info::AccountInfo<'a>,
+        token0_vault: &'b solana_account_info::AccountInfo<'a>,
+        token1_vault: &'b solana_account_info::AccountInfo<'a>,
+        token_program: &'b solana_account_info::AccountInfo<'a>,
+        token_program2022: &'b solana_account_info::AccountInfo<'a>,
+        vault0_mint: &'b solana_account_info::AccountInfo<'a>,
+        vault1_mint: &'b solana_account_info::AccountInfo<'a>,
+        lp_mint: &'b solana_account_info::AccountInfo<'a>,
+        memo_program: &'b solana_account_info::AccountInfo<'a>,
+        lp_token_amount: u64,
+        minimum_token0_amount: u64,
+        minimum_token1_amount: u64,
+    ) -> Self {
         let instruction = Box::new(WithdrawCpiBuilderInstruction {
-            __program: program,
-            owner: None,
-            authority: None,
-            pool_state: None,
-            owner_lp_token: None,
-            token0_account: None,
-            token1_account: None,
-            token0_vault: None,
-            token1_vault: None,
-            token_program: None,
-            token_program2022: None,
-            vault0_mint: None,
-            vault1_mint: None,
-            lp_mint: None,
-            memo_program: None,
-            lp_token_amount: None,
-            minimum_token0_amount: None,
-            minimum_token1_amount: None,
+            __program,
+            owner,
+            authority,
+            pool_state,
+            owner_lp_token,
+            token0_account,
+            token1_account,
+            token0_vault,
+            token1_vault,
+            token_program,
+            token_program2022,
+            vault0_mint,
+            vault1_mint,
+            lp_mint,
+            memo_program,
+            lp_token_amount,
+            minimum_token0_amount,
+            minimum_token1_amount,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// Pays to mint the position
-    #[inline(always)]
-    pub fn owner(&mut self, owner: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.owner = Some(owner);
-        self
-    }
-    #[inline(always)]
-    pub fn authority(&mut self, authority: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.authority = Some(authority);
-        self
-    }
-    /// Pool state account
-    #[inline(always)]
-    pub fn pool_state(
-        &mut self,
-        pool_state: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.pool_state = Some(pool_state);
-        self
-    }
-    /// Owner lp token account
-    #[inline(always)]
-    pub fn owner_lp_token(
-        &mut self,
-        owner_lp_token: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.owner_lp_token = Some(owner_lp_token);
-        self
-    }
-    /// The token account for receive token_0,
-    #[inline(always)]
-    pub fn token0_account(
-        &mut self,
-        token0_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.token0_account = Some(token0_account);
-        self
-    }
-    /// The token account for receive token_1
-    #[inline(always)]
-    pub fn token1_account(
-        &mut self,
-        token1_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.token1_account = Some(token1_account);
-        self
-    }
-    /// The address that holds pool tokens for token_0
-    #[inline(always)]
-    pub fn token0_vault(
-        &mut self,
-        token0_vault: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.token0_vault = Some(token0_vault);
-        self
-    }
-    /// The address that holds pool tokens for token_1
-    #[inline(always)]
-    pub fn token1_vault(
-        &mut self,
-        token1_vault: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.token1_vault = Some(token1_vault);
-        self
-    }
-    /// token Program
-    #[inline(always)]
-    pub fn token_program(
-        &mut self,
-        token_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.token_program = Some(token_program);
-        self
-    }
-    /// Token program 2022
-    #[inline(always)]
-    pub fn token_program2022(
-        &mut self,
-        token_program2022: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.token_program2022 = Some(token_program2022);
-        self
-    }
-    /// The mint of token_0 vault
-    #[inline(always)]
-    pub fn vault0_mint(
-        &mut self,
-        vault0_mint: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.vault0_mint = Some(vault0_mint);
-        self
-    }
-    /// The mint of token_1 vault
-    #[inline(always)]
-    pub fn vault1_mint(
-        &mut self,
-        vault1_mint: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.vault1_mint = Some(vault1_mint);
-        self
-    }
-    /// Pool lp token mint
-    #[inline(always)]
-    pub fn lp_mint(&mut self, lp_mint: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.lp_mint = Some(lp_mint);
-        self
-    }
-    /// memo program
-    #[inline(always)]
-    pub fn memo_program(
-        &mut self,
-        memo_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.memo_program = Some(memo_program);
-        self
-    }
-    #[inline(always)]
-    pub fn lp_token_amount(&mut self, lp_token_amount: u64) -> &mut Self {
-        self.instruction.lp_token_amount = Some(lp_token_amount);
-        self
-    }
-    #[inline(always)]
-    pub fn minimum_token0_amount(&mut self, minimum_token0_amount: u64) -> &mut Self {
-        self.instruction.minimum_token0_amount = Some(minimum_token0_amount);
-        self
-    }
-    #[inline(always)]
-    pub fn minimum_token1_amount(&mut self, minimum_token1_amount: u64) -> &mut Self {
-        self.instruction.minimum_token1_amount = Some(minimum_token1_amount);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -787,82 +639,26 @@ impl<'a, 'b> WithdrawCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = WithdrawInstructionArgs {
-            lp_token_amount: self
-                .instruction
-                .lp_token_amount
-                .clone()
-                .expect("lp_token_amount is not set"),
-            minimum_token0_amount: self
-                .instruction
-                .minimum_token0_amount
-                .clone()
-                .expect("minimum_token0_amount is not set"),
-            minimum_token1_amount: self
-                .instruction
-                .minimum_token1_amount
-                .clone()
-                .expect("minimum_token1_amount is not set"),
+            lp_token_amount: self.instruction.lp_token_amount.clone(),
+            minimum_token0_amount: self.instruction.minimum_token0_amount.clone(),
+            minimum_token1_amount: self.instruction.minimum_token1_amount.clone(),
         };
         let instruction = WithdrawCpi {
             __program: self.instruction.__program,
-
-            owner: self.instruction.owner.expect("owner is not set"),
-
-            authority: self.instruction.authority.expect("authority is not set"),
-
-            pool_state: self.instruction.pool_state.expect("pool_state is not set"),
-
-            owner_lp_token: self
-                .instruction
-                .owner_lp_token
-                .expect("owner_lp_token is not set"),
-
-            token0_account: self
-                .instruction
-                .token0_account
-                .expect("token0_account is not set"),
-
-            token1_account: self
-                .instruction
-                .token1_account
-                .expect("token1_account is not set"),
-
-            token0_vault: self
-                .instruction
-                .token0_vault
-                .expect("token0_vault is not set"),
-
-            token1_vault: self
-                .instruction
-                .token1_vault
-                .expect("token1_vault is not set"),
-
-            token_program: self
-                .instruction
-                .token_program
-                .expect("token_program is not set"),
-
-            token_program2022: self
-                .instruction
-                .token_program2022
-                .expect("token_program2022 is not set"),
-
-            vault0_mint: self
-                .instruction
-                .vault0_mint
-                .expect("vault0_mint is not set"),
-
-            vault1_mint: self
-                .instruction
-                .vault1_mint
-                .expect("vault1_mint is not set"),
-
-            lp_mint: self.instruction.lp_mint.expect("lp_mint is not set"),
-
-            memo_program: self
-                .instruction
-                .memo_program
-                .expect("memo_program is not set"),
+            owner: self.instruction.owner,
+            authority: self.instruction.authority,
+            pool_state: self.instruction.pool_state,
+            owner_lp_token: self.instruction.owner_lp_token,
+            token0_account: self.instruction.token0_account,
+            token1_account: self.instruction.token1_account,
+            token0_vault: self.instruction.token0_vault,
+            token1_vault: self.instruction.token1_vault,
+            token_program: self.instruction.token_program,
+            token_program2022: self.instruction.token_program2022,
+            vault0_mint: self.instruction.vault0_mint,
+            vault1_mint: self.instruction.vault1_mint,
+            lp_mint: self.instruction.lp_mint,
+            memo_program: self.instruction.memo_program,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -875,23 +671,23 @@ impl<'a, 'b> WithdrawCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct WithdrawCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    owner: Option<&'b solana_account_info::AccountInfo<'a>>,
-    authority: Option<&'b solana_account_info::AccountInfo<'a>>,
-    pool_state: Option<&'b solana_account_info::AccountInfo<'a>>,
-    owner_lp_token: Option<&'b solana_account_info::AccountInfo<'a>>,
-    token0_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    token1_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    token0_vault: Option<&'b solana_account_info::AccountInfo<'a>>,
-    token1_vault: Option<&'b solana_account_info::AccountInfo<'a>>,
-    token_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    token_program2022: Option<&'b solana_account_info::AccountInfo<'a>>,
-    vault0_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
-    vault1_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
-    lp_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
-    memo_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    lp_token_amount: Option<u64>,
-    minimum_token0_amount: Option<u64>,
-    minimum_token1_amount: Option<u64>,
+    owner: &'b solana_account_info::AccountInfo<'a>,
+    authority: &'b solana_account_info::AccountInfo<'a>,
+    pool_state: &'b solana_account_info::AccountInfo<'a>,
+    owner_lp_token: &'b solana_account_info::AccountInfo<'a>,
+    token0_account: &'b solana_account_info::AccountInfo<'a>,
+    token1_account: &'b solana_account_info::AccountInfo<'a>,
+    token0_vault: &'b solana_account_info::AccountInfo<'a>,
+    token1_vault: &'b solana_account_info::AccountInfo<'a>,
+    token_program: &'b solana_account_info::AccountInfo<'a>,
+    token_program2022: &'b solana_account_info::AccountInfo<'a>,
+    vault0_mint: &'b solana_account_info::AccountInfo<'a>,
+    vault1_mint: &'b solana_account_info::AccountInfo<'a>,
+    lp_mint: &'b solana_account_info::AccountInfo<'a>,
+    memo_program: &'b solana_account_info::AccountInfo<'a>,
+    lp_token_amount: u64,
+    minimum_token0_amount: u64,
+    minimum_token1_amount: u64,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

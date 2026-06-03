@@ -72,20 +72,18 @@ impl AddMemoInstructionArgs {
 ///
 /// ### Accounts:
 ///
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct AddMemoBuilder {
-    memo: Option<TrailingStr>,
+    memo: TrailingStr,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl AddMemoBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    #[inline(always)]
-    pub fn memo(&mut self, memo: TrailingStr) -> &mut Self {
-        self.memo = Some(memo);
-        self
+    pub fn new(memo: TrailingStr) -> Self {
+        Self {
+            memo,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -106,7 +104,7 @@ impl AddMemoBuilder {
     pub fn instruction(&self) -> solana_instruction::Instruction {
         let accounts = AddMemo {};
         let args = AddMemoInstructionArgs {
-            memo: self.memo.clone().expect("memo is not set"),
+            memo: self.memo.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -195,18 +193,13 @@ pub struct AddMemoCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> AddMemoCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(__program: &'b solana_account_info::AccountInfo<'a>, memo: TrailingStr) -> Self {
         let instruction = Box::new(AddMemoCpiBuilderInstruction {
-            __program: program,
-            memo: None,
+            __program,
+            memo,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn memo(&mut self, memo: TrailingStr) -> &mut Self {
-        self.instruction.memo = Some(memo);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -243,7 +236,7 @@ impl<'a, 'b> AddMemoCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = AddMemoInstructionArgs {
-            memo: self.instruction.memo.clone().expect("memo is not set"),
+            memo: self.instruction.memo.clone(),
         };
         let instruction = AddMemoCpi {
             __program: self.instruction.__program,
@@ -259,7 +252,7 @@ impl<'a, 'b> AddMemoCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct AddMemoCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    memo: Option<TrailingStr>,
+    memo: TrailingStr,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

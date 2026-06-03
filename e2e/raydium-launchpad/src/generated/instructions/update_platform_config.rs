@@ -97,34 +97,29 @@ impl UpdatePlatformConfigInstructionArgs {
 /// ### Accounts:
 ///
 ///   0. `[signer]` platform_admin
-///   1. `[writable]` platform_config
-#[derive(Clone, Debug, Default)]
+///   1. `[writable, optional]` platform_config (default to PDA derived from 'platformConfig')
+#[derive(Clone, Debug)]
 pub struct UpdatePlatformConfigBuilder {
-    platform_admin: Option<solana_address::Address>,
+    platform_admin: solana_address::Address,
     platform_config: Option<solana_address::Address>,
-    param: Option<PlatformConfigParam>,
+    param: PlatformConfigParam,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl UpdatePlatformConfigBuilder {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(platform_admin: solana_address::Address, param: PlatformConfigParam) -> Self {
+        Self {
+            platform_admin,
+            platform_config: None,
+            param,
+            __remaining_accounts: Vec::new(),
+        }
     }
-    /// The account paying for the initialization costs
-    #[inline(always)]
-    pub fn platform_admin(&mut self, platform_admin: solana_address::Address) -> &mut Self {
-        self.platform_admin = Some(platform_admin);
-        self
-    }
+    /// `[optional account, default to PDA derived from 'platformConfig']`
     /// Platform config account to be changed
     #[inline(always)]
     pub fn platform_config(&mut self, platform_config: solana_address::Address) -> &mut Self {
         self.platform_config = Some(platform_config);
-        self
-    }
-    #[inline(always)]
-    pub fn param(&mut self, param: PlatformConfigParam) -> &mut Self {
-        self.param = Some(param);
         self
     }
     /// Add an additional account to the instruction.
@@ -144,12 +139,16 @@ impl UpdatePlatformConfigBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let platform_admin = self.platform_admin;
+        let platform_config = self
+            .platform_config
+            .unwrap_or_else(|| crate::pdas::find_platform_config_pda(&self.platform_admin).0);
         let accounts = UpdatePlatformConfig {
-            platform_admin: self.platform_admin.expect("platform_admin is not set"),
-            platform_config: self.platform_config.expect("platform_config is not set"),
+            platform_admin,
+            platform_config,
         };
         let args = UpdatePlatformConfigInstructionArgs {
-            param: self.param.clone().expect("param is not set"),
+            param: self.param.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -267,38 +266,20 @@ pub struct UpdatePlatformConfigCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> UpdatePlatformConfigCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        platform_admin: &'b solana_account_info::AccountInfo<'a>,
+        platform_config: &'b solana_account_info::AccountInfo<'a>,
+        param: PlatformConfigParam,
+    ) -> Self {
         let instruction = Box::new(UpdatePlatformConfigCpiBuilderInstruction {
-            __program: program,
-            platform_admin: None,
-            platform_config: None,
-            param: None,
+            __program,
+            platform_admin,
+            platform_config,
+            param,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// The account paying for the initialization costs
-    #[inline(always)]
-    pub fn platform_admin(
-        &mut self,
-        platform_admin: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.platform_admin = Some(platform_admin);
-        self
-    }
-    /// Platform config account to be changed
-    #[inline(always)]
-    pub fn platform_config(
-        &mut self,
-        platform_config: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.platform_config = Some(platform_config);
-        self
-    }
-    #[inline(always)]
-    pub fn param(&mut self, param: PlatformConfigParam) -> &mut Self {
-        self.instruction.param = Some(param);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -335,20 +316,12 @@ impl<'a, 'b> UpdatePlatformConfigCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = UpdatePlatformConfigInstructionArgs {
-            param: self.instruction.param.clone().expect("param is not set"),
+            param: self.instruction.param.clone(),
         };
         let instruction = UpdatePlatformConfigCpi {
             __program: self.instruction.__program,
-
-            platform_admin: self
-                .instruction
-                .platform_admin
-                .expect("platform_admin is not set"),
-
-            platform_config: self
-                .instruction
-                .platform_config
-                .expect("platform_config is not set"),
+            platform_admin: self.instruction.platform_admin,
+            platform_config: self.instruction.platform_config,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -361,9 +334,9 @@ impl<'a, 'b> UpdatePlatformConfigCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct UpdatePlatformConfigCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    platform_admin: Option<&'b solana_account_info::AccountInfo<'a>>,
-    platform_config: Option<&'b solana_account_info::AccountInfo<'a>>,
-    param: Option<PlatformConfigParam>,
+    platform_admin: &'b solana_account_info::AccountInfo<'a>,
+    platform_config: &'b solana_account_info::AccountInfo<'a>,
+    param: PlatformConfigParam,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

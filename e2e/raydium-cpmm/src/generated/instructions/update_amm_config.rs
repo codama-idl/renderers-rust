@@ -92,40 +92,30 @@ impl UpdateAmmConfigInstructionArgs {
 ///
 ///   0. `[signer, optional]` owner (default to `GThUX1Atko4tqhN2NaiTazWSeFWMuiUvfFnyJyUghFMJ`)
 ///   1. `[writable]` amm_config
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct UpdateAmmConfigBuilder {
     owner: Option<solana_address::Address>,
-    amm_config: Option<solana_address::Address>,
-    param: Option<u8>,
-    value: Option<u64>,
+    amm_config: solana_address::Address,
+    param: u8,
+    value: u64,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl UpdateAmmConfigBuilder {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(amm_config: solana_address::Address, param: u8, value: u64) -> Self {
+        Self {
+            owner: None,
+            amm_config,
+            param,
+            value,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// `[optional account, default to 'GThUX1Atko4tqhN2NaiTazWSeFWMuiUvfFnyJyUghFMJ']`
     /// The amm config owner or admin
     #[inline(always)]
     pub fn owner(&mut self, owner: solana_address::Address) -> &mut Self {
         self.owner = Some(owner);
-        self
-    }
-    /// Amm config account to be changed
-    #[inline(always)]
-    pub fn amm_config(&mut self, amm_config: solana_address::Address) -> &mut Self {
-        self.amm_config = Some(amm_config);
-        self
-    }
-    #[inline(always)]
-    pub fn param(&mut self, param: u8) -> &mut Self {
-        self.param = Some(param);
-        self
-    }
-    #[inline(always)]
-    pub fn value(&mut self, value: u64) -> &mut Self {
-        self.value = Some(value);
         self
     }
     /// Add an additional account to the instruction.
@@ -145,15 +135,14 @@ impl UpdateAmmConfigBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
-        let accounts = UpdateAmmConfig {
-            owner: self.owner.unwrap_or(solana_address::address!(
-                "GThUX1Atko4tqhN2NaiTazWSeFWMuiUvfFnyJyUghFMJ"
-            )),
-            amm_config: self.amm_config.expect("amm_config is not set"),
-        };
+        let owner = self.owner.unwrap_or(solana_address::address!(
+            "GThUX1Atko4tqhN2NaiTazWSeFWMuiUvfFnyJyUghFMJ"
+        ));
+        let amm_config = self.amm_config;
+        let accounts = UpdateAmmConfig { owner, amm_config };
         let args = UpdateAmmConfigInstructionArgs {
-            param: self.param.clone().expect("param is not set"),
-            value: self.value.clone().expect("value is not set"),
+            param: self.param.clone(),
+            value: self.value.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -269,41 +258,22 @@ pub struct UpdateAmmConfigCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> UpdateAmmConfigCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        owner: &'b solana_account_info::AccountInfo<'a>,
+        amm_config: &'b solana_account_info::AccountInfo<'a>,
+        param: u8,
+        value: u64,
+    ) -> Self {
         let instruction = Box::new(UpdateAmmConfigCpiBuilderInstruction {
-            __program: program,
-            owner: None,
-            amm_config: None,
-            param: None,
-            value: None,
+            __program,
+            owner,
+            amm_config,
+            param,
+            value,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// The amm config owner or admin
-    #[inline(always)]
-    pub fn owner(&mut self, owner: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.owner = Some(owner);
-        self
-    }
-    /// Amm config account to be changed
-    #[inline(always)]
-    pub fn amm_config(
-        &mut self,
-        amm_config: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.amm_config = Some(amm_config);
-        self
-    }
-    #[inline(always)]
-    pub fn param(&mut self, param: u8) -> &mut Self {
-        self.instruction.param = Some(param);
-        self
-    }
-    #[inline(always)]
-    pub fn value(&mut self, value: u64) -> &mut Self {
-        self.instruction.value = Some(value);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -340,15 +310,13 @@ impl<'a, 'b> UpdateAmmConfigCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = UpdateAmmConfigInstructionArgs {
-            param: self.instruction.param.clone().expect("param is not set"),
-            value: self.instruction.value.clone().expect("value is not set"),
+            param: self.instruction.param.clone(),
+            value: self.instruction.value.clone(),
         };
         let instruction = UpdateAmmConfigCpi {
             __program: self.instruction.__program,
-
-            owner: self.instruction.owner.expect("owner is not set"),
-
-            amm_config: self.instruction.amm_config.expect("amm_config is not set"),
+            owner: self.instruction.owner,
+            amm_config: self.instruction.amm_config,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -361,10 +329,10 @@ impl<'a, 'b> UpdateAmmConfigCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct UpdateAmmConfigCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    owner: Option<&'b solana_account_info::AccountInfo<'a>>,
-    amm_config: Option<&'b solana_account_info::AccountInfo<'a>>,
-    param: Option<u8>,
-    value: Option<u64>,
+    owner: &'b solana_account_info::AccountInfo<'a>,
+    amm_config: &'b solana_account_info::AccountInfo<'a>,
+    param: u8,
+    value: u64,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

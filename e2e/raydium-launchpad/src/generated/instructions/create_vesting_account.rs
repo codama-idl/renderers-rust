@@ -111,41 +111,37 @@ impl CreateVestingAccountInstructionArgs {
 ///   0. `[writable, signer]` creator
 ///   1. `[writable]` beneficiary
 ///   2. `[writable]` pool_state
-///   3. `[writable]` vesting_record
+///   3. `[writable, optional]` vesting_record (default to PDA derived from 'vestingRecord')
 ///   4. `[optional]` system_program (default to `11111111111111111111111111111111`)
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct CreateVestingAccountBuilder {
-    creator: Option<solana_address::Address>,
-    beneficiary: Option<solana_address::Address>,
-    pool_state: Option<solana_address::Address>,
+    creator: solana_address::Address,
+    beneficiary: solana_address::Address,
+    pool_state: solana_address::Address,
     vesting_record: Option<solana_address::Address>,
     system_program: Option<solana_address::Address>,
-    share_amount: Option<u64>,
+    share_amount: u64,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl CreateVestingAccountBuilder {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(
+        creator: solana_address::Address,
+        beneficiary: solana_address::Address,
+        pool_state: solana_address::Address,
+        share_amount: u64,
+    ) -> Self {
+        Self {
+            creator,
+            beneficiary,
+            pool_state,
+            vesting_record: None,
+            system_program: None,
+            share_amount,
+            __remaining_accounts: Vec::new(),
+        }
     }
-    /// The account paying for the initialization costs
-    /// This can be any account with sufficient SOL to cover the transaction
-    #[inline(always)]
-    pub fn creator(&mut self, creator: solana_address::Address) -> &mut Self {
-        self.creator = Some(creator);
-        self
-    }
-    #[inline(always)]
-    pub fn beneficiary(&mut self, beneficiary: solana_address::Address) -> &mut Self {
-        self.beneficiary = Some(beneficiary);
-        self
-    }
-    /// The pool state account
-    #[inline(always)]
-    pub fn pool_state(&mut self, pool_state: solana_address::Address) -> &mut Self {
-        self.pool_state = Some(pool_state);
-        self
-    }
+    /// `[optional account, default to PDA derived from 'vestingRecord']`
     /// The vesting record account
     #[inline(always)]
     pub fn vesting_record(&mut self, vesting_record: solana_address::Address) -> &mut Self {
@@ -157,11 +153,6 @@ impl CreateVestingAccountBuilder {
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_address::Address) -> &mut Self {
         self.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn share_amount(&mut self, share_amount: u64) -> &mut Self {
-        self.share_amount = Some(share_amount);
         self
     }
     /// Add an additional account to the instruction.
@@ -181,17 +172,24 @@ impl CreateVestingAccountBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let creator = self.creator;
+        let beneficiary = self.beneficiary;
+        let pool_state = self.pool_state;
+        let vesting_record = self.vesting_record.unwrap_or_else(|| {
+            crate::pdas::find_vesting_record_pda(&self.pool_state, &self.beneficiary).0
+        });
+        let system_program = self
+            .system_program
+            .unwrap_or(solana_address::address!("11111111111111111111111111111111"));
         let accounts = CreateVestingAccount {
-            creator: self.creator.expect("creator is not set"),
-            beneficiary: self.beneficiary.expect("beneficiary is not set"),
-            pool_state: self.pool_state.expect("pool_state is not set"),
-            vesting_record: self.vesting_record.expect("vesting_record is not set"),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
+            creator,
+            beneficiary,
+            pool_state,
+            vesting_record,
+            system_program,
         };
         let args = CreateVestingAccountInstructionArgs {
-            share_amount: self.share_amount.clone().expect("share_amount is not set"),
+            share_amount: self.share_amount.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -344,65 +342,26 @@ pub struct CreateVestingAccountCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> CreateVestingAccountCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        creator: &'b solana_account_info::AccountInfo<'a>,
+        beneficiary: &'b solana_account_info::AccountInfo<'a>,
+        pool_state: &'b solana_account_info::AccountInfo<'a>,
+        vesting_record: &'b solana_account_info::AccountInfo<'a>,
+        system_program: &'b solana_account_info::AccountInfo<'a>,
+        share_amount: u64,
+    ) -> Self {
         let instruction = Box::new(CreateVestingAccountCpiBuilderInstruction {
-            __program: program,
-            creator: None,
-            beneficiary: None,
-            pool_state: None,
-            vesting_record: None,
-            system_program: None,
-            share_amount: None,
+            __program,
+            creator,
+            beneficiary,
+            pool_state,
+            vesting_record,
+            system_program,
+            share_amount,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// The account paying for the initialization costs
-    /// This can be any account with sufficient SOL to cover the transaction
-    #[inline(always)]
-    pub fn creator(&mut self, creator: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.creator = Some(creator);
-        self
-    }
-    #[inline(always)]
-    pub fn beneficiary(
-        &mut self,
-        beneficiary: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.beneficiary = Some(beneficiary);
-        self
-    }
-    /// The pool state account
-    #[inline(always)]
-    pub fn pool_state(
-        &mut self,
-        pool_state: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.pool_state = Some(pool_state);
-        self
-    }
-    /// The vesting record account
-    #[inline(always)]
-    pub fn vesting_record(
-        &mut self,
-        vesting_record: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.vesting_record = Some(vesting_record);
-        self
-    }
-    /// Required for account creation
-    #[inline(always)]
-    pub fn system_program(
-        &mut self,
-        system_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn share_amount(&mut self, share_amount: u64) -> &mut Self {
-        self.instruction.share_amount = Some(share_amount);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -439,33 +398,15 @@ impl<'a, 'b> CreateVestingAccountCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = CreateVestingAccountInstructionArgs {
-            share_amount: self
-                .instruction
-                .share_amount
-                .clone()
-                .expect("share_amount is not set"),
+            share_amount: self.instruction.share_amount.clone(),
         };
         let instruction = CreateVestingAccountCpi {
             __program: self.instruction.__program,
-
-            creator: self.instruction.creator.expect("creator is not set"),
-
-            beneficiary: self
-                .instruction
-                .beneficiary
-                .expect("beneficiary is not set"),
-
-            pool_state: self.instruction.pool_state.expect("pool_state is not set"),
-
-            vesting_record: self
-                .instruction
-                .vesting_record
-                .expect("vesting_record is not set"),
-
-            system_program: self
-                .instruction
-                .system_program
-                .expect("system_program is not set"),
+            creator: self.instruction.creator,
+            beneficiary: self.instruction.beneficiary,
+            pool_state: self.instruction.pool_state,
+            vesting_record: self.instruction.vesting_record,
+            system_program: self.instruction.system_program,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -478,12 +419,12 @@ impl<'a, 'b> CreateVestingAccountCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct CreateVestingAccountCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    creator: Option<&'b solana_account_info::AccountInfo<'a>>,
-    beneficiary: Option<&'b solana_account_info::AccountInfo<'a>>,
-    pool_state: Option<&'b solana_account_info::AccountInfo<'a>>,
-    vesting_record: Option<&'b solana_account_info::AccountInfo<'a>>,
-    system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    share_amount: Option<u64>,
+    creator: &'b solana_account_info::AccountInfo<'a>,
+    beneficiary: &'b solana_account_info::AccountInfo<'a>,
+    pool_state: &'b solana_account_info::AccountInfo<'a>,
+    vesting_record: &'b solana_account_info::AccountInfo<'a>,
+    system_program: &'b solana_account_info::AccountInfo<'a>,
+    share_amount: u64,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

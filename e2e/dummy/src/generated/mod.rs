@@ -7,6 +7,7 @@
 
 pub mod errors;
 pub mod instructions;
+pub mod pdas;
 pub mod programs;
 
 pub(crate) use programs::*;

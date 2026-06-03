@@ -135,33 +135,57 @@ impl CreateConfigInstructionArgs {
 /// ### Accounts:
 ///
 ///   0. `[writable, signer, optional]` owner (default to `GThUX1Atko4tqhN2NaiTazWSeFWMuiUvfFnyJyUghFMJ`)
-///   1. `[writable]` global_config
+///   1. `[writable, optional]` global_config (default to PDA derived from 'globalConfig')
 ///   2. `[]` quote_token_mint
 ///   3. `[]` protocol_fee_owner
 ///   4. `[]` migrate_fee_owner
 ///   5. `[]` migrate_to_amm_wallet
 ///   6. `[]` migrate_to_cpswap_wallet
 ///   7. `[optional]` system_program (default to `11111111111111111111111111111111`)
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct CreateConfigBuilder {
     owner: Option<solana_address::Address>,
     global_config: Option<solana_address::Address>,
-    quote_token_mint: Option<solana_address::Address>,
-    protocol_fee_owner: Option<solana_address::Address>,
-    migrate_fee_owner: Option<solana_address::Address>,
-    migrate_to_amm_wallet: Option<solana_address::Address>,
-    migrate_to_cpswap_wallet: Option<solana_address::Address>,
+    quote_token_mint: solana_address::Address,
+    protocol_fee_owner: solana_address::Address,
+    migrate_fee_owner: solana_address::Address,
+    migrate_to_amm_wallet: solana_address::Address,
+    migrate_to_cpswap_wallet: solana_address::Address,
     system_program: Option<solana_address::Address>,
-    curve_type: Option<u8>,
-    index: Option<u16>,
-    migrate_fee: Option<u64>,
-    trade_fee_rate: Option<u64>,
+    curve_type: u8,
+    index: u16,
+    migrate_fee: u64,
+    trade_fee_rate: u64,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl CreateConfigBuilder {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(
+        quote_token_mint: solana_address::Address,
+        protocol_fee_owner: solana_address::Address,
+        migrate_fee_owner: solana_address::Address,
+        migrate_to_amm_wallet: solana_address::Address,
+        migrate_to_cpswap_wallet: solana_address::Address,
+        curve_type: u8,
+        index: u16,
+        migrate_fee: u64,
+        trade_fee_rate: u64,
+    ) -> Self {
+        Self {
+            owner: None,
+            global_config: None,
+            quote_token_mint,
+            protocol_fee_owner,
+            migrate_fee_owner,
+            migrate_to_amm_wallet,
+            migrate_to_cpswap_wallet,
+            system_program: None,
+            curve_type,
+            index,
+            migrate_fee,
+            trade_fee_rate,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// `[optional account, default to 'GThUX1Atko4tqhN2NaiTazWSeFWMuiUvfFnyJyUghFMJ']`
     /// The protocol owner/admin account
@@ -172,6 +196,7 @@ impl CreateConfigBuilder {
         self.owner = Some(owner);
         self
     }
+    /// `[optional account, default to PDA derived from 'globalConfig']`
     /// Global configuration account that stores protocol-wide settings
     /// PDA generated using GLOBAL_CONFIG_SEED, quote token mint, and curve type
     /// Stores fee rates and protocol parameters
@@ -180,68 +205,11 @@ impl CreateConfigBuilder {
         self.global_config = Some(global_config);
         self
     }
-    /// The mint address of the quote token (token used for buying)
-    /// This will be the standard token used for all pools with this config
-    #[inline(always)]
-    pub fn quote_token_mint(&mut self, quote_token_mint: solana_address::Address) -> &mut Self {
-        self.quote_token_mint = Some(quote_token_mint);
-        self
-    }
-    /// Account that will receive protocol fees
-    #[inline(always)]
-    pub fn protocol_fee_owner(&mut self, protocol_fee_owner: solana_address::Address) -> &mut Self {
-        self.protocol_fee_owner = Some(protocol_fee_owner);
-        self
-    }
-    /// Account that will receive migrate fees
-    #[inline(always)]
-    pub fn migrate_fee_owner(&mut self, migrate_fee_owner: solana_address::Address) -> &mut Self {
-        self.migrate_fee_owner = Some(migrate_fee_owner);
-        self
-    }
-    /// The control wallet address for migrating to amm
-    #[inline(always)]
-    pub fn migrate_to_amm_wallet(
-        &mut self,
-        migrate_to_amm_wallet: solana_address::Address,
-    ) -> &mut Self {
-        self.migrate_to_amm_wallet = Some(migrate_to_amm_wallet);
-        self
-    }
-    /// The control wallet address for migrating to cpswap
-    #[inline(always)]
-    pub fn migrate_to_cpswap_wallet(
-        &mut self,
-        migrate_to_cpswap_wallet: solana_address::Address,
-    ) -> &mut Self {
-        self.migrate_to_cpswap_wallet = Some(migrate_to_cpswap_wallet);
-        self
-    }
     /// `[optional account, default to '11111111111111111111111111111111']`
     /// Required for account creation
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_address::Address) -> &mut Self {
         self.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn curve_type(&mut self, curve_type: u8) -> &mut Self {
-        self.curve_type = Some(curve_type);
-        self
-    }
-    #[inline(always)]
-    pub fn index(&mut self, index: u16) -> &mut Self {
-        self.index = Some(index);
-        self
-    }
-    #[inline(always)]
-    pub fn migrate_fee(&mut self, migrate_fee: u64) -> &mut Self {
-        self.migrate_fee = Some(migrate_fee);
-        self
-    }
-    #[inline(always)]
-    pub fn trade_fee_rate(&mut self, trade_fee_rate: u64) -> &mut Self {
-        self.trade_fee_rate = Some(trade_fee_rate);
         self
     }
     /// Add an additional account to the instruction.
@@ -261,36 +229,40 @@ impl CreateConfigBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let owner = self.owner.unwrap_or(solana_address::address!(
+            "GThUX1Atko4tqhN2NaiTazWSeFWMuiUvfFnyJyUghFMJ"
+        ));
+        let global_config = self.global_config.unwrap_or_else(|| {
+            crate::pdas::find_global_config_pda(
+                &self.quote_token_mint,
+                self.curve_type.clone(),
+                self.index.clone(),
+            )
+            .0
+        });
+        let quote_token_mint = self.quote_token_mint;
+        let protocol_fee_owner = self.protocol_fee_owner;
+        let migrate_fee_owner = self.migrate_fee_owner;
+        let migrate_to_amm_wallet = self.migrate_to_amm_wallet;
+        let migrate_to_cpswap_wallet = self.migrate_to_cpswap_wallet;
+        let system_program = self
+            .system_program
+            .unwrap_or(solana_address::address!("11111111111111111111111111111111"));
         let accounts = CreateConfig {
-            owner: self.owner.unwrap_or(solana_address::address!(
-                "GThUX1Atko4tqhN2NaiTazWSeFWMuiUvfFnyJyUghFMJ"
-            )),
-            global_config: self.global_config.expect("global_config is not set"),
-            quote_token_mint: self.quote_token_mint.expect("quote_token_mint is not set"),
-            protocol_fee_owner: self
-                .protocol_fee_owner
-                .expect("protocol_fee_owner is not set"),
-            migrate_fee_owner: self
-                .migrate_fee_owner
-                .expect("migrate_fee_owner is not set"),
-            migrate_to_amm_wallet: self
-                .migrate_to_amm_wallet
-                .expect("migrate_to_amm_wallet is not set"),
-            migrate_to_cpswap_wallet: self
-                .migrate_to_cpswap_wallet
-                .expect("migrate_to_cpswap_wallet is not set"),
-            system_program: self
-                .system_program
-                .unwrap_or(solana_address::address!("11111111111111111111111111111111")),
+            owner,
+            global_config,
+            quote_token_mint,
+            protocol_fee_owner,
+            migrate_fee_owner,
+            migrate_to_amm_wallet,
+            migrate_to_cpswap_wallet,
+            system_program,
         };
         let args = CreateConfigInstructionArgs {
-            curve_type: self.curve_type.clone().expect("curve_type is not set"),
-            index: self.index.clone().expect("index is not set"),
-            migrate_fee: self.migrate_fee.clone().expect("migrate_fee is not set"),
-            trade_fee_rate: self
-                .trade_fee_rate
-                .clone()
-                .expect("trade_fee_rate is not set"),
+            curve_type: self.curve_type.clone(),
+            index: self.index.clone(),
+            migrate_fee: self.migrate_fee.clone(),
+            trade_fee_rate: self.trade_fee_rate.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -479,118 +451,38 @@ pub struct CreateConfigCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> CreateConfigCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        owner: &'b solana_account_info::AccountInfo<'a>,
+        global_config: &'b solana_account_info::AccountInfo<'a>,
+        quote_token_mint: &'b solana_account_info::AccountInfo<'a>,
+        protocol_fee_owner: &'b solana_account_info::AccountInfo<'a>,
+        migrate_fee_owner: &'b solana_account_info::AccountInfo<'a>,
+        migrate_to_amm_wallet: &'b solana_account_info::AccountInfo<'a>,
+        migrate_to_cpswap_wallet: &'b solana_account_info::AccountInfo<'a>,
+        system_program: &'b solana_account_info::AccountInfo<'a>,
+        curve_type: u8,
+        index: u16,
+        migrate_fee: u64,
+        trade_fee_rate: u64,
+    ) -> Self {
         let instruction = Box::new(CreateConfigCpiBuilderInstruction {
-            __program: program,
-            owner: None,
-            global_config: None,
-            quote_token_mint: None,
-            protocol_fee_owner: None,
-            migrate_fee_owner: None,
-            migrate_to_amm_wallet: None,
-            migrate_to_cpswap_wallet: None,
-            system_program: None,
-            curve_type: None,
-            index: None,
-            migrate_fee: None,
-            trade_fee_rate: None,
+            __program,
+            owner,
+            global_config,
+            quote_token_mint,
+            protocol_fee_owner,
+            migrate_fee_owner,
+            migrate_to_amm_wallet,
+            migrate_to_cpswap_wallet,
+            system_program,
+            curve_type,
+            index,
+            migrate_fee,
+            trade_fee_rate,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    /// The protocol owner/admin account
-    /// Must match the predefined admin address
-    /// Has authority to create and modify protocol configurations
-    #[inline(always)]
-    pub fn owner(&mut self, owner: &'b solana_account_info::AccountInfo<'a>) -> &mut Self {
-        self.instruction.owner = Some(owner);
-        self
-    }
-    /// Global configuration account that stores protocol-wide settings
-    /// PDA generated using GLOBAL_CONFIG_SEED, quote token mint, and curve type
-    /// Stores fee rates and protocol parameters
-    #[inline(always)]
-    pub fn global_config(
-        &mut self,
-        global_config: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.global_config = Some(global_config);
-        self
-    }
-    /// The mint address of the quote token (token used for buying)
-    /// This will be the standard token used for all pools with this config
-    #[inline(always)]
-    pub fn quote_token_mint(
-        &mut self,
-        quote_token_mint: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.quote_token_mint = Some(quote_token_mint);
-        self
-    }
-    /// Account that will receive protocol fees
-    #[inline(always)]
-    pub fn protocol_fee_owner(
-        &mut self,
-        protocol_fee_owner: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.protocol_fee_owner = Some(protocol_fee_owner);
-        self
-    }
-    /// Account that will receive migrate fees
-    #[inline(always)]
-    pub fn migrate_fee_owner(
-        &mut self,
-        migrate_fee_owner: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.migrate_fee_owner = Some(migrate_fee_owner);
-        self
-    }
-    /// The control wallet address for migrating to amm
-    #[inline(always)]
-    pub fn migrate_to_amm_wallet(
-        &mut self,
-        migrate_to_amm_wallet: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.migrate_to_amm_wallet = Some(migrate_to_amm_wallet);
-        self
-    }
-    /// The control wallet address for migrating to cpswap
-    #[inline(always)]
-    pub fn migrate_to_cpswap_wallet(
-        &mut self,
-        migrate_to_cpswap_wallet: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.migrate_to_cpswap_wallet = Some(migrate_to_cpswap_wallet);
-        self
-    }
-    /// Required for account creation
-    #[inline(always)]
-    pub fn system_program(
-        &mut self,
-        system_program: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.system_program = Some(system_program);
-        self
-    }
-    #[inline(always)]
-    pub fn curve_type(&mut self, curve_type: u8) -> &mut Self {
-        self.instruction.curve_type = Some(curve_type);
-        self
-    }
-    #[inline(always)]
-    pub fn index(&mut self, index: u16) -> &mut Self {
-        self.instruction.index = Some(index);
-        self
-    }
-    #[inline(always)]
-    pub fn migrate_fee(&mut self, migrate_fee: u64) -> &mut Self {
-        self.instruction.migrate_fee = Some(migrate_fee);
-        self
-    }
-    #[inline(always)]
-    pub fn trade_fee_rate(&mut self, trade_fee_rate: u64) -> &mut Self {
-        self.instruction.trade_fee_rate = Some(trade_fee_rate);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -627,62 +519,21 @@ impl<'a, 'b> CreateConfigCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = CreateConfigInstructionArgs {
-            curve_type: self
-                .instruction
-                .curve_type
-                .clone()
-                .expect("curve_type is not set"),
-            index: self.instruction.index.clone().expect("index is not set"),
-            migrate_fee: self
-                .instruction
-                .migrate_fee
-                .clone()
-                .expect("migrate_fee is not set"),
-            trade_fee_rate: self
-                .instruction
-                .trade_fee_rate
-                .clone()
-                .expect("trade_fee_rate is not set"),
+            curve_type: self.instruction.curve_type.clone(),
+            index: self.instruction.index.clone(),
+            migrate_fee: self.instruction.migrate_fee.clone(),
+            trade_fee_rate: self.instruction.trade_fee_rate.clone(),
         };
         let instruction = CreateConfigCpi {
             __program: self.instruction.__program,
-
-            owner: self.instruction.owner.expect("owner is not set"),
-
-            global_config: self
-                .instruction
-                .global_config
-                .expect("global_config is not set"),
-
-            quote_token_mint: self
-                .instruction
-                .quote_token_mint
-                .expect("quote_token_mint is not set"),
-
-            protocol_fee_owner: self
-                .instruction
-                .protocol_fee_owner
-                .expect("protocol_fee_owner is not set"),
-
-            migrate_fee_owner: self
-                .instruction
-                .migrate_fee_owner
-                .expect("migrate_fee_owner is not set"),
-
-            migrate_to_amm_wallet: self
-                .instruction
-                .migrate_to_amm_wallet
-                .expect("migrate_to_amm_wallet is not set"),
-
-            migrate_to_cpswap_wallet: self
-                .instruction
-                .migrate_to_cpswap_wallet
-                .expect("migrate_to_cpswap_wallet is not set"),
-
-            system_program: self
-                .instruction
-                .system_program
-                .expect("system_program is not set"),
+            owner: self.instruction.owner,
+            global_config: self.instruction.global_config,
+            quote_token_mint: self.instruction.quote_token_mint,
+            protocol_fee_owner: self.instruction.protocol_fee_owner,
+            migrate_fee_owner: self.instruction.migrate_fee_owner,
+            migrate_to_amm_wallet: self.instruction.migrate_to_amm_wallet,
+            migrate_to_cpswap_wallet: self.instruction.migrate_to_cpswap_wallet,
+            system_program: self.instruction.system_program,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -695,18 +546,18 @@ impl<'a, 'b> CreateConfigCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct CreateConfigCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    owner: Option<&'b solana_account_info::AccountInfo<'a>>,
-    global_config: Option<&'b solana_account_info::AccountInfo<'a>>,
-    quote_token_mint: Option<&'b solana_account_info::AccountInfo<'a>>,
-    protocol_fee_owner: Option<&'b solana_account_info::AccountInfo<'a>>,
-    migrate_fee_owner: Option<&'b solana_account_info::AccountInfo<'a>>,
-    migrate_to_amm_wallet: Option<&'b solana_account_info::AccountInfo<'a>>,
-    migrate_to_cpswap_wallet: Option<&'b solana_account_info::AccountInfo<'a>>,
-    system_program: Option<&'b solana_account_info::AccountInfo<'a>>,
-    curve_type: Option<u8>,
-    index: Option<u16>,
-    migrate_fee: Option<u64>,
-    trade_fee_rate: Option<u64>,
+    owner: &'b solana_account_info::AccountInfo<'a>,
+    global_config: &'b solana_account_info::AccountInfo<'a>,
+    quote_token_mint: &'b solana_account_info::AccountInfo<'a>,
+    protocol_fee_owner: &'b solana_account_info::AccountInfo<'a>,
+    migrate_fee_owner: &'b solana_account_info::AccountInfo<'a>,
+    migrate_to_amm_wallet: &'b solana_account_info::AccountInfo<'a>,
+    migrate_to_cpswap_wallet: &'b solana_account_info::AccountInfo<'a>,
+    system_program: &'b solana_account_info::AccountInfo<'a>,
+    curve_type: u8,
+    index: u16,
+    migrate_fee: u64,
+    trade_fee_rate: u64,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

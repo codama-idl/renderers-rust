@@ -1,0 +1,106 @@
+{% extends "layout.njk" %}
+{% import "macros.njk" as macros %}
+
+{% block main %}
+
+{{ imports }}
+
+{% if program %}
+use crate::{{ program.name | snakeCase | upper }}_ID;
+{% endif %}
+
+{# Generate SEED constants for constant seeds #}
+{% set constantIndex = 0 %}
+{% for seed in seeds %}
+  {% if seed.kind === 'constantPdaSeedNode' and seed.value.kind !== 'programIdValueNode' %}
+pub const {{ pda.name | snakeCase | upper }}_SEED{% if constantSeeds.length > 1 %}_{{ constantIndex }}{% endif %}: &'static [u8] = {{ seed.seedBytesExpr }};
+    {% set constantIndex = constantIndex + 1 %}
+  {% endif %}
+{% endfor %}
+{% if precomputedAddress %}
+
+pub const {{ pda.name | snakeCase | upper }}_ADDRESS: solana_address::Address =
+    solana_address::address!("{{ precomputedAddress }}");
+{% endif %}
+
+{{- macros.docblock(pda.docs) -}}
+pub fn create_{{ pda.name | snakeCase }}_pda(
+  {% if hasVariableSeeds %}
+    {% for seed in seeds %}
+      {% if seed.kind === 'variablePdaSeedNode' %}
+    {{ seed.name | snakeCase }}: {{ seed.typeManifest.type }},
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+    bump: u8,
+) -> Result<solana_address::Address, solana_address::error::AddressError> {
+    solana_address::Address::create_program_address(
+        &[
+        {% set constantUsageIndex = 0 %}
+        {% for seed in seeds %}
+          {% if seed.kind === 'constantPdaSeedNode' and seed.value.kind === 'programIdValueNode' %}
+            {% if program %}
+            crate::{{ program.name | snakeCase | upper }}_ID.as_ref(),
+            {% endif %}
+          {% elif seed.kind === 'constantPdaSeedNode' %}
+            {{ pda.name | snakeCase | upper }}_SEED{% if constantSeeds.length > 1 %}_{{ constantUsageIndex }}{% endif %},
+            {% set constantUsageIndex = constantUsageIndex + 1 %}
+          {% elif seed.kind == 'variablePdaSeedNode' and seed.resolvedType.kind == 'publicKeyTypeNode' %}
+            {{ seed.name | snakeCase }}.as_ref(),
+          {% elif seed.kind == 'variablePdaSeedNode' and seed.resolvedType.kind == 'bytesTypeNode' %}
+            &{{ seed.name | snakeCase }},
+          {% else %}
+            {{ seed.name | snakeCase }}.to_string().as_ref(),
+          {% endif %}
+        {% endfor %}
+            &[bump],
+        ],
+        {% if program %}
+        &{{ program.name | snakeCase | upper }}_ID,
+        {% else %}
+        // Program ID not available
+        {% endif %}
+    )
+}
+
+{{- macros.docblock(pda.docs) -}}
+pub fn find_{{ pda.name | snakeCase }}_pda(
+{% if hasVariableSeeds %}
+  {% for seed in seeds %}
+    {% if seed.kind == 'variablePdaSeedNode' and seed.resolvedType.kind == 'publicKeyTypeNode' %}
+    {{ seed.name | snakeCase }}: &{{ seed.typeManifest.type }},
+    {% elif seed.kind === 'variablePdaSeedNode' %}
+    {{ seed.name | snakeCase }}: {{ seed.typeManifest.type }},
+    {% endif %}
+  {% endfor %}
+{% endif %}
+) -> (solana_address::Address, u8) {
+    solana_address::Address::find_program_address(
+        &[
+        {% set constantUsageIndex2 = 0 %}
+        {% for seed in seeds %}
+          {% if seed.kind === 'constantPdaSeedNode' and seed.value.kind === 'programIdValueNode' %}
+            {% if program %}
+            crate::{{ program.name | snakeCase | upper }}_ID.as_ref(),
+            {% endif %}
+          {% elif seed.kind === 'constantPdaSeedNode' %}
+            {{ pda.name | snakeCase | upper }}_SEED{% if constantSeeds.length > 1 %}_{{ constantUsageIndex2 }}{% endif %},
+            {% set constantUsageIndex2 = constantUsageIndex2 + 1 %}
+          {% elif seed.kind == 'variablePdaSeedNode' and seed.resolvedType.kind == 'publicKeyTypeNode' %}
+            {{ seed.name | snakeCase }}.as_ref(),
+          {% elif seed.kind == 'variablePdaSeedNode' and seed.resolvedType.kind == 'bytesTypeNode' %}
+            &{{ seed.name | snakeCase }},
+          {% else %}
+            {{ seed.name | snakeCase }}.to_string().as_ref(),
+          {% endif %}
+        {% endfor %}
+        ],
+        {% if program %}
+        &{{ program.name | snakeCase | upper }}_ID,
+        {% else %}
+        // Program ID not available
+        {% endif %}
+    )
+}
+
+{% endblock %}

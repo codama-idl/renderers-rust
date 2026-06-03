@@ -6,7 +6,7 @@ import nunjucks, { ConfigureOptions as NunJucksOptions } from 'nunjucks';
 
 export function rustDocblock(docs: string[]): string {
     if (docs.length <= 0) return '';
-    const lines = docs.map(doc => `/// ${doc}`);
+    const lines = docs.flatMap(doc => doc.split('\n')).map(doc => `/// ${doc}`);
     return `${lines.join('\n')}\n`;
 }
 

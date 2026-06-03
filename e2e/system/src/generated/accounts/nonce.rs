@@ -34,14 +34,20 @@ impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for Nonce {
     type Error = std::io::Error;
 
     fn try_from(account_info: &solana_account_info::AccountInfo<'a>) -> Result<Self, Self::Error> {
-        let mut data: &[u8] = &(*account_info.data).borrow();
-        Self::deserialize(&mut data)
+        if account_info.owner != &crate::SYSTEM_ID {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "invalid account owner",
+            ));
+        }
+        let data: &[u8] = &(*account_info.data).borrow();
+        Self::from_bytes(data)
     }
 }
 
 #[cfg(feature = "fetch")]
 pub fn fetch_nonce(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     address: &solana_address::Address,
 ) -> Result<crate::shared::DecodedAccount<Nonce>, std::io::Error> {
     let accounts = fetch_all_nonce(rpc, &[*address])?;
@@ -50,7 +56,7 @@ pub fn fetch_nonce(
 
 #[cfg(feature = "fetch")]
 pub fn fetch_all_nonce(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::DecodedAccount<Nonce>>, std::io::Error> {
     let accounts = rpc
@@ -62,6 +68,11 @@ pub fn fetch_all_nonce(
         let account = accounts[i].as_ref().ok_or(std::io::Error::other(format!(
             "Account not found: {address}"
         )))?;
+        if account.owner != crate::SYSTEM_ID {
+            return Err(std::io::Error::other(format!(
+                "Invalid owner for account: {address}"
+            )));
+        }
         let data = Nonce::from_bytes(&account.data)?;
         decoded_accounts.push(crate::shared::DecodedAccount {
             address,
@@ -74,7 +85,7 @@ pub fn fetch_all_nonce(
 
 #[cfg(feature = "fetch")]
 pub fn fetch_maybe_nonce(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     address: &solana_address::Address,
 ) -> Result<crate::shared::MaybeAccount<Nonce>, std::io::Error> {
     let accounts = fetch_all_maybe_nonce(rpc, &[*address])?;
@@ -83,7 +94,7 @@ pub fn fetch_maybe_nonce(
 
 #[cfg(feature = "fetch")]
 pub fn fetch_all_maybe_nonce(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::MaybeAccount<Nonce>>, std::io::Error> {
     let accounts = rpc
@@ -93,6 +104,11 @@ pub fn fetch_all_maybe_nonce(
     for i in 0..addresses.len() {
         let address = addresses[i];
         if let Some(account) = accounts[i].as_ref() {
+            if account.owner != crate::SYSTEM_ID {
+                return Err(std::io::Error::other(format!(
+                    "Invalid owner for account: {address}"
+                )));
+            }
             let data = Nonce::from_bytes(&account.data)?;
             decoded_accounts.push(crate::shared::MaybeAccount::Exists(
                 crate::shared::DecodedAccount {

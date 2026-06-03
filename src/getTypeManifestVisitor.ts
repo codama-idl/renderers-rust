@@ -231,6 +231,12 @@ export function getTypeManifestVisitor(options: {
                             parentNode,
                             traitOptions,
                         );
+                    } else if (parentNode && ['(u64)', '(i64)', '(u128)', '(i128)'].includes(childManifest.type)) {
+                        derive = getSerdeFieldAttribute(
+                            'serde_with::As::<serde_with::DisplayFromStr>',
+                            parentNode,
+                            traitOptions,
+                        );
                     }
 
                     return {
@@ -416,6 +422,12 @@ export function getTypeManifestVisitor(options: {
                         } else if (fieldManifest.type === 'Vec<Address>') {
                             derive = getSerdeFieldAttribute(
                                 'serde_with::As::<Vec<serde_with::DisplayFromStr>>',
+                                parentNode,
+                                traitOptions,
+                            );
+                        } else if (['u64', 'i64', 'u128', 'i128'].includes(fieldManifest.type)) {
+                            derive = getSerdeFieldAttribute(
+                                'serde_with::As::<serde_with::DisplayFromStr>',
                                 parentNode,
                                 traitOptions,
                             );

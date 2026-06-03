@@ -95,32 +95,26 @@ impl AuthorizeNonceAccountInstructionArgs {
 ///
 ///   0. `[writable]` nonce_account
 ///   1. `[signer]` nonce_authority
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct AuthorizeNonceAccountBuilder {
-    nonce_account: Option<solana_address::Address>,
-    nonce_authority: Option<solana_address::Address>,
-    new_nonce_authority: Option<Address>,
+    nonce_account: solana_address::Address,
+    nonce_authority: solana_address::Address,
+    new_nonce_authority: Address,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl AuthorizeNonceAccountBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-    #[inline(always)]
-    pub fn nonce_account(&mut self, nonce_account: solana_address::Address) -> &mut Self {
-        self.nonce_account = Some(nonce_account);
-        self
-    }
-    #[inline(always)]
-    pub fn nonce_authority(&mut self, nonce_authority: solana_address::Address) -> &mut Self {
-        self.nonce_authority = Some(nonce_authority);
-        self
-    }
-    #[inline(always)]
-    pub fn new_nonce_authority(&mut self, new_nonce_authority: Address) -> &mut Self {
-        self.new_nonce_authority = Some(new_nonce_authority);
-        self
+    pub fn new(
+        nonce_account: solana_address::Address,
+        nonce_authority: solana_address::Address,
+        new_nonce_authority: Address,
+    ) -> Self {
+        Self {
+            nonce_account,
+            nonce_authority,
+            new_nonce_authority,
+            __remaining_accounts: Vec::new(),
+        }
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -139,15 +133,14 @@ impl AuthorizeNonceAccountBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let nonce_account = self.nonce_account;
+        let nonce_authority = self.nonce_authority;
         let accounts = AuthorizeNonceAccount {
-            nonce_account: self.nonce_account.expect("nonce_account is not set"),
-            nonce_authority: self.nonce_authority.expect("nonce_authority is not set"),
+            nonce_account,
+            nonce_authority,
         };
         let args = AuthorizeNonceAccountInstructionArgs {
-            new_nonce_authority: self
-                .new_nonce_authority
-                .clone()
-                .expect("new_nonce_authority is not set"),
+            new_nonce_authority: self.new_nonce_authority.clone(),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
@@ -264,36 +257,20 @@ pub struct AuthorizeNonceAccountCpiBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> AuthorizeNonceAccountCpiBuilder<'a, 'b> {
-    pub fn new(program: &'b solana_account_info::AccountInfo<'a>) -> Self {
+    pub fn new(
+        __program: &'b solana_account_info::AccountInfo<'a>,
+        nonce_account: &'b solana_account_info::AccountInfo<'a>,
+        nonce_authority: &'b solana_account_info::AccountInfo<'a>,
+        new_nonce_authority: Address,
+    ) -> Self {
         let instruction = Box::new(AuthorizeNonceAccountCpiBuilderInstruction {
-            __program: program,
-            nonce_account: None,
-            nonce_authority: None,
-            new_nonce_authority: None,
+            __program,
+            nonce_account,
+            nonce_authority,
+            new_nonce_authority,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
-    }
-    #[inline(always)]
-    pub fn nonce_account(
-        &mut self,
-        nonce_account: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.nonce_account = Some(nonce_account);
-        self
-    }
-    #[inline(always)]
-    pub fn nonce_authority(
-        &mut self,
-        nonce_authority: &'b solana_account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.nonce_authority = Some(nonce_authority);
-        self
-    }
-    #[inline(always)]
-    pub fn new_nonce_authority(&mut self, new_nonce_authority: Address) -> &mut Self {
-        self.instruction.new_nonce_authority = Some(new_nonce_authority);
-        self
     }
     /// Add an additional account to the instruction.
     #[inline(always)]
@@ -330,24 +307,12 @@ impl<'a, 'b> AuthorizeNonceAccountCpiBuilder<'a, 'b> {
     #[allow(clippy::vec_init_then_push)]
     pub fn invoke_signed(&self, signers_seeds: &[&[&[u8]]]) -> solana_program_error::ProgramResult {
         let args = AuthorizeNonceAccountInstructionArgs {
-            new_nonce_authority: self
-                .instruction
-                .new_nonce_authority
-                .clone()
-                .expect("new_nonce_authority is not set"),
+            new_nonce_authority: self.instruction.new_nonce_authority.clone(),
         };
         let instruction = AuthorizeNonceAccountCpi {
             __program: self.instruction.__program,
-
-            nonce_account: self
-                .instruction
-                .nonce_account
-                .expect("nonce_account is not set"),
-
-            nonce_authority: self
-                .instruction
-                .nonce_authority
-                .expect("nonce_authority is not set"),
+            nonce_account: self.instruction.nonce_account,
+            nonce_authority: self.instruction.nonce_authority,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -360,9 +325,9 @@ impl<'a, 'b> AuthorizeNonceAccountCpiBuilder<'a, 'b> {
 #[derive(Clone, Debug)]
 struct AuthorizeNonceAccountCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_account_info::AccountInfo<'a>,
-    nonce_account: Option<&'b solana_account_info::AccountInfo<'a>>,
-    nonce_authority: Option<&'b solana_account_info::AccountInfo<'a>>,
-    new_nonce_authority: Option<Address>,
+    nonce_account: &'b solana_account_info::AccountInfo<'a>,
+    nonce_authority: &'b solana_account_info::AccountInfo<'a>,
+    new_nonce_authority: Address,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(&'b solana_account_info::AccountInfo<'a>, bool, bool)>,
 }

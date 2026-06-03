@@ -18,6 +18,7 @@ function test_anchor_project() {
 test_project dummy
 test_project system
 test_project memo
+test_project governance
 # test_project meteora  # TODO: uncomment after some internal fixes
 test_anchor_project anchor
 test_anchor_project raydium-cpmm
