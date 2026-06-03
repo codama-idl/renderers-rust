@@ -7,9 +7,10 @@
 
 use solana_address::Address;
 
-use crate::RAYDIUM_LAUNCHPAD_ID;
-
 pub const CPSWAP_BASE_VAULT_SEED: &'static [u8] = &[112, 111, 111, 108, 95, 118, 97, 117, 108, 116];
+
+pub const CPSWAP_BASE_VAULT_PROGRAM_ADDRESS: solana_address::Address =
+    solana_address::address!("CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C");
 pub fn create_cpswap_base_vault_pda(
     cpswap_pool: Address,
     base_mint: Address,
@@ -22,7 +23,7 @@ pub fn create_cpswap_base_vault_pda(
             base_mint.as_ref(),
             &[bump],
         ],
-        &RAYDIUM_LAUNCHPAD_ID,
+        &CPSWAP_BASE_VAULT_PROGRAM_ADDRESS,
     )
 }
 pub fn find_cpswap_base_vault_pda(
@@ -35,6 +36,6 @@ pub fn find_cpswap_base_vault_pda(
             cpswap_pool.as_ref(),
             base_mint.as_ref(),
         ],
-        &RAYDIUM_LAUNCHPAD_ID,
+        &CPSWAP_BASE_VAULT_PROGRAM_ADDRESS,
     )
 }

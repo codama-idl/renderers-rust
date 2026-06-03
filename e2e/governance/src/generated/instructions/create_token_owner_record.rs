@@ -164,6 +164,7 @@ impl CreateTokenOwnerRecordBuilder {
     pub fn instruction(&self) -> solana_instruction::Instruction {
         let realm_account = self.realm_account;
         let governing_token_owner_account = self.governing_token_owner_account;
+        let governing_token_mint = self.governing_token_mint;
         let token_owner_record = self.token_owner_record.unwrap_or_else(|| {
             crate::pdas::find_token_owner_record_pda(
                 &self.realm_account,
@@ -172,7 +173,6 @@ impl CreateTokenOwnerRecordBuilder {
             )
             .0
         });
-        let governing_token_mint = self.governing_token_mint;
         let payer = self.payer;
         let system_program = self
             .system_program

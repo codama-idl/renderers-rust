@@ -7,33 +7,38 @@
 
 use solana_address::Address;
 
-use crate::RAYDIUM_LAUNCHPAD_ID;
-
-pub const AMM_OPEN_ORDERS_SEED: &'static [u8] = &[
+pub const AMM_OPEN_ORDERS_SEED_0: &'static [u8] = &[
+    75, 217, 73, 196, 54, 2, 195, 63, 32, 119, 144, 237, 22, 163, 82, 76, 161, 185, 151, 92, 241,
+    33, 162, 169, 12, 255, 236, 125, 248, 182, 138, 205,
+];
+pub const AMM_OPEN_ORDERS_SEED_1: &'static [u8] = &[
     111, 112, 101, 110, 95, 111, 114, 100, 101, 114, 95, 97, 115, 115, 111, 99, 105, 97, 116, 101,
     100, 95, 115, 101, 101, 100,
 ];
+
+pub const AMM_OPEN_ORDERS_PROGRAM_ADDRESS: solana_address::Address =
+    solana_address::address!("675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8");
 pub fn create_amm_open_orders_pda(
-    amm_program: Address,
     market: Address,
     bump: u8,
 ) -> Result<solana_address::Address, solana_address::error::AddressError> {
     solana_address::Address::create_program_address(
         &[
-            amm_program.as_ref(),
+            AMM_OPEN_ORDERS_SEED_0,
             market.as_ref(),
-            AMM_OPEN_ORDERS_SEED,
+            AMM_OPEN_ORDERS_SEED_1,
             &[bump],
         ],
-        &RAYDIUM_LAUNCHPAD_ID,
+        &AMM_OPEN_ORDERS_PROGRAM_ADDRESS,
     )
 }
-pub fn find_amm_open_orders_pda(
-    amm_program: &Address,
-    market: &Address,
-) -> (solana_address::Address, u8) {
+pub fn find_amm_open_orders_pda(market: &Address) -> (solana_address::Address, u8) {
     solana_address::Address::find_program_address(
-        &[amm_program.as_ref(), market.as_ref(), AMM_OPEN_ORDERS_SEED],
-        &RAYDIUM_LAUNCHPAD_ID,
+        &[
+            AMM_OPEN_ORDERS_SEED_0,
+            market.as_ref(),
+            AMM_OPEN_ORDERS_SEED_1,
+        ],
+        &AMM_OPEN_ORDERS_PROGRAM_ADDRESS,
     )
 }

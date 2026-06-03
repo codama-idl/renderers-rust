@@ -532,63 +532,27 @@ impl MigrateToAmmBuilder {
         let amm_program = self.amm_program.unwrap_or(solana_address::address!(
             "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
         ));
-        let amm_pool = self.amm_pool.unwrap_or_else(|| {
-            crate::pdas::find_amm_pool_pda(
-                &self.amm_program.unwrap_or(solana_address::address!(
-                    "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
-                )),
-                &self.market,
-            )
-            .0
-        });
+        let amm_pool = self
+            .amm_pool
+            .unwrap_or_else(|| crate::pdas::find_amm_pool_pda(&self.market).0);
         let amm_authority = self
             .amm_authority
             .unwrap_or(crate::pdas::AMM_AUTHORITY_ADDRESS);
-        let amm_open_orders = self.amm_open_orders.unwrap_or_else(|| {
-            crate::pdas::find_amm_open_orders_pda(
-                &self.amm_program.unwrap_or(solana_address::address!(
-                    "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
-                )),
-                &self.market,
-            )
-            .0
-        });
-        let amm_lp_mint = self.amm_lp_mint.unwrap_or_else(|| {
-            crate::pdas::find_amm_lp_mint_pda(
-                &self.amm_program.unwrap_or(solana_address::address!(
-                    "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
-                )),
-                &self.market,
-            )
-            .0
-        });
-        let amm_base_vault = self.amm_base_vault.unwrap_or_else(|| {
-            crate::pdas::find_amm_base_vault_pda(
-                &self.amm_program.unwrap_or(solana_address::address!(
-                    "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
-                )),
-                &self.market,
-            )
-            .0
-        });
-        let amm_quote_vault = self.amm_quote_vault.unwrap_or_else(|| {
-            crate::pdas::find_amm_quote_vault_pda(
-                &self.amm_program.unwrap_or(solana_address::address!(
-                    "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
-                )),
-                &self.market,
-            )
-            .0
-        });
-        let amm_target_orders = self.amm_target_orders.unwrap_or_else(|| {
-            crate::pdas::find_amm_target_orders_pda(
-                &self.amm_program.unwrap_or(solana_address::address!(
-                    "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
-                )),
-                &self.market,
-            )
-            .0
-        });
+        let amm_open_orders = self
+            .amm_open_orders
+            .unwrap_or_else(|| crate::pdas::find_amm_open_orders_pda(&self.market).0);
+        let amm_lp_mint = self
+            .amm_lp_mint
+            .unwrap_or_else(|| crate::pdas::find_amm_lp_mint_pda(&self.market).0);
+        let amm_base_vault = self
+            .amm_base_vault
+            .unwrap_or_else(|| crate::pdas::find_amm_base_vault_pda(&self.market).0);
+        let amm_quote_vault = self
+            .amm_quote_vault
+            .unwrap_or_else(|| crate::pdas::find_amm_quote_vault_pda(&self.market).0);
+        let amm_target_orders = self
+            .amm_target_orders
+            .unwrap_or_else(|| crate::pdas::find_amm_target_orders_pda(&self.market).0);
         let amm_config = self.amm_config.unwrap_or(crate::pdas::AMM_CONFIG_ADDRESS);
         let amm_create_fee_destination = self.amm_create_fee_destination;
         let authority = self.authority.unwrap_or(crate::pdas::AUTHORITY_ADDRESS);

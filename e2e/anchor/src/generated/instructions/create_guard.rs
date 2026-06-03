@@ -241,26 +241,25 @@ impl CreateGuardBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let mint = self.mint;
         let guard = self
             .guard
             .unwrap_or_else(|| crate::pdas::find_guard_pda(&self.mint).0);
-        let mint = self.mint;
+        let guard_authority = self.guard_authority;
         let mint_token_account = self.mint_token_account.unwrap_or_else(|| {
             solana_address::Address::find_program_address(
                 &[
                     self.guard_authority.as_ref(),
-                    self.token_program
-                        .unwrap_or(solana_address::address!(
-                            "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
-                        ))
-                        .as_ref(),
+                    &[
+                        6, 221, 246, 225, 238, 117, 143, 222, 24, 66, 93, 188, 228, 108, 205, 218,
+                        182, 26, 252, 77, 131, 185, 13, 39, 254, 189, 249, 40, 216, 161, 139, 252,
+                    ],
                     self.mint.as_ref(),
                 ],
                 &solana_address::address!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"),
             )
             .0
         });
-        let guard_authority = self.guard_authority;
         let payer = self.payer;
         let associated_token_program =
             self.associated_token_program

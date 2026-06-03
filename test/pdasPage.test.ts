@@ -9,6 +9,7 @@ import {
     pdaNode,
     programNode,
     publicKeyTypeNode,
+    publicKeyValueNode,
     rootNode,
     variablePdaSeedNode,
 } from '@codama/nodes';
@@ -208,4 +209,64 @@ test('it renders a PDA with byte array constant seeds', () => {
         'pub fn find_guard_pda_pda(',
         'mint: &Address,',
     ]);
+});
+
+test('it renders constant publicKey seeds as byte-array seed constants', () => {
+    // Given a PDA with a constant publicKey seed, as codama emits when an
+    // address-pinned program account is used as a seed (e.g. raydium's ammPool).
+    const node = programNode({
+        name: 'myProgram',
+        pdas: [
+            pdaNode({
+                name: 'ammPool',
+                programId: '675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8',
+                seeds: [
+                    constantPdaSeedNode(
+                        publicKeyTypeNode(),
+                        publicKeyValueNode('675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8'),
+                    ),
+                    variablePdaSeedNode('market', publicKeyTypeNode()),
+                    constantPdaSeedNodeFromString('utf8', 'amm_associated_seed'),
+                ],
+            }),
+        ],
+        publicKey: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+    });
+
+    // When we render it.
+    const renderMap = visit(node, getRenderMapVisitor());
+
+    // Then the publicKey seed renders as its base58-decoded byte slice.
+    codeContains(getFromRenderMap(renderMap, 'pdas/amm_pool.rs').content, [
+        "pub const AMM_POOL_SEED_0: &'static [u8] = " +
+            '&[75, 217, 73, 196, 54, 2, 195, 63, 32, 119, 144, 237, 22, 163, 82, 76, ' +
+            '161, 185, 151, 92, 241, 33, 162, 169, 12, 255, 236, 125, 248, 182, 138, 205];',
+        'pub const AMM_POOL_SEED_1: &\'static [u8] = b"amm_associated_seed";',
+        'pub fn find_amm_pool_pda(',
+    ]);
+});
+
+test('it bakes the local program into helpers of same-program PDAs', () => {
+    // Given a standalone PDA with no dynamic-programId usages.
+    const node = programNode({
+        name: 'myProgram',
+        pdas: [
+            pdaNode({
+                name: 'myPda',
+                seeds: [
+                    constantPdaSeedNodeFromString('utf8', 'prefix'),
+                    variablePdaSeedNode('owner', publicKeyTypeNode()),
+                ],
+            }),
+        ],
+        publicKey: '1111',
+    });
+
+    // When we render it.
+    const renderMap = visit(node, getRenderMapVisitor());
+    const content = getFromRenderMap(renderMap, 'pdas/my_pda.rs').content;
+
+    // Then the helpers derive under this crate's program — no program parameter.
+    codeContains(content, [`pub fn find_my_pda_pda(`, `pub fn create_my_pda_pda(`, `&MY_PROGRAM_ID,`]);
+    codeDoesNotContains(content, [`program_address:`, `_with_program`]);
 });

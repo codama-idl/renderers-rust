@@ -5,23 +5,27 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
-use crate::RAYDIUM_LAUNCHPAD_ID;
-
 pub const CPSWAP_AUTHORITY_SEED: &'static [u8] = &[
     118, 97, 117, 108, 116, 95, 97, 110, 100, 95, 108, 112, 95, 109, 105, 110, 116, 95, 97, 117,
     116, 104, 95, 115, 101, 101, 100,
 ];
 
 pub const CPSWAP_AUTHORITY_ADDRESS: solana_address::Address =
-    solana_address::address!("GE8yD1URMMFUh4LBN9kHw1iTPvmPZdCnExEY1kVa4P1C");
+    solana_address::address!("GpMZbSM2GgvTKHJirzeGfMFoaZ8UR2X7F4v8vHTvxFbL");
+
+pub const CPSWAP_AUTHORITY_PROGRAM_ADDRESS: solana_address::Address =
+    solana_address::address!("CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C");
 pub fn create_cpswap_authority_pda(
     bump: u8,
 ) -> Result<solana_address::Address, solana_address::error::AddressError> {
     solana_address::Address::create_program_address(
         &[CPSWAP_AUTHORITY_SEED, &[bump]],
-        &RAYDIUM_LAUNCHPAD_ID,
+        &CPSWAP_AUTHORITY_PROGRAM_ADDRESS,
     )
 }
 pub fn find_cpswap_authority_pda() -> (solana_address::Address, u8) {
-    solana_address::Address::find_program_address(&[CPSWAP_AUTHORITY_SEED], &RAYDIUM_LAUNCHPAD_ID)
+    solana_address::Address::find_program_address(
+        &[CPSWAP_AUTHORITY_SEED],
+        &CPSWAP_AUTHORITY_PROGRAM_ADDRESS,
+    )
 }

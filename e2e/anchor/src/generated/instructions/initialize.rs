@@ -7,6 +7,7 @@
 
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
+use solana_address::Address;
 
 pub const INITIALIZE_DISCRIMINATOR: [u8; 8] = [43, 34, 13, 49, 167, 88, 235, 235];
 
@@ -95,7 +96,7 @@ impl Default for InitializeInstructionData {
 /// ### Accounts:
 ///
 ///   0. `[writable, optional]` extra_metas_account (default to PDA derived from 'extraMetasAccount')
-///   1. `[]` guard
+///   1. `[optional]` guard (default to PDA derived from 'guard')
 ///   2. `[]` mint
 ///   3. `[writable, signer]` transfer_hook_authority
 ///   4. `[optional]` system_program (default to `11111111111111111111111111111111`)
@@ -103,28 +104,30 @@ impl Default for InitializeInstructionData {
 #[derive(Clone, Debug)]
 pub struct InitializeBuilder {
     extra_metas_account: Option<solana_address::Address>,
-    guard: solana_address::Address,
+    guard: Option<solana_address::Address>,
     mint: solana_address::Address,
     transfer_hook_authority: solana_address::Address,
     system_program: Option<solana_address::Address>,
     payer: solana_address::Address,
+    guard_mint: Address,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
 impl InitializeBuilder {
     pub fn new(
-        guard: solana_address::Address,
         mint: solana_address::Address,
         transfer_hook_authority: solana_address::Address,
         payer: solana_address::Address,
+        guard_mint: Address,
     ) -> Self {
         Self {
             extra_metas_account: None,
-            guard,
+            guard: None,
             mint,
             transfer_hook_authority,
             system_program: None,
             payer,
+            guard_mint,
             __remaining_accounts: Vec::new(),
         }
     }
@@ -135,6 +138,12 @@ impl InitializeBuilder {
         extra_metas_account: solana_address::Address,
     ) -> &mut Self {
         self.extra_metas_account = Some(extra_metas_account);
+        self
+    }
+    /// `[optional account, default to PDA derived from 'guard']`
+    #[inline(always)]
+    pub fn guard(&mut self, guard: solana_address::Address) -> &mut Self {
+        self.guard = Some(guard);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
@@ -160,11 +169,13 @@ impl InitializeBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let mint = self.mint;
         let extra_metas_account = self
             .extra_metas_account
             .unwrap_or_else(|| crate::pdas::find_extra_metas_account_pda(&self.mint).0);
-        let guard = self.guard;
-        let mint = self.mint;
+        let guard = self
+            .guard
+            .unwrap_or_else(|| crate::pdas::find_guard_pda(&self.guard_mint.clone()).0);
         let transfer_hook_authority = self.transfer_hook_authority;
         let system_program = self
             .system_program

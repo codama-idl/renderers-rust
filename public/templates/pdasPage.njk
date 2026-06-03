@@ -5,7 +5,7 @@
 
 {{ imports }}
 
-{% if program %}
+{% if program and not dynamicProgramOnly %}
 use crate::{{ program.name | snakeCase | upper }}_ID;
 {% endif %}
 
@@ -22,6 +22,11 @@ pub const {{ pda.name | snakeCase | upper }}_SEED{% if constantSeeds.length > 1 
 pub const {{ pda.name | snakeCase | upper }}_ADDRESS: solana_address::Address =
     solana_address::address!("{{ precomputedAddress }}");
 {% endif %}
+{% if dynamicProgramOnly and canonicalProgramAddress %}
+
+{# The IDL pins the owning program's address (Anchor address constraint), so bake it in. #}
+pub const {{ pda.name | snakeCase | upper }}_PROGRAM_ADDRESS: solana_address::Address =
+    solana_address::address!("{{ canonicalProgramAddress }}");
 
 {{- macros.docblock(pda.docs) -}}
 pub fn create_{{ pda.name | snakeCase }}_pda(
@@ -36,15 +41,156 @@ pub fn create_{{ pda.name | snakeCase }}_pda(
 ) -> Result<solana_address::Address, solana_address::error::AddressError> {
     solana_address::Address::create_program_address(
         &[
+        {% set constantUsageIndexP = 0 %}
+        {% for seed in seeds %}
+          {% if seed.kind === 'constantPdaSeedNode' and seed.value.kind === 'programIdValueNode' %}
+            {{ pda.name | snakeCase | upper }}_PROGRAM_ADDRESS.as_ref(),
+          {% elif seed.kind === 'constantPdaSeedNode' %}
+            {{ pda.name | snakeCase | upper }}_SEED{% if constantSeeds.length > 1 %}_{{ constantUsageIndexP }}{% endif %},
+            {% set constantUsageIndexP = constantUsageIndexP + 1 %}
+          {% elif seed.kind == 'variablePdaSeedNode' and seed.resolvedType.kind == 'publicKeyTypeNode' %}
+            {{ seed.name | snakeCase }}.as_ref(),
+          {% elif seed.kind == 'variablePdaSeedNode' and seed.resolvedType.kind == 'bytesTypeNode' %}
+            &{{ seed.name | snakeCase }},
+          {% else %}
+            {{ seed.name | snakeCase }}.to_string().as_ref(),
+          {% endif %}
+        {% endfor %}
+            &[bump],
+        ],
+        &{{ pda.name | snakeCase | upper }}_PROGRAM_ADDRESS,
+    )
+}
+
+{{- macros.docblock(pda.docs) -}}
+pub fn find_{{ pda.name | snakeCase }}_pda(
+{% if hasVariableSeeds %}
+  {% for seed in seeds %}
+    {% if seed.kind == 'variablePdaSeedNode' and seed.resolvedType.kind == 'publicKeyTypeNode' %}
+    {{ seed.name | snakeCase }}: &{{ seed.typeManifest.type }},
+    {% elif seed.kind === 'variablePdaSeedNode' %}
+    {{ seed.name | snakeCase }}: {{ seed.typeManifest.type }},
+    {% endif %}
+  {% endfor %}
+{% endif %}
+) -> (solana_address::Address, u8) {
+    solana_address::Address::find_program_address(
+        &[
+        {% set constantUsageIndexP2 = 0 %}
+        {% for seed in seeds %}
+          {% if seed.kind === 'constantPdaSeedNode' and seed.value.kind === 'programIdValueNode' %}
+            {{ pda.name | snakeCase | upper }}_PROGRAM_ADDRESS.as_ref(),
+          {% elif seed.kind === 'constantPdaSeedNode' %}
+            {{ pda.name | snakeCase | upper }}_SEED{% if constantSeeds.length > 1 %}_{{ constantUsageIndexP2 }}{% endif %},
+            {% set constantUsageIndexP2 = constantUsageIndexP2 + 1 %}
+          {% elif seed.kind == 'variablePdaSeedNode' and seed.resolvedType.kind == 'publicKeyTypeNode' %}
+            {{ seed.name | snakeCase }}.as_ref(),
+          {% elif seed.kind == 'variablePdaSeedNode' and seed.resolvedType.kind == 'bytesTypeNode' %}
+            &{{ seed.name | snakeCase }},
+          {% else %}
+            {{ seed.name | snakeCase }}.to_string().as_ref(),
+          {% endif %}
+        {% endfor %}
+        ],
+        &{{ pda.name | snakeCase | upper }}_PROGRAM_ADDRESS,
+    )
+}
+{% elif dynamicProgramOnly %}
+
+{# The deriving program is unpinned and only known at runtime, so callers pass it in. #}
+{{- macros.docblock(pda.docs) -}}
+pub fn create_{{ pda.name | snakeCase }}_pda(
+  {% if hasVariableSeeds %}
+    {% for seed in seeds %}
+      {% if seed.kind === 'variablePdaSeedNode' %}
+    {{ seed.name | snakeCase }}: {{ seed.typeManifest.type }},
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+    bump: u8,
+    program_address: &solana_address::Address,
+) -> Result<solana_address::Address, solana_address::error::AddressError> {
+    solana_address::Address::create_program_address(
+        &[
         {% set constantUsageIndex = 0 %}
+        {% for seed in seeds %}
+          {% if seed.kind === 'constantPdaSeedNode' and seed.value.kind === 'programIdValueNode' %}
+            program_address.as_ref(),
+          {% elif seed.kind === 'constantPdaSeedNode' %}
+            {{ pda.name | snakeCase | upper }}_SEED{% if constantSeeds.length > 1 %}_{{ constantUsageIndex }}{% endif %},
+            {% set constantUsageIndex = constantUsageIndex + 1 %}
+          {% elif seed.kind == 'variablePdaSeedNode' and seed.resolvedType.kind == 'publicKeyTypeNode' %}
+            {{ seed.name | snakeCase }}.as_ref(),
+          {% elif seed.kind == 'variablePdaSeedNode' and seed.resolvedType.kind == 'bytesTypeNode' %}
+            &{{ seed.name | snakeCase }},
+          {% else %}
+            {{ seed.name | snakeCase }}.to_string().as_ref(),
+          {% endif %}
+        {% endfor %}
+            &[bump],
+        ],
+        program_address,
+    )
+}
+
+{{- macros.docblock(pda.docs) -}}
+pub fn find_{{ pda.name | snakeCase }}_pda(
+{% if hasVariableSeeds %}
+  {% for seed in seeds %}
+    {% if seed.kind == 'variablePdaSeedNode' and seed.resolvedType.kind == 'publicKeyTypeNode' %}
+    {{ seed.name | snakeCase }}: &{{ seed.typeManifest.type }},
+    {% elif seed.kind === 'variablePdaSeedNode' %}
+    {{ seed.name | snakeCase }}: {{ seed.typeManifest.type }},
+    {% endif %}
+  {% endfor %}
+{% endif %}
+    program_address: &solana_address::Address,
+) -> (solana_address::Address, u8) {
+    solana_address::Address::find_program_address(
+        &[
+        {% set constantUsageIndex2 = 0 %}
+        {% for seed in seeds %}
+          {% if seed.kind === 'constantPdaSeedNode' and seed.value.kind === 'programIdValueNode' %}
+            program_address.as_ref(),
+          {% elif seed.kind === 'constantPdaSeedNode' %}
+            {{ pda.name | snakeCase | upper }}_SEED{% if constantSeeds.length > 1 %}_{{ constantUsageIndex2 }}{% endif %},
+            {% set constantUsageIndex2 = constantUsageIndex2 + 1 %}
+          {% elif seed.kind == 'variablePdaSeedNode' and seed.resolvedType.kind == 'publicKeyTypeNode' %}
+            {{ seed.name | snakeCase }}.as_ref(),
+          {% elif seed.kind == 'variablePdaSeedNode' and seed.resolvedType.kind == 'bytesTypeNode' %}
+            &{{ seed.name | snakeCase }},
+          {% else %}
+            {{ seed.name | snakeCase }}.to_string().as_ref(),
+          {% endif %}
+        {% endfor %}
+        ],
+        program_address,
+    )
+}
+{% else %}
+
+{{- macros.docblock(pda.docs) -}}
+pub fn create_{{ pda.name | snakeCase }}_pda(
+  {% if hasVariableSeeds %}
+    {% for seed in seeds %}
+      {% if seed.kind === 'variablePdaSeedNode' %}
+    {{ seed.name | snakeCase }}: {{ seed.typeManifest.type }},
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+    bump: u8,
+) -> Result<solana_address::Address, solana_address::error::AddressError> {
+    solana_address::Address::create_program_address(
+        &[
+        {% set constantUsageIndex3 = 0 %}
         {% for seed in seeds %}
           {% if seed.kind === 'constantPdaSeedNode' and seed.value.kind === 'programIdValueNode' %}
             {% if program %}
             crate::{{ program.name | snakeCase | upper }}_ID.as_ref(),
             {% endif %}
           {% elif seed.kind === 'constantPdaSeedNode' %}
-            {{ pda.name | snakeCase | upper }}_SEED{% if constantSeeds.length > 1 %}_{{ constantUsageIndex }}{% endif %},
-            {% set constantUsageIndex = constantUsageIndex + 1 %}
+            {{ pda.name | snakeCase | upper }}_SEED{% if constantSeeds.length > 1 %}_{{ constantUsageIndex3 }}{% endif %},
+            {% set constantUsageIndex3 = constantUsageIndex3 + 1 %}
           {% elif seed.kind == 'variablePdaSeedNode' and seed.resolvedType.kind == 'publicKeyTypeNode' %}
             {{ seed.name | snakeCase }}.as_ref(),
           {% elif seed.kind == 'variablePdaSeedNode' and seed.resolvedType.kind == 'bytesTypeNode' %}
@@ -77,15 +223,15 @@ pub fn find_{{ pda.name | snakeCase }}_pda(
 ) -> (solana_address::Address, u8) {
     solana_address::Address::find_program_address(
         &[
-        {% set constantUsageIndex2 = 0 %}
+        {% set constantUsageIndex4 = 0 %}
         {% for seed in seeds %}
           {% if seed.kind === 'constantPdaSeedNode' and seed.value.kind === 'programIdValueNode' %}
             {% if program %}
             crate::{{ program.name | snakeCase | upper }}_ID.as_ref(),
             {% endif %}
           {% elif seed.kind === 'constantPdaSeedNode' %}
-            {{ pda.name | snakeCase | upper }}_SEED{% if constantSeeds.length > 1 %}_{{ constantUsageIndex2 }}{% endif %},
-            {% set constantUsageIndex2 = constantUsageIndex2 + 1 %}
+            {{ pda.name | snakeCase | upper }}_SEED{% if constantSeeds.length > 1 %}_{{ constantUsageIndex4 }}{% endif %},
+            {% set constantUsageIndex4 = constantUsageIndex4 + 1 %}
           {% elif seed.kind == 'variablePdaSeedNode' and seed.resolvedType.kind == 'publicKeyTypeNode' %}
             {{ seed.name | snakeCase }}.as_ref(),
           {% elif seed.kind == 'variablePdaSeedNode' and seed.resolvedType.kind == 'bytesTypeNode' %}
@@ -102,5 +248,6 @@ pub fn find_{{ pda.name | snakeCase }}_pda(
         {% endif %}
     )
 }
+{% endif %}
 
 {% endblock %}

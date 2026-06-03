@@ -374,11 +374,11 @@ impl InitializeBuilder {
         let global_config = self.global_config;
         let platform_config = self.platform_config;
         let authority = self.authority.unwrap_or(crate::pdas::AUTHORITY_ADDRESS);
+        let base_mint = self.base_mint;
+        let quote_mint = self.quote_mint;
         let pool_state = self.pool_state.unwrap_or_else(|| {
             crate::pdas::find_pool_state_pda(&self.base_mint, &self.quote_mint).0
         });
-        let base_mint = self.base_mint;
-        let quote_mint = self.quote_mint;
         let base_vault = self
             .base_vault
             .unwrap_or_else(|| crate::pdas::find_base_vault_pda(&pool_state, &self.base_mint).0);

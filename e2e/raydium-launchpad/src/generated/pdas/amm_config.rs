@@ -5,23 +5,24 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
-use crate::RAYDIUM_LAUNCHPAD_ID;
-
 pub const AMM_CONFIG_SEED: &'static [u8] = &[
     97, 109, 109, 95, 99, 111, 110, 102, 105, 103, 95, 97, 99, 99, 111, 117, 110, 116, 95, 115,
     101, 101, 100,
 ];
 
 pub const AMM_CONFIG_ADDRESS: solana_address::Address =
-    solana_address::address!("NKeKVhNv6BayHHcFzpt8DTZ9vw8c3CuGcHDmULVoQr8");
+    solana_address::address!("9DCxsMizn3H1hprZ7xWe6LDzeUeZBksYFpBWBtSf1PQX");
+
+pub const AMM_CONFIG_PROGRAM_ADDRESS: solana_address::Address =
+    solana_address::address!("675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8");
 pub fn create_amm_config_pda(
     bump: u8,
 ) -> Result<solana_address::Address, solana_address::error::AddressError> {
     solana_address::Address::create_program_address(
         &[AMM_CONFIG_SEED, &[bump]],
-        &RAYDIUM_LAUNCHPAD_ID,
+        &AMM_CONFIG_PROGRAM_ADDRESS,
     )
 }
 pub fn find_amm_config_pda() -> (solana_address::Address, u8) {
-    solana_address::Address::find_program_address(&[AMM_CONFIG_SEED], &RAYDIUM_LAUNCHPAD_ID)
+    solana_address::Address::find_program_address(&[AMM_CONFIG_SEED], &AMM_CONFIG_PROGRAM_ADDRESS)
 }

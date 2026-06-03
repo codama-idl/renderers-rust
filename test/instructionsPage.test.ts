@@ -1020,7 +1020,7 @@ test('it handles omitted-default argument seeds in inline pdaNode', () => {
     expect(content).not.toContain('self.kind');
 });
 
-test('it falls back to .expect() for both accounts in a circular PDA dependency', () => {
+test('it throws on a circular PDA dependency', () => {
     // Given two accounts with circular PDA dependencies (A depends on B, B depends on A).
     const node = programNode({
         instructions: [
@@ -1060,17 +1060,11 @@ test('it falls back to .expect() for both accounts in a circular PDA dependency'
         publicKey: '11111111111111111111111111111111',
     });
 
-    const renderMap = visit(node, getRenderMapVisitor());
-    const content = getFromRenderMap(renderMap, 'instructions/circular.rs').content;
-
-    // Then BOTH accounts lose PDA resolution and become required constructor params.
-    // They resolve via let-bindings with direct field access.
-    codeContains(content, ['let account_a = self.account_a', 'let account_b = self.account_b']);
-    // No PDA derivation code should be emitted for either.
-    codeDoesNotContains(content, ['find_program_address', 'unwrap_or_else']);
+    // Then the native input resolution hard-throws instead of degrading.
+    expect(() => visit(node, getRenderMapVisitor())).toThrow(/[Cc]ircular dependency/);
 });
 
-test('it bails entire PDA resolution when a variable seed has no binding', () => {
+test('it throws when a variable seed has no binding', () => {
     // Given an inline PDA with a variable seed that has no matching binding.
     const node = programNode({
         instructions: [
@@ -1102,13 +1096,8 @@ test('it bails entire PDA resolution when a variable seed has no binding', () =>
         publicKey: '11111111111111111111111111111111',
     });
 
-    const renderMap = visit(node, getRenderMapVisitor());
-    const content = getFromRenderMap(renderMap, 'instructions/deposit.rs').content;
-
-    // PDA resolution fails — vault becomes a required constructor param.
-    // Resolved via let-binding with direct field access.
-    codeContains(content, ['let vault = self.vault']);
-    codeDoesNotContains(content, ['find_program_address', 'unwrap_or_else', '.expect(']);
+    // An unbound variable seed cannot be derived at runtime — hard-throw.
+    expect(() => visit(node, getRenderMapVisitor())).toThrow(/Missing seed value for variable seed \[owner\]/);
 });
 
 test('it renders required args as constructor params', () => {
@@ -1629,4 +1618,346 @@ test('it uses unwrap_or with precomputed address for zero-variable-seed linked P
 
     codeContains(content, ['unwrap_or(', 'crate::pdas::CONFIG_ADDRESS']);
     codeDoesNotContains(content, ['unwrap_or_else', 'find_config_pda']);
+});
+
+test('it derives linked PDAs with a dynamic programId by passing the program to the helper', () => {
+    // Given linked PDAs whose deriving program is a runtime account reference.
+    const node = programNode({
+        instructions: [
+            instructionNode({
+                accounts: [
+                    instructionAccountNode({
+                        isOptional: false,
+                        isSigner: false,
+                        isWritable: false,
+                        name: 'ammProgram',
+                    }),
+                    instructionAccountNode({ isOptional: false, isSigner: false, isWritable: false, name: 'market' }),
+                    instructionAccountNode({
+                        defaultValue: pdaValueNode(
+                            pdaLinkNode('pool'),
+                            [pdaSeedValueNode('market', accountValueNode('market'))],
+                            accountValueNode('ammProgram'),
+                        ),
+                        isOptional: false,
+                        isSigner: false,
+                        isWritable: true,
+                        name: 'pool',
+                    }),
+                    instructionAccountNode({
+                        defaultValue: pdaValueNode(pdaLinkNode('authority'), [], accountValueNode('ammProgram')),
+                        isOptional: false,
+                        isSigner: false,
+                        isWritable: false,
+                        name: 'authority',
+                    }),
+                ],
+                name: 'migrate',
+            }),
+        ],
+        name: 'testProgram',
+        pdas: [
+            pdaNode({ name: 'pool', seeds: [variablePdaSeedNode('market', publicKeyTypeNode())] }),
+            pdaNode({ name: 'authority', seeds: [constantPdaSeedNodeFromString('utf8', 'authority')] }),
+        ],
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    // When we render it.
+    const renderMap = visit(node, getRenderMapVisitor());
+    const content = getFromRenderMap(renderMap, 'instructions/migrate.rs').content;
+
+    // Then the builder calls the helpers with the referenced account as the
+    // deriving program.
+    codeContains(content, [
+        `crate::pdas::find_pool_pda(`,
+        `&self.market,`,
+        `&self.amm_program,`,
+        `crate::pdas::find_authority_pda(`,
+    ]);
+    // And never through a local-program constant.
+    codeDoesNotContains(content, [`AUTHORITY_ADDRESS`, `_with_program`]);
+
+    // And the dynamic-only PDA helpers take the deriving program as a required
+    // parameter; the local-program _ADDRESS constant is not emitted.
+    const authorityPda = getFromRenderMap(renderMap, 'pdas/authority.rs').content;
+    codeContains(authorityPda, [
+        /pub fn find_authority_pda\(\s*program_address: &solana_address::Address,/,
+        `pub const AUTHORITY_SEED`,
+    ]);
+    codeDoesNotContains(authorityPda, [`AUTHORITY_ADDRESS`, `_with_program`, `use crate::TEST_PROGRAM_ID`]);
+});
+
+test('it derives linked PDAs with a dynamic programId from an argument reference', () => {
+    // Given a PDA whose deriving program comes from a required instruction argument.
+    const node = programNode({
+        instructions: [
+            instructionNode({
+                accounts: [
+                    instructionAccountNode({ isOptional: false, isSigner: false, isWritable: false, name: 'market' }),
+                    instructionAccountNode({
+                        defaultValue: pdaValueNode(
+                            pdaLinkNode('pool'),
+                            [pdaSeedValueNode('market', accountValueNode('market'))],
+                            argumentValueNode('poolProgram'),
+                        ),
+                        isOptional: false,
+                        isSigner: false,
+                        isWritable: true,
+                        name: 'pool',
+                    }),
+                ],
+                arguments: [instructionArgumentNode({ name: 'poolProgram', type: publicKeyTypeNode() })],
+                name: 'migrate',
+            }),
+        ],
+        name: 'testProgram',
+        pdas: [pdaNode({ name: 'pool', seeds: [variablePdaSeedNode('market', publicKeyTypeNode())] })],
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const content = getFromRenderMap(renderMap, 'instructions/migrate.rs').content;
+
+    // Required arg — direct field access as the deriving program.
+    codeContains(content, [`crate::pdas::find_pool_pda(`, `&self.market,`, `&self.pool_program,`]);
+});
+
+test('it throws on a nested argument path in a PDA seed', () => {
+    // Given a PDA seed bound to a nested argument path (e.g. account-data field).
+    const node = programNode({
+        instructions: [
+            instructionNode({
+                accounts: [
+                    instructionAccountNode({
+                        defaultValue: pdaValueNode(pdaLinkNode('guard'), [
+                            pdaSeedValueNode('mint', argumentValueNode('guardData', ['mint'])),
+                        ]),
+                        isOptional: false,
+                        isSigner: false,
+                        isWritable: false,
+                        name: 'guard',
+                    }),
+                ],
+                arguments: [instructionArgumentNode({ name: 'guardData', type: publicKeyTypeNode() })],
+                name: 'execute',
+            }),
+        ],
+        name: 'testProgram',
+        pdas: [pdaNode({ name: 'guard', seeds: [variablePdaSeedNode('mint', publicKeyTypeNode())] })],
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    // Nested paths have no builder field to read from — hard-throw.
+    expect(() => visit(node, getRenderMapVisitor())).toThrow(/nested argument path \[guardData\.mint\]/);
+});
+
+test('it renders inline constant string seeds with byte semantics', () => {
+    // Given an inline (non-linked) PDA default with a constant string seed.
+    const node = programNode({
+        instructions: [
+            instructionNode({
+                accounts: [
+                    instructionAccountNode({ isOptional: false, isSigner: false, isWritable: false, name: 'owner' }),
+                    instructionAccountNode({
+                        defaultValue: pdaValueNode(
+                            pdaNode({
+                                name: 'ata',
+                                programId: 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL',
+                                seeds: [
+                                    constantPdaSeedNodeFromString('utf8', 'prefix'),
+                                    variablePdaSeedNode('owner', publicKeyTypeNode()),
+                                ],
+                            }),
+                            [pdaSeedValueNode('owner', accountValueNode('owner'))],
+                        ),
+                        isOptional: false,
+                        isSigner: false,
+                        isWritable: true,
+                        name: 'ata',
+                    }),
+                ],
+                name: 'init',
+            }),
+        ],
+        name: 'testProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const content = getFromRenderMap(renderMap, 'instructions/init.rs').content;
+
+    // The string seed must be a byte-string literal, not a Rust String.
+    codeContains(content, [
+        `find_program_address`,
+        `b"prefix"`,
+        `solana_address::address!("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL")`,
+    ]);
+    codeDoesNotContains(content, [`String::from`]);
+});
+
+test('it renders extra arguments as required builder inputs', () => {
+    // Given an instruction whose PDA seed reads a caller-supplied extra argument.
+    const node = programNode({
+        instructions: [
+            instructionNode({
+                accounts: [
+                    instructionAccountNode({
+                        defaultValue: pdaValueNode(pdaLinkNode('guard'), [
+                            pdaSeedValueNode('mint', argumentValueNode('guardMint')),
+                        ]),
+                        isOptional: false,
+                        isSigner: false,
+                        isWritable: false,
+                        name: 'guard',
+                    }),
+                ],
+                arguments: [instructionArgumentNode({ name: 'amount', type: numberTypeNode('u64') })],
+                extraArguments: [instructionArgumentNode({ name: 'guardMint', type: publicKeyTypeNode() })],
+                name: 'execute',
+            }),
+        ],
+        name: 'testProgram',
+        pdas: [pdaNode({ name: 'guard', seeds: [variablePdaSeedNode('mint', publicKeyTypeNode())] })],
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const content = getFromRenderMap(renderMap, 'instructions/execute.rs').content;
+
+    codeContains(content, [
+        // Builder field + constructor param appended after required args.
+        /pub fn new\([\s\S]*amount: u64,[\s\S]*guard_mint: Address,[\s\S]*\) -> Self/,
+        `guard_mint: Address,`,
+        // Read by the PDA derivation.
+        `crate::pdas::find_guard_pda(`,
+        `&self.guard_mint.clone(),`,
+    ]);
+    // Never serialized into the instruction data/args structs.
+    codeDoesNotContains(content, [`pub guard_mint`]);
+});
+
+test('it suffixes extra arguments conflicting with account names', () => {
+    // Given an extra argument whose name collides with an account.
+    const node = programNode({
+        instructions: [
+            instructionNode({
+                accounts: [
+                    instructionAccountNode({ isOptional: false, isSigner: false, isWritable: false, name: 'mint' }),
+                    instructionAccountNode({
+                        defaultValue: pdaValueNode(pdaLinkNode('guard'), [
+                            pdaSeedValueNode('mint', argumentValueNode('mint')),
+                        ]),
+                        isOptional: false,
+                        isSigner: false,
+                        isWritable: false,
+                        name: 'guard',
+                    }),
+                ],
+                extraArguments: [instructionArgumentNode({ name: 'mint', type: publicKeyTypeNode() })],
+                name: 'execute',
+            }),
+        ],
+        name: 'testProgram',
+        pdas: [pdaNode({ name: 'guard', seeds: [variablePdaSeedNode('mint', publicKeyTypeNode())] })],
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const content = getFromRenderMap(renderMap, 'instructions/execute.rs').content;
+
+    // The extra-arg field and its seed usage both carry the _arg suffix.
+    codeContains(content, [`mint_arg: Address,`, `&self.mint_arg.clone(),`]);
+});
+
+// Relies on allowOptionalAccountsAsPdaSeeds; derivation runs inside unwrap_or_else,
+// so the expect() only fires when the PDA actually needs deriving.
+test('it derives a PDA from an optional account seed via expect', () => {
+    // Given a PDA-defaulted account whose seed reads an optional account.
+    const node = programNode({
+        instructions: [
+            instructionNode({
+                accounts: [
+                    instructionAccountNode({ isOptional: true, isSigner: false, isWritable: false, name: 'owner' }),
+                    instructionAccountNode({
+                        defaultValue: pdaValueNode(pdaLinkNode('record'), [
+                            pdaSeedValueNode('owner', accountValueNode('owner')),
+                        ]),
+                        isOptional: false,
+                        isSigner: false,
+                        isWritable: true,
+                        name: 'record',
+                    }),
+                ],
+                name: 'createRecord',
+            }),
+        ],
+        name: 'testProgram',
+        pdas: [pdaNode({ name: 'record', seeds: [variablePdaSeedNode('owner', publicKeyTypeNode())] })],
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    // When we render it.
+    const renderMap = visit(node, getRenderMapVisitor());
+    const content = getFromRenderMap(renderMap, 'instructions/create_record.rs').content;
+
+    codeContains(content, [`crate::pdas::find_record_pda(`, `&self.owner.expect("owner is needed for record PDA")`]);
+});
+
+test('it folds constant-seed dynamic PDAs under the canonical program default', () => {
+    // Given a constant-seed PDA pinned to a foreign program via pdaNode.programId,
+    // while the use-site still passes a runtime program reference.
+    const node = programNode({
+        instructions: [
+            instructionNode({
+                accounts: [
+                    instructionAccountNode({
+                        defaultValue: publicKeyValueNode('CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C'),
+                        isOptional: false,
+                        isSigner: false,
+                        isWritable: false,
+                        name: 'cpswapProgram',
+                    }),
+                    instructionAccountNode({
+                        defaultValue: pdaValueNode(
+                            pdaLinkNode('vaultAuthority'),
+                            [],
+                            accountValueNode('cpswapProgram'),
+                        ),
+                        isOptional: false,
+                        isSigner: false,
+                        isWritable: false,
+                        name: 'vaultAuthority',
+                    }),
+                ],
+                name: 'migrate',
+            }),
+        ],
+        name: 'testProgram',
+        pdas: [
+            pdaNode({
+                name: 'vaultAuthority',
+                programId: 'CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C',
+                seeds: [constantPdaSeedNodeFromString('utf8', 'vault_auth')],
+            }),
+        ],
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+
+    // The pdas page folds the address at codegen time under the pinned program,
+    // and the helpers bake that program in — no program parameter.
+    const pdaContent = getFromRenderMap(renderMap, 'pdas/vault_authority.rs').content;
+    codeContains(pdaContent, [
+        `pub const VAULT_AUTHORITY_PROGRAM_ADDRESS: solana_address::Address`,
+        `CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C`,
+        `pub const VAULT_AUTHORITY_ADDRESS: solana_address::Address`,
+    ]);
+    codeDoesNotContains(pdaContent, [`program_address:`]);
+
+    // The builder uses the folded constant directly.
+    const ixContent = getFromRenderMap(renderMap, 'instructions/migrate.rs').content;
+    codeContains(ixContent, [`unwrap_or(`, `crate::pdas::VAULT_AUTHORITY_ADDRESS`]);
+    codeDoesNotContains(ixContent, [`find_vault_authority_pda`]);
 });

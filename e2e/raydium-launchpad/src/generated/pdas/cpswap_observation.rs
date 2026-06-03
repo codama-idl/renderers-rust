@@ -7,22 +7,23 @@
 
 use solana_address::Address;
 
-use crate::RAYDIUM_LAUNCHPAD_ID;
-
 pub const CPSWAP_OBSERVATION_SEED: &'static [u8] =
     &[111, 98, 115, 101, 114, 118, 97, 116, 105, 111, 110];
+
+pub const CPSWAP_OBSERVATION_PROGRAM_ADDRESS: solana_address::Address =
+    solana_address::address!("CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C");
 pub fn create_cpswap_observation_pda(
     cpswap_pool: Address,
     bump: u8,
 ) -> Result<solana_address::Address, solana_address::error::AddressError> {
     solana_address::Address::create_program_address(
         &[CPSWAP_OBSERVATION_SEED, cpswap_pool.as_ref(), &[bump]],
-        &RAYDIUM_LAUNCHPAD_ID,
+        &CPSWAP_OBSERVATION_PROGRAM_ADDRESS,
     )
 }
 pub fn find_cpswap_observation_pda(cpswap_pool: &Address) -> (solana_address::Address, u8) {
     solana_address::Address::find_program_address(
         &[CPSWAP_OBSERVATION_SEED, cpswap_pool.as_ref()],
-        &RAYDIUM_LAUNCHPAD_ID,
+        &CPSWAP_OBSERVATION_PROGRAM_ADDRESS,
     )
 }

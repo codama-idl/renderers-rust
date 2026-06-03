@@ -234,6 +234,7 @@ impl ClaimPlatformFeeBuilder {
         let pool_state = self.pool_state;
         let platform_config = self.platform_config;
         let quote_vault = self.quote_vault;
+        let quote_mint = self.quote_mint;
         let recipient_token_account = self.recipient_token_account.unwrap_or_else(|| {
             solana_address::Address::find_program_address(
                 &[
@@ -249,7 +250,6 @@ impl ClaimPlatformFeeBuilder {
             )
             .0
         });
-        let quote_mint = self.quote_mint;
         let token_program = self.token_program.unwrap_or(solana_address::address!(
             "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         ));

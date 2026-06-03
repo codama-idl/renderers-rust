@@ -1,5 +1,6 @@
 import { logWarn } from '@codama/errors';
 import {
+    type ConstantPdaSeedNode,
     ConstantValueNode,
     constantValueNode,
     definedTypeNode,
@@ -8,16 +9,17 @@ import {
     getAllAccounts,
     getAllDefinedTypes,
     getAllEvents,
+    getAllInstructionArguments,
     getAllInstructionsWithSubs,
     getAllPdas,
     getAllPrograms,
     type InstructionAccountNode,
-    type InstructionArgumentNode,
     InstructionNode,
     isNode,
     isNodeFilter,
     pascalCase,
     type PdaNode,
+    type PdaValueNode,
     type ProgramNode,
     resolveNestedTypeNode,
     snakeCase,
@@ -28,6 +30,7 @@ import { addToRenderMap, createRenderMap, mergeRenderMaps } from '@codama/render
 import {
     extendVisitor,
     findProgramNodeFromPath,
+    getResolvedInstructionInputsVisitor,
     LinkableDictionary,
     NodeStack,
     pipe,
@@ -36,6 +39,7 @@ import {
     staticVisitor,
     visit,
 } from '@codama/visitors-core';
+import { getBase58Encoder } from '@solana/codecs-strings';
 
 import { getTypeManifestVisitor } from './getTypeManifestVisitor';
 import { ImportMap } from './ImportMap';
@@ -80,6 +84,11 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
         getImportFrom,
         getTraitsFromNode,
         traitOptions: options.traitOptions,
+    });
+    // Optional accounts are safe as PDA seeds: builders hold accounts as
+    // Option<Pubkey> and only expect() them on the derive path.
+    const resolvedInstructionInputVisitor = getResolvedInstructionInputsVisitor({
+        allowOptionalAccountsAsPdaSeeds: true,
     });
     const anchorTraits = options.anchorTraits ?? true;
 
@@ -137,21 +146,9 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                         }
                         const seedManifest = visit(seed.type, typeManifestVisitor);
                         const resolvedType = resolveNestedTypeNode(seed.type);
-                        let seedBytesExpr: string;
-                        if (isNode(seed.value, 'stringValueNode')) {
-                            const m = renderValueNode(seed.value, getImportFrom, true);
-                            seedsImports.mergeWith(m.imports);
-                            seedBytesExpr = `b${m.render}`;
-                        } else if (isNode(seed.value, 'bytesValueNode')) {
-                            const m = renderValueNode(seed.value, getImportFrom, true);
-                            seedsImports.mergeWith(m.imports);
-                            seedBytesExpr = `&${m.render}`;
-                        } else {
-                            const m = renderValueNode(constantValueNode(seed.type, seed.value), getImportFrom, true);
-                            seedsImports.mergeWith(m.imports);
-                            seedBytesExpr = `&${m.render}`;
-                        }
-                        return { ...seed, resolvedType, seedBytesExpr, typeManifest: seedManifest };
+                        const seedBytes = renderConstantSeedBytes(seed, getImportFrom);
+                        seedsImports.mergeWith(seedBytes.imports);
+                        return { ...seed, resolvedType, seedBytesExpr: seedBytes.render, typeManifest: seedManifest };
                     });
                     const hasVariableSeeds = pdaSeeds.filter(isNodeFilter('variablePdaSeedNode')).length > 0;
                     const constantSeeds = seeds
@@ -354,6 +351,18 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                         });
                     });
 
+                    // Extra arguments: required, non-serialized caller inputs (e.g. Anchor
+                    // account-data seeds lowered to argumentValueNodes). They become builder
+                    // fields read by PDA derivations but never enter InstructionData/Args.
+                    const extraArgs = (node.extraArguments ?? []).map(argument => {
+                        const manifest = visit(argument.type, typeManifestVisitor);
+                        imports.mergeWith(manifest.imports);
+                        const name = accountsAndArgsConflicts.includes(argument.name)
+                            ? `${argument.name}_arg`
+                            : argument.name;
+                        return { name, type: manifest.type };
+                    });
+
                     const struct = structTypeNodeFromInstructionArgumentNodes(node.arguments);
                     const structVisitor = getTypeManifestVisitor({
                         getImportFrom,
@@ -391,41 +400,37 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                             )
                             .map(a => a.name),
                     );
-                    const hasRequiredArgs = instructionArgs.some(
-                        arg => !arg.default && !arg.optional && !arg.innerOptionType,
-                    );
-                    const requiredArgNames = instructionArgs
-                        .filter(arg => !arg.default && !arg.optional && !arg.innerOptionType)
-                        .map(arg => snakeCase(arg.name));
+                    // Extra args are always required builder inputs.
+                    const hasRequiredArgs =
+                        instructionArgs.some(arg => !arg.default && !arg.optional && !arg.innerOptionType) ||
+                        extraArgs.length > 0;
+                    const requiredArgNames = [
+                        ...instructionArgs
+                            .filter(arg => !arg.default && !arg.optional && !arg.innerOptionType)
+                            .map(arg => snakeCase(arg.name)),
+                        ...extraArgs.map(arg => snakeCase(arg.name)),
+                    ];
 
-                    // Resolve PDA defaults and topologically sort accounts by dependency.
+                    // Resolve PDA defaults; builder `let` bindings follow the visitor's
+                    // dependency-first order so derived PDAs can feed later derivations.
+                    // Strip `isOptional` for the ordering visit: codama rejects optional
+                    // accounts as seed sources, but the builder unwraps them at runtime.
+                    const orderingNode = { ...node, accounts: node.accounts.map(a => ({ ...a, isOptional: false })) };
+                    const orderedAccountNames = visit(orderingNode, resolvedInstructionInputVisitor)
+                        .filter(isNodeFilter('instructionAccountNode'))
+                        .map(input => input.name as string);
                     const resolvedAccounts = resolveInstructionPdaDefaults({
-                        accounts: node.accounts,
                         accountsAndArgsConflicts,
                         builderOptionalAccounts,
                         getImportFrom,
                         imports,
-                        instructionArguments: node.arguments,
-                        instructionName: node.name,
+                        instruction: node,
                         linkables,
+                        orderedAccountNames,
                         program,
                         requiredArgNames,
                         stack,
                     });
-
-                    // An account with a PDA default that could not be resolved has no usable
-                    // default, so it falls back to a required builder input. Drop it from the
-                    // optional sets so its field type and accounts struct stay consistent.
-                    for (const account of resolvedAccounts) {
-                        if (
-                            account.pdaDefault == null &&
-                            !account.isOptional &&
-                            account.defaultValue?.kind === 'pdaValueNode'
-                        ) {
-                            builderOptionalAccounts.delete(account.name);
-                            cpiBuilderOptionalAccounts.delete(account.name);
-                        }
-                    }
                     const hasRequiredAccounts = node.accounts.some(a => !builderOptionalAccounts.has(a.name));
 
                     return createRenderMap(`instructions/${snakeCase(node.name)}.rs`, {
@@ -435,6 +440,7 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                             cpiBuilderOptionalAccounts: [...cpiBuilderOptionalAccounts],
                             dataTraits: dataTraits.render,
                             discriminatorConstants: discriminatorConstants.render,
+                            extraArgs,
                             hasArgs,
                             hasOptional,
                             hasRequiredAccounts,
@@ -472,21 +478,9 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                         }
                         const seedManifest = visit(seed.type, typeManifestVisitor);
                         const resolvedType = resolveNestedTypeNode(seed.type);
-                        let seedBytesExpr: string;
-                        if (isNode(seed.value, 'stringValueNode')) {
-                            const m = renderValueNode(seed.value, getImportFrom, true);
-                            imports.mergeWith(m.imports);
-                            seedBytesExpr = `b${m.render}`;
-                        } else if (isNode(seed.value, 'bytesValueNode')) {
-                            const m = renderValueNode(seed.value, getImportFrom, true);
-                            imports.mergeWith(m.imports);
-                            seedBytesExpr = `&${m.render}`;
-                        } else {
-                            const m = renderValueNode(constantValueNode(seed.type, seed.value), getImportFrom, true);
-                            imports.mergeWith(m.imports);
-                            seedBytesExpr = `&${m.render}`;
-                        }
-                        return { ...seed, resolvedType, seedBytesExpr, typeManifest: seedManifest };
+                        const seedBytes = renderConstantSeedBytes(seed, getImportFrom);
+                        imports.mergeWith(seedBytes.imports);
+                        return { ...seed, resolvedType, seedBytesExpr: seedBytes.render, typeManifest: seedManifest };
                     });
 
                     const hasVariableSeeds = node.seeds.filter(isNodeFilter('variablePdaSeedNode')).length > 0;
@@ -496,9 +490,20 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
 
                     const programAddress = node.programId ?? program?.publicKey;
 
+                    // Dynamic-only PDAs: helpers take the deriving program as a parameter,
+                    // and _ADDRESS folds under the canonical program, not this program's ID.
+                    const dynamicProgramOnly = getDynamicProgramOnlyPdas(program).has(node.name as string);
+                    // Codama pins foreign programs (IDL address constraint) on
+                    // pdaNode.programId; bake that address into the helpers.
+                    const canonicalProgramAddress =
+                        node.programId && node.programId !== program.publicKey ? node.programId : undefined;
+
                     let precomputedAddress: string | undefined;
-                    if (!hasVariableSeeds && programAddress) {
-                        precomputedAddress = computePdaAddress(node.seeds, programAddress) ?? undefined;
+                    if (!hasVariableSeeds) {
+                        const foldProgram = dynamicProgramOnly ? canonicalProgramAddress : programAddress;
+                        if (foldProgram) {
+                            precomputedAddress = computePdaAddress(node.seeds, foldProgram) ?? undefined;
+                        }
                     }
 
                     // Template uses fully-qualified paths for return types and static methods,
@@ -510,7 +515,9 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
 
                     return createRenderMap(`pdas/${snakeCase(node.name)}.rs`, {
                         content: render('pdasPage.njk', {
+                            canonicalProgramAddress,
                             constantSeeds,
+                            dynamicProgramOnly,
                             hasVariableSeeds,
                             imports: imports.toString(dependencyMap),
                             pda: node,
@@ -829,10 +836,60 @@ function buildProgramEventsRender(
     };
 }
 
+/**
+ * Linked PDAs whose every use-site passes a dynamic programId. Their helpers
+ * take the deriving program as a parameter (unless pinned to a foreign address).
+ */
+function getDynamicProgramOnlyPdas(program: ProgramNode): Set<string> {
+    const allUsagesDynamic = new Map<string, boolean>();
+    for (const instruction of getAllInstructionsWithSubs(program, { leavesOnly: false })) {
+        for (const account of instruction.accounts) {
+            const defaultValue = account.defaultValue;
+            if (!defaultValue || !isNode(defaultValue, 'pdaValueNode')) continue;
+            if (!isNode(defaultValue.pda, 'pdaLinkNode')) continue;
+            const name = defaultValue.pda.name as string;
+            allUsagesDynamic.set(name, (allUsagesDynamic.get(name) ?? true) && defaultValue.programId != null);
+        }
+    }
+    return new Set([...allUsagesDynamic.entries()].filter(([, allDynamic]) => allDynamic).map(([name]) => name));
+}
+
+/**
+ * Renders a constant PDA seed as a raw byte-slice expression suitable for
+ * `find_program_address(&[...])`: `b"…"` for strings, `&[…]` for bytes, and
+ * `&N.to_le_bytes()`-style for typed values. Shared by the PDA-helper pages
+ * and the inline instruction-builder derivations.
+ */
+function renderConstantSeedBytes(
+    seed: ConstantPdaSeedNode,
+    getImportFrom: GetImportFromFunction,
+): { imports: ImportMap; render: string } {
+    if (isNode(seed.value, 'programIdValueNode')) {
+        // The program reference is context-dependent; callers render it themselves.
+        throw new Error('programIdValueNode seeds must be rendered by the caller.');
+    }
+    if (isNode(seed.value, 'stringValueNode')) {
+        const m = renderValueNode(seed.value, getImportFrom, true);
+        return { imports: m.imports, render: `b${m.render}` };
+    }
+    if (isNode(seed.value, 'bytesValueNode')) {
+        const m = renderValueNode(seed.value, getImportFrom, true);
+        return { imports: m.imports, render: `&${m.render}` };
+    }
+    if (isNode(seed.value, 'publicKeyValueNode')) {
+        // Codama folds address-pinned program accounts used as seeds into
+        // constant publicKey seeds; emit the decoded 32 bytes.
+        const bytes = getBase58Encoder().encode(seed.value.publicKey);
+        return { imports: new ImportMap(), render: `&[${Array.from(bytes).join(', ')}]` };
+    }
+    const m = renderValueNode(constantValueNode(seed.type, seed.value), getImportFrom, true);
+    return { imports: m.imports, render: `&${m.render}` };
+}
+
 function getConflictsForInstructionAccountsAndArgs(instruction: InstructionNode): string[] {
     const allNames = [
         ...instruction.accounts.map(account => account.name),
-        ...instruction.arguments.map(argument => argument.name),
+        ...getAllInstructionArguments(instruction).map(argument => argument.name),
     ];
     const duplicates = allNames.filter((e, i, a) => a.indexOf(e) !== i);
     return [...new Set(duplicates)];
@@ -845,11 +902,15 @@ type RenderedSeed = {
 };
 
 type ResolvedPdaDefault = {
-    accountDeps: string[];
+    /**
+     * True when the helper call needs a runtime program argument, i.e. the
+     * deriving program is dynamic and not address-pinned (pinned ones are baked in).
+     */
+    hasDynamicProgram: boolean;
     hasVariableSeeds: boolean;
     isLinked: boolean;
     linkedPdaName?: string;
-    programAddressExpr?: string;
+    programAddressExpr: string;
     renderedSeeds: RenderedSeed[];
 };
 
@@ -858,36 +919,86 @@ type ResolvedAccount = InstructionAccountNode & {
 };
 
 function resolveInstructionPdaDefaults(ctx: {
-    accounts: readonly InstructionAccountNode[];
     accountsAndArgsConflicts: string[];
     builderOptionalAccounts: Set<string>;
     getImportFrom: GetImportFromFunction;
     imports: ImportMap;
-    instructionArguments: readonly InstructionArgumentNode[];
-    instructionName: string;
+    instruction: InstructionNode;
     linkables: LinkableDictionary;
+    orderedAccountNames: string[];
     program: ProgramNode;
     requiredArgNames: string[];
     stack: NodeStack;
 }): ResolvedAccount[] {
     const {
-        accounts,
         accountsAndArgsConflicts,
         builderOptionalAccounts,
         getImportFrom,
         imports,
-        instructionArguments,
-        instructionName,
+        instruction,
         linkables,
+        orderedAccountNames,
         program,
         requiredArgNames,
         stack,
     } = ctx;
 
+    const accounts = instruction.accounts;
+    // Includes extraArguments — Anchor lowers account-data seeds (e.g. `guard.mint`)
+    // to caller-supplied extra arguments.
+    const instructionArguments = getAllInstructionArguments(instruction);
+    const instructionName = instruction.name;
+    const localProgramIdExpr = `crate::${snakeCase(program.name).toUpperCase()}_ID`;
+    // PDAs whose helpers require the deriving program as a parameter.
+    const dynamicOnlyPdas = getDynamicProgramOnlyPdas(program);
+
     // Cast to string to avoid branded CamelCaseString type.
     const pdaDefaultedNames = new Set<string>(
         accounts.filter(a => a.defaultValue?.kind === 'pdaValueNode').map(a => a.name as string),
     );
+
+    // Nested argument paths (e.g. `guard.mint`) have no builder field to read from.
+    const assertNoArgumentPath = (ref: { name: string; path?: readonly string[] }, accountName: string) => {
+        if (ref.path && ref.path.length > 0) {
+            throw new Error(
+                `[Rust] Account [${accountName}] of instruction [${instructionName}] references nested ` +
+                    `argument path [${ref.name}.${ref.path.join('.')}], which the Rust renderer does not support.`,
+            );
+        }
+    };
+
+    // Renders the builder expression for the account/argument reference used as a
+    // PDA's dynamic deriving program.
+    const renderProgramRefExpr = (ref: NonNullable<PdaValueNode['programId']>, accountName: string): string => {
+        if (isNode(ref, 'accountValueNode')) {
+            const refName = snakeCase(ref.name);
+            if (pdaDefaultedNames.has(ref.name)) {
+                // Previously derived in the builder; visitor ordering guarantees it.
+                return refName;
+            }
+            const refAccount = accounts.find(a => a.name === ref.name);
+            const isEither = refAccount?.isSigner === 'either';
+            const isOptional = builderOptionalAccounts.has(ref.name);
+            const eitherExtract = isEither ? (isOptional ? '.map(|(k, _)| k)' : '.0') : '';
+            if (!isOptional) {
+                return `self.${refName}${eitherExtract}`;
+            }
+            if (refAccount?.defaultValue && isNode(refAccount.defaultValue, 'publicKeyValueNode')) {
+                return `self.${refName}${eitherExtract}.unwrap_or(solana_address::address!("${refAccount.defaultValue.publicKey}"))`;
+            }
+            if (refAccount?.defaultValue && isNode(refAccount.defaultValue, 'programIdValueNode')) {
+                return `self.${refName}${eitherExtract}.unwrap_or(${localProgramIdExpr})`;
+            }
+            return `self.${refName}${eitherExtract}.expect("${refName} is needed for ${snakeCase(accountName)} PDA")`;
+        }
+        assertNoArgumentPath(ref, accountName);
+        const argFieldName = accountsAndArgsConflicts.includes(ref.name) ? `${ref.name}_arg` : ref.name;
+        const fieldName = snakeCase(argFieldName);
+        if (requiredArgNames.includes(fieldName)) {
+            return `self.${fieldName}`;
+        }
+        return `self.${fieldName}.clone().expect("${fieldName} is needed for ${snakeCase(accountName)} PDA")`;
+    };
 
     const resolvedPdas: Record<string, ResolvedPdaDefault> = {};
 
@@ -907,18 +1018,22 @@ function resolveInstructionPdaDefaults(ctx: {
             pdaNode = defaultValue.pda;
         }
 
-        // Linked PDAs can work without pdaNode (iterate defaultValue.seeds directly).
-        if (!isLinked && !pdaNode) {
-            logWarn(
-                `[Rust] Could not resolve PDA node for account [${account.name}] ` +
-                    `in instruction [${instructionName}]. The account will be treated as required.`,
-            );
-            continue;
-        }
+        // Dynamic programId: render as linked only when the PDA's helper takes a
+        // program parameter (dynamic-only); mixed-use PDAs fall back to inline.
+        const dynamicProgramRef = defaultValue.programId;
+        const renderAsLinked =
+            isLinked && (!dynamicProgramRef || (linkedPdaName !== undefined && dynamicOnlyPdas.has(linkedPdaName)));
 
-        const programAddressExpr = pdaNode?.programId
-            ? `solana_address::address!("${pdaNode.programId}")`
-            : `crate::${snakeCase(program.name).toUpperCase()}_ID`;
+        // Program priority mirrors codama resolve-pda-address.ts:
+        // dynamic runtime ref > pdaNode constant > local program ID.
+        let programAddressExpr: string;
+        if (dynamicProgramRef) {
+            programAddressExpr = renderProgramRefExpr(dynamicProgramRef, account.name);
+        } else if (pdaNode?.programId) {
+            programAddressExpr = `solana_address::address!("${pdaNode.programId}")`;
+        } else {
+            programAddressExpr = localProgramIdExpr;
+        }
 
         // Upstream account defaults for seed resolution.
         const accountDefaults: Record<string, string> = {};
@@ -930,7 +1045,7 @@ function resolveInstructionPdaDefaults(ctx: {
                 if (refAccount?.defaultValue && isNode(refAccount.defaultValue, 'publicKeyValueNode')) {
                     accountDefaults[refName] = `solana_address::address!("${refAccount.defaultValue.publicKey}")`;
                 } else if (refAccount?.defaultValue && isNode(refAccount.defaultValue, 'programIdValueNode')) {
-                    accountDefaults[refName] = `crate::${snakeCase(program.name).toUpperCase()}_ID`;
+                    accountDefaults[refName] = localProgramIdExpr;
                 }
                 if (refAccount?.isSigner === 'either') {
                     eitherSignerAccounts.add(refName);
@@ -939,16 +1054,15 @@ function resolveInstructionPdaDefaults(ctx: {
         }
 
         const renderedSeeds: RenderedSeed[] = [];
-        const accountDeps: string[] = [];
-        let seedsComplete = true;
 
         // Two rendering paths because extractPdasVisitor only extracts same-program
         // PDAs — cross-program derivations (e.g. ATAs via the associated-token-program)
         // stay inline as pdaNode since they can't live in this program's pdas module.
         //
-        // Linked (pdaLinkNode): call the standalone find_*_pda() with typed args.
+        // Linked (pdaLinkNode): call find_*_pda() with typed args (and the program
+        //                       when the helper takes one).
         // Inline (pdaNode):     emit find_program_address() with raw byte-slice seeds.
-        if (isLinked) {
+        if (renderAsLinked) {
             for (const seedBinding of defaultValue.seeds) {
                 const seedValue = seedBinding.value;
 
@@ -959,7 +1073,6 @@ function resolveInstructionPdaDefaults(ctx: {
                     const eitherExtract = isEither ? (isOptional ? '.map(|(k, _)| k)' : '.0') : '';
 
                     if (pdaDefaultedNames.has(seedValue.name)) {
-                        accountDeps.push(seedValue.name);
                         renderedSeeds.push({ kind: 'accountRef', rawName: refName, render: `&${refName}` });
                     } else if (!isOptional) {
                         // Required account — direct field access, no Option unwrap.
@@ -979,6 +1092,7 @@ function resolveInstructionPdaDefaults(ctx: {
                         renderedSeeds.push({ kind: 'accountRef', rawName: refName, render });
                     }
                 } else if (isNode(seedValue, 'argumentValueNode')) {
+                    assertNoArgumentPath(seedValue, account.name);
                     const argFieldName = accountsAndArgsConflicts.includes(seedValue.name)
                         ? `${seedValue.name}_arg`
                         : seedValue.name;
@@ -986,24 +1100,18 @@ function resolveInstructionPdaDefaults(ctx: {
                     const isRequiredArg = requiredArgNames.includes(fieldName);
 
                     const arg = instructionArguments.find(a => a.name === seedValue.name);
+                    if (!arg) {
+                        // The native visitor validates seed dependencies upfront, so this is
+                        // unreachable for well-formed IDLs.
+                        throw new Error(
+                            `[Rust] Seed argument [${seedValue.name}] for account [${account.name}] in ` +
+                                `instruction [${instructionName}] does not match any instruction argument.`,
+                        );
+                    }
                     let argDefault: { isOmitted: boolean; value: string } | null = null;
-                    if (arg?.defaultValue && isNode(arg.defaultValue, VALUE_NODES)) {
+                    if (arg.defaultValue && isNode(arg.defaultValue, VALUE_NODES)) {
                         const { render: value } = renderValueNode(arg.defaultValue, getImportFrom);
                         argDefault = { isOmitted: arg.defaultValueStrategy === 'omitted', value };
-                    }
-
-                    // A seed may reference an argument that does not exist on the instruction
-                    // (e.g. an account-data path like `guard.mint` that cannot be resolved at
-                    // build time). Without a matching argument there is no builder field to read,
-                    // so treat the PDA as unresolvable and fall back to a required account.
-                    if (!arg) {
-                        logWarn(
-                            `[Rust] Seed argument [${seedValue.name}] for account [${account.name}] ` +
-                                `in instruction [${instructionName}] does not match any instruction ` +
-                                `argument. Falling back to required account.`,
-                        );
-                        seedsComplete = false;
-                        break;
                     }
 
                     // Pubkey seeds need by-ref for the typed find_*_pda() signature.
@@ -1037,17 +1145,25 @@ function resolveInstructionPdaDefaults(ctx: {
                 }
             }
         } else {
-            for (const seed of pdaNode!.seeds) {
+            if (!pdaNode) {
+                throw new Error(
+                    `[Rust] Could not resolve PDA node for account [${account.name}] ` +
+                        `in instruction [${instructionName}].`,
+                );
+            }
+            for (const seed of pdaNode.seeds) {
                 if (isNode(seed, 'constantPdaSeedNode')) {
                     if (isNode(seed.value, 'programIdValueNode')) {
+                        // The deriving program doubles as a seed; honor the runtime ref.
+                        const programSeedExpr = dynamicProgramRef ? programAddressExpr : localProgramIdExpr;
                         renderedSeeds.push({
                             kind: 'programId',
-                            render: `crate::${snakeCase(program.name).toUpperCase()}_ID.as_ref()`,
+                            render: `${programSeedExpr}.as_ref()`,
                         });
                     } else {
-                        const valueManifest = renderValueNode(seed.value, getImportFrom);
-                        imports.mergeWith(valueManifest.imports);
-                        renderedSeeds.push({ kind: 'constant', render: `&${valueManifest.render}` });
+                        const seedBytes = renderConstantSeedBytes(seed, getImportFrom);
+                        imports.mergeWith(seedBytes.imports);
+                        renderedSeeds.push({ kind: 'constant', render: seedBytes.render });
                     }
                     continue;
                 }
@@ -1056,13 +1172,10 @@ function resolveInstructionPdaDefaults(ctx: {
 
                 const binding = defaultValue.seeds.find(s => s.name === seed.name);
                 if (!binding) {
-                    logWarn(
-                        `[Rust] Missing seed value for variable seed [${seed.name}] ` +
-                            `in PDA default for account [${account.name}] ` +
-                            `of instruction [${instructionName}]. Skipping PDA resolution.`,
+                    throw new Error(
+                        `[Rust] Missing seed value for variable seed [${seed.name}] in PDA default ` +
+                            `for account [${account.name}] of instruction [${instructionName}].`,
                     );
-                    seedsComplete = false;
-                    break;
                 }
 
                 const resolvedType = resolveNestedTypeNode(seed.type);
@@ -1074,10 +1187,6 @@ function resolveInstructionPdaDefaults(ctx: {
                     const isOptional = builderOptionalAccounts.has(seedValue.name);
                     const eitherExtract = isEither ? (isOptional ? '.map(|(k, _)| k)' : '.0') : '';
                     const defaultExpr = accountDefaults[seedValue.name];
-
-                    if (pdaDefaultedNames.has(seedValue.name)) {
-                        accountDeps.push(seedValue.name);
-                    }
 
                     let valueExpr: string;
                     if (pdaDefaultedNames.has(seedValue.name)) {
@@ -1103,6 +1212,7 @@ function resolveInstructionPdaDefaults(ctx: {
                         });
                     }
                 } else if (isNode(seedValue, 'argumentValueNode')) {
+                    assertNoArgumentPath(seedValue, account.name);
                     const argFieldName = accountsAndArgsConflicts.includes(seedValue.name)
                         ? `${seedValue.name}_arg`
                         : seedValue.name;
@@ -1110,23 +1220,18 @@ function resolveInstructionPdaDefaults(ctx: {
                     const isRequiredArg = requiredArgNames.includes(fieldName);
 
                     const arg = instructionArguments.find(a => a.name === seedValue.name);
+                    if (!arg) {
+                        // The native visitor validates seed dependencies upfront, so this is
+                        // unreachable for well-formed IDLs.
+                        throw new Error(
+                            `[Rust] Seed argument [${seedValue.name}] for account [${account.name}] in ` +
+                                `instruction [${instructionName}] does not match any instruction argument.`,
+                        );
+                    }
                     let argDefault: { isOmitted: boolean; value: string } | null = null;
-                    if (arg?.defaultValue && isNode(arg.defaultValue, VALUE_NODES)) {
+                    if (arg.defaultValue && isNode(arg.defaultValue, VALUE_NODES)) {
                         const { render: value } = renderValueNode(arg.defaultValue, getImportFrom);
                         argDefault = { isOmitted: arg.defaultValueStrategy === 'omitted', value };
-                    }
-
-                    // See note in the linked-PDA branch above: a seed referencing a
-                    // non-existent argument (e.g. an account-data path) cannot be resolved
-                    // from a builder field, so fall back to a required account.
-                    if (!arg) {
-                        logWarn(
-                            `[Rust] Seed argument [${seedValue.name}] for account [${account.name}] ` +
-                                `in instruction [${instructionName}] does not match any instruction ` +
-                                `argument. Falling back to required account.`,
-                        );
-                        seedsComplete = false;
-                        break;
                     }
 
                     if (argDefault && argDefault.isOmitted) {
@@ -1178,66 +1283,30 @@ function resolveInstructionPdaDefaults(ctx: {
             }
         }
 
-        if (!seedsComplete) continue;
-
         const pdaHasVariableSeeds = pdaNode ? pdaNode.seeds.some(s => isNode(s, 'variablePdaSeedNode')) : true;
 
+        // Pinned programs (pdaNode.programId) are baked into the generated
+        // helpers and _ADDRESS constant, so the builder passes no program arg.
+        const pinnedProgram =
+            renderAsLinked && pdaNode?.programId && pdaNode.programId !== program.publicKey
+                ? pdaNode.programId
+                : undefined;
+
         resolvedPdas[account.name] = {
-            accountDeps,
+            hasDynamicProgram: !!dynamicProgramRef && !pinnedProgram,
             hasVariableSeeds: pdaHasVariableSeeds,
-            isLinked,
+            isLinked: renderAsLinked,
             linkedPdaName,
             programAddressExpr,
             renderedSeeds,
         };
     }
 
-    // DFS topological sort with cycle detection and propagation.
-    const accountDeps = new Map<string, Set<string>>();
-    for (const account of accounts) {
-        const name = account.name;
-        accountDeps.set(name, new Set());
-        const pdaInfo = resolvedPdas[name];
-        if (pdaInfo) {
-            for (const dep of pdaInfo.accountDeps) {
-                accountDeps.get(name)!.add(dep);
-            }
-        }
-    }
-
-    const sortedNames: string[] = [];
-    const visited = new Set<string>();
-    const visiting = new Set<string>();
-
-    const topoVisit = (name: string): boolean => {
-        if (visited.has(name)) return resolvedPdas[name] !== undefined || !pdaDefaultedNames.has(name);
-        if (visiting.has(name)) {
-            logWarn(
-                `[Rust] Circular PDA dependency detected for account [${name}] ` +
-                    `in instruction [${instructionName}]. Falling back to required account.`,
-            );
-            delete resolvedPdas[name];
-            return false;
-        }
-        visiting.add(name);
-        for (const dep of accountDeps.get(name) ?? []) {
-            if (accountDeps.has(dep) && !topoVisit(dep)) {
-                // Dependency lost its PDA resolution — remove ours too.
-                delete resolvedPdas[name];
-            }
-        }
-        visiting.delete(name);
-        visited.add(name);
-        sortedNames.push(name);
-        return resolvedPdas[name] !== undefined || !pdaDefaultedNames.has(name);
-    };
-
-    for (const account of accounts) {
-        topoVisit(account.name);
-    }
-
-    return sortedNames.map(name => {
-        const account = accounts.find(a => a.name === name)!;
+    // Inputs are already validated and dependency-ordered; emit builder `let`
+    // bindings in that order so derived PDAs can feed later derivations.
+    const accountsByName = new Map(accounts.map(a => [a.name as string, a]));
+    return orderedAccountNames.map(name => {
+        const account = accountsByName.get(name)!;
         return { ...account, pdaDefault: resolvedPdas[name] ?? null };
     });
 }

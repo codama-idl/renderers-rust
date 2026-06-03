@@ -232,6 +232,7 @@ impl CreateConfigBuilder {
         let owner = self.owner.unwrap_or(solana_address::address!(
             "GThUX1Atko4tqhN2NaiTazWSeFWMuiUvfFnyJyUghFMJ"
         ));
+        let quote_token_mint = self.quote_token_mint;
         let global_config = self.global_config.unwrap_or_else(|| {
             crate::pdas::find_global_config_pda(
                 &self.quote_token_mint,
@@ -240,7 +241,6 @@ impl CreateConfigBuilder {
             )
             .0
         });
-        let quote_token_mint = self.quote_token_mint;
         let protocol_fee_owner = self.protocol_fee_owner;
         let migrate_fee_owner = self.migrate_fee_owner;
         let migrate_to_amm_wallet = self.migrate_to_amm_wallet;

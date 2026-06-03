@@ -5,21 +5,25 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
-use crate::RAYDIUM_LAUNCHPAD_ID;
-
 pub const AMM_AUTHORITY_SEED: &'static [u8] =
     &[97, 109, 109, 32, 97, 117, 116, 104, 111, 114, 105, 116, 121];
 
 pub const AMM_AUTHORITY_ADDRESS: solana_address::Address =
-    solana_address::address!("8esABrhGmu9d63CV5Km5a2Sy9SHC2jJHwDB67zMhL9ki");
+    solana_address::address!("5Q544fKrFoe6tsEbD7S8EmxGTJYAKtTVhAW5Q5pge4j1");
+
+pub const AMM_AUTHORITY_PROGRAM_ADDRESS: solana_address::Address =
+    solana_address::address!("675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8");
 pub fn create_amm_authority_pda(
     bump: u8,
 ) -> Result<solana_address::Address, solana_address::error::AddressError> {
     solana_address::Address::create_program_address(
         &[AMM_AUTHORITY_SEED, &[bump]],
-        &RAYDIUM_LAUNCHPAD_ID,
+        &AMM_AUTHORITY_PROGRAM_ADDRESS,
     )
 }
 pub fn find_amm_authority_pda() -> (solana_address::Address, u8) {
-    solana_address::Address::find_program_address(&[AMM_AUTHORITY_SEED], &RAYDIUM_LAUNCHPAD_ID)
+    solana_address::Address::find_program_address(
+        &[AMM_AUTHORITY_SEED],
+        &AMM_AUTHORITY_PROGRAM_ADDRESS,
+    )
 }

@@ -7,6 +7,7 @@
 
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
+use solana_address::Address;
 
 pub const EXECUTE_DISCRIMINATOR: [u8; 8] = [105, 37, 101, 197, 75, 251, 102, 26];
 
@@ -122,7 +123,7 @@ impl ExecuteInstructionArgs {
 ///   2. `[]` destination_account
 ///   3. `[]` owner_delegate
 ///   4. `[optional]` extra_metas_account (default to PDA derived from 'extraMetasAccount')
-///   5. `[]` guard
+///   5. `[optional]` guard (default to PDA derived from 'guard')
 ///   6. `[optional]` instruction_sysvar_account (default to `Sysvar1nstructions1111111111111111111111111`)
 #[derive(Clone, Debug)]
 pub struct ExecuteBuilder {
@@ -131,9 +132,10 @@ pub struct ExecuteBuilder {
     destination_account: solana_address::Address,
     owner_delegate: solana_address::Address,
     extra_metas_account: Option<solana_address::Address>,
-    guard: solana_address::Address,
+    guard: Option<solana_address::Address>,
     instruction_sysvar_account: Option<solana_address::Address>,
     amount: u64,
+    guard_mint: Address,
     __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
@@ -143,8 +145,8 @@ impl ExecuteBuilder {
         mint: solana_address::Address,
         destination_account: solana_address::Address,
         owner_delegate: solana_address::Address,
-        guard: solana_address::Address,
         amount: u64,
+        guard_mint: Address,
     ) -> Self {
         Self {
             source_account,
@@ -152,9 +154,10 @@ impl ExecuteBuilder {
             destination_account,
             owner_delegate,
             extra_metas_account: None,
-            guard,
+            guard: None,
             instruction_sysvar_account: None,
             amount,
+            guard_mint,
             __remaining_accounts: Vec::new(),
         }
     }
@@ -165,6 +168,12 @@ impl ExecuteBuilder {
         extra_metas_account: solana_address::Address,
     ) -> &mut Self {
         self.extra_metas_account = Some(extra_metas_account);
+        self
+    }
+    /// `[optional account, default to PDA derived from 'guard']`
+    #[inline(always)]
+    pub fn guard(&mut self, guard: solana_address::Address) -> &mut Self {
+        self.guard = Some(guard);
         self
     }
     /// `[optional account, default to 'Sysvar1nstructions1111111111111111111111111']`
@@ -200,7 +209,9 @@ impl ExecuteBuilder {
         let extra_metas_account = self
             .extra_metas_account
             .unwrap_or_else(|| crate::pdas::find_extra_metas_account_pda(&self.mint).0);
-        let guard = self.guard;
+        let guard = self
+            .guard
+            .unwrap_or_else(|| crate::pdas::find_guard_pda(&self.guard_mint.clone()).0);
         let instruction_sysvar_account =
             self.instruction_sysvar_account
                 .unwrap_or(solana_address::address!(

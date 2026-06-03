@@ -5,23 +5,27 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
-use crate::RAYDIUM_LAUNCHPAD_ID;
-
 pub const LOCK_AUTHORITY_SEED: &'static [u8] = &[
     108, 111, 99, 107, 95, 99, 112, 95, 97, 117, 116, 104, 111, 114, 105, 116, 121, 95, 115, 101,
     101, 100,
 ];
 
 pub const LOCK_AUTHORITY_ADDRESS: solana_address::Address =
-    solana_address::address!("J119hBxyfY1jnqgajS5p3GLXm7mG9KP5r7P9bmrKk9SE");
+    solana_address::address!("3f7GcQFG397GAaEnv51zR6tsTVihYRydnydDD1cXekxH");
+
+pub const LOCK_AUTHORITY_PROGRAM_ADDRESS: solana_address::Address =
+    solana_address::address!("LockrWmn6K5twhz3y9w1dQERbmgSaRkfnTeTKbpofwE");
 pub fn create_lock_authority_pda(
     bump: u8,
 ) -> Result<solana_address::Address, solana_address::error::AddressError> {
     solana_address::Address::create_program_address(
         &[LOCK_AUTHORITY_SEED, &[bump]],
-        &RAYDIUM_LAUNCHPAD_ID,
+        &LOCK_AUTHORITY_PROGRAM_ADDRESS,
     )
 }
 pub fn find_lock_authority_pda() -> (solana_address::Address, u8) {
-    solana_address::Address::find_program_address(&[LOCK_AUTHORITY_SEED], &RAYDIUM_LAUNCHPAD_ID)
+    solana_address::Address::find_program_address(
+        &[LOCK_AUTHORITY_SEED],
+        &LOCK_AUTHORITY_PROGRAM_ADDRESS,
+    )
 }

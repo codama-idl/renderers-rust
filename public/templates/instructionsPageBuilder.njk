@@ -44,6 +44,9 @@ pub struct {{ instruction.name | pascalCase }}Builder {
       {% endif %}
     {% endif %}
   {% endfor %}
+  {% for arg in extraArgs %}
+    {{ arg.name | snakeCase }}: {{ arg.type }},
+  {% endfor %}
   __remaining_accounts: Vec<solana_instruction::AccountMeta>,
 }
 
@@ -60,6 +63,9 @@ impl {{ instruction.name | pascalCase }}Builder {
         {% if not arg.default and not arg.optional and not arg.innerOptionType %}
           {{ arg.name | snakeCase }}: {{ arg.type }},
         {% endif %}
+      {% endfor %}
+      {% for arg in extraArgs %}
+        {{ arg.name | snakeCase }}: {{ arg.type }},
       {% endfor %}
     ) -> Self {
       Self {
@@ -79,6 +85,9 @@ impl {{ instruction.name | pascalCase }}Builder {
               {{ arg.name | snakeCase }}: None,
             {% endif %}
           {% endif %}
+        {% endfor %}
+        {% for arg in extraArgs %}
+          {{ arg.name | snakeCase }},
         {% endfor %}
         __remaining_accounts: Vec::new(),
       }
@@ -149,7 +158,7 @@ impl {{ instruction.name | pascalCase }}Builder {
   pub fn instruction(&self) -> solana_instruction::Instruction {
     {% for account in resolvedAccounts %}
       {% if account.pdaDefault %}
-        {% if account.pdaDefault.isLinked and not account.pdaDefault.hasVariableSeeds %}
+        {% if account.pdaDefault.isLinked and not account.pdaDefault.hasVariableSeeds and not account.pdaDefault.hasDynamicProgram %}
           {% if account.isSigner === 'either' %}
     let {{ account.name | snakeCase }} = self.{{ account.name | snakeCase }}.map(|(k, _)| k).unwrap_or(
           {% else %}
@@ -168,6 +177,9 @@ impl {{ instruction.name | pascalCase }}Builder {
               {% for seed in account.pdaDefault.renderedSeeds %}
                 {{ seed.render }},
               {% endfor %}
+              {% if account.pdaDefault.hasDynamicProgram %}
+                &{{ account.pdaDefault.programAddressExpr }},
+              {% endif %}
             ).0
           {% else %}
             solana_address::Address::find_program_address(
