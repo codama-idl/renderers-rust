@@ -93,7 +93,7 @@ impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for TokenOwnerRecordV1 {
 
 #[cfg(feature = "fetch")]
 pub fn fetch_token_owner_record_v1(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     address: &solana_address::Address,
 ) -> Result<crate::shared::DecodedAccount<TokenOwnerRecordV1>, std::io::Error> {
     let accounts = fetch_all_token_owner_record_v1(rpc, &[*address])?;
@@ -102,7 +102,7 @@ pub fn fetch_token_owner_record_v1(
 
 #[cfg(feature = "fetch")]
 pub fn fetch_all_token_owner_record_v1(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::DecodedAccount<TokenOwnerRecordV1>>, std::io::Error> {
     let accounts = rpc
@@ -131,7 +131,7 @@ pub fn fetch_all_token_owner_record_v1(
 
 #[cfg(feature = "fetch")]
 pub fn fetch_maybe_token_owner_record_v1(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     address: &solana_address::Address,
 ) -> Result<crate::shared::MaybeAccount<TokenOwnerRecordV1>, std::io::Error> {
     let accounts = fetch_all_maybe_token_owner_record_v1(rpc, &[*address])?;
@@ -140,7 +140,7 @@ pub fn fetch_maybe_token_owner_record_v1(
 
 #[cfg(feature = "fetch")]
 pub fn fetch_all_maybe_token_owner_record_v1(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::MaybeAccount<TokenOwnerRecordV1>>, std::io::Error> {
     let accounts = rpc

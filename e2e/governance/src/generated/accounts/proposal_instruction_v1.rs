@@ -93,7 +93,7 @@ impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for ProposalInstructionV
 
 #[cfg(feature = "fetch")]
 pub fn fetch_proposal_instruction_v1(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     address: &solana_address::Address,
 ) -> Result<crate::shared::DecodedAccount<ProposalInstructionV1>, std::io::Error> {
     let accounts = fetch_all_proposal_instruction_v1(rpc, &[*address])?;
@@ -102,7 +102,7 @@ pub fn fetch_proposal_instruction_v1(
 
 #[cfg(feature = "fetch")]
 pub fn fetch_all_proposal_instruction_v1(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::DecodedAccount<ProposalInstructionV1>>, std::io::Error> {
     let accounts = rpc
@@ -132,7 +132,7 @@ pub fn fetch_all_proposal_instruction_v1(
 
 #[cfg(feature = "fetch")]
 pub fn fetch_maybe_proposal_instruction_v1(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     address: &solana_address::Address,
 ) -> Result<crate::shared::MaybeAccount<ProposalInstructionV1>, std::io::Error> {
     let accounts = fetch_all_maybe_proposal_instruction_v1(rpc, &[*address])?;
@@ -141,7 +141,7 @@ pub fn fetch_maybe_proposal_instruction_v1(
 
 #[cfg(feature = "fetch")]
 pub fn fetch_all_maybe_proposal_instruction_v1(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::MaybeAccount<ProposalInstructionV1>>, std::io::Error> {
     let accounts = rpc

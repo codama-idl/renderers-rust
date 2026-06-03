@@ -79,7 +79,7 @@ impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for RequiredSignatory {
 
 #[cfg(feature = "fetch")]
 pub fn fetch_required_signatory(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     address: &solana_address::Address,
 ) -> Result<crate::shared::DecodedAccount<RequiredSignatory>, std::io::Error> {
     let accounts = fetch_all_required_signatory(rpc, &[*address])?;
@@ -88,7 +88,7 @@ pub fn fetch_required_signatory(
 
 #[cfg(feature = "fetch")]
 pub fn fetch_all_required_signatory(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::DecodedAccount<RequiredSignatory>>, std::io::Error> {
     let accounts = rpc
@@ -117,7 +117,7 @@ pub fn fetch_all_required_signatory(
 
 #[cfg(feature = "fetch")]
 pub fn fetch_maybe_required_signatory(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     address: &solana_address::Address,
 ) -> Result<crate::shared::MaybeAccount<RequiredSignatory>, std::io::Error> {
     let accounts = fetch_all_maybe_required_signatory(rpc, &[*address])?;
@@ -126,7 +126,7 @@ pub fn fetch_maybe_required_signatory(
 
 #[cfg(feature = "fetch")]
 pub fn fetch_all_maybe_required_signatory(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::MaybeAccount<RequiredSignatory>>, std::io::Error> {
     let accounts = rpc

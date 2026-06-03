@@ -43,7 +43,7 @@ impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for ProgramMetadata {
 
 #[cfg(feature = "fetch")]
 pub fn fetch_program_metadata(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     address: &solana_address::Address,
 ) -> Result<crate::shared::DecodedAccount<ProgramMetadata>, std::io::Error> {
     let accounts = fetch_all_program_metadata(rpc, &[*address])?;
@@ -52,7 +52,7 @@ pub fn fetch_program_metadata(
 
 #[cfg(feature = "fetch")]
 pub fn fetch_all_program_metadata(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::DecodedAccount<ProgramMetadata>>, std::io::Error> {
     let accounts = rpc
@@ -81,7 +81,7 @@ pub fn fetch_all_program_metadata(
 
 #[cfg(feature = "fetch")]
 pub fn fetch_maybe_program_metadata(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     address: &solana_address::Address,
 ) -> Result<crate::shared::MaybeAccount<ProgramMetadata>, std::io::Error> {
     let accounts = fetch_all_maybe_program_metadata(rpc, &[*address])?;
@@ -90,7 +90,7 @@ pub fn fetch_maybe_program_metadata(
 
 #[cfg(feature = "fetch")]
 pub fn fetch_all_maybe_program_metadata(
-    rpc: &solana_client::rpc_client::RpcClient,
+    rpc: &solana_rpc_client::rpc_client::RpcClient,
     addresses: &[solana_address::Address],
 ) -> Result<Vec<crate::shared::MaybeAccount<ProgramMetadata>>, std::io::Error> {
     let accounts = rpc
