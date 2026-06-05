@@ -48,6 +48,7 @@ import {
     CargoDependencies,
     computePdaAddress,
     constantDiscriminatorName,
+    constantDiscriminatorSize,
     Fragment,
     getByteArrayDiscriminatorConstantName,
     getDiscriminatorConditions,
@@ -57,6 +58,7 @@ import {
     getTraitsFromNodeFactory,
     LinkOverrides,
     render,
+    renderByteCheck,
     TraitOptions,
 } from './utils';
 
@@ -225,27 +227,45 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                     const perEventConstantDiscriminators = hasFromBytes
                         ? discriminators
                               .filter(isNodeFilter('constantDiscriminatorNode'))
-                              .map(d => ({
-                                  name: snakeCase(
+                              .map(d => {
+                                  const name = snakeCase(
                                       constantDiscriminatorName(node.name, d, discriminators),
-                                  ).toUpperCase(),
-                                  offset: d.offset,
-                              }))
+                                  ).toUpperCase();
+                                  return {
+                                      condition: renderByteCheck(name, d.constant.type, d.offset, true),
+                                      name,
+                                      offset: d.offset,
+                                      size: constantDiscriminatorSize(d),
+                                  };
+                              })
                               .sort((a, b) => a.offset - b.offset)
                         : [];
 
                     const allConstantDiscriminators =
                         isCpiFramed && framingConstantName
-                            ? [{ name: framingConstantName, offset: 0 }, ...perEventConstantDiscriminators]
+                            ? [
+                                  {
+                                      condition: renderByteCheck(
+                                          framingConstantName,
+                                          programEventFraming!.constant.type,
+                                          0,
+                                          true,
+                                      ),
+                                      name: framingConstantName,
+                                      offset: 0,
+                                      size: renderConstantBytesArray(programEventFraming!.constant)?.len ?? null,
+                                  },
+                                  ...perEventConstantDiscriminators,
+                              ]
                             : perEventConstantDiscriminators;
 
                     const hiddenPrefixSkipResult = hasFromBytes
                         ? isCpiFramed
                             ? getCpiFramedSkip(allConstantDiscriminators)
-                            : getHiddenPrefixSkip(node, allConstantDiscriminators)
+                            : getHiddenPrefixSkip(node)
                         : null;
                     const generateFromBytes = hasFromBytes && hiddenPrefixSkipResult !== null;
-                    const hiddenPrefixSkip = hiddenPrefixSkipResult ?? '0';
+                    const hiddenPrefixSkip = hiddenPrefixSkipResult ?? NO_SKIP;
                     const constantDiscriminators = generateFromBytes ? allConstantDiscriminators : [];
 
                     const imports = new ImportMap()
@@ -659,12 +679,14 @@ function eventHasFromBytes(event: EventNode): boolean {
     return hasConstantDiscriminator && dataHasHiddenPrefix;
 }
 
-function getHiddenPrefixSkip(
-    event: EventNode,
-    constantDiscriminators: { name: string; offset: number }[],
-): string | null {
+/** A rendered `&data[..]` skip expression; `comment` lists the constants folded into a literal offset. */
+type SkipExpr = { comment: string | null; expr: string };
+
+const NO_SKIP: SkipExpr = { comment: null, expr: 'data' };
+
+function getHiddenPrefixSkip(event: EventNode): SkipExpr | null {
     if (!isNode(event.data, 'hiddenPrefixTypeNode')) {
-        return '0';
+        return NO_SKIP;
     }
     let hasNonFixedSize = false;
     const prefixSize = event.data.prefix.reduce((sum, p) => {
@@ -681,11 +703,8 @@ function getHiddenPrefixSkip(
     if (hasNonFixedSize) {
         return null;
     }
-    const firstDisc = constantDiscriminators.find(d => d.offset === 0);
-    if (event.data.prefix.length === 1 && firstDisc) {
-        return `${firstDisc.name}.len()`;
-    }
-    return String(prefixSize);
+    // Literal byte count: keeps arithmetic out of generated code (clippy::arithmetic_side_effects).
+    return { comment: null, expr: `&data[${prefixSize}..]` };
 }
 
 /** Resolved program-level framing: the hoisted prefix constant + its source EventFraming. */
@@ -722,9 +741,19 @@ function isEventCpiFramed(event: EventNode, programEventFraming: ResolvedProgram
     return event.data.prefix.length > 0;
 }
 
-function getCpiFramedSkip(constantDiscriminators: { name: string; offset: number }[]): string {
-    // Sorted by offset; skip past every leading constant discriminator.
-    return constantDiscriminators.map(d => `${d.name}.len()`).join(' + ');
+function getCpiFramedSkip(constantDiscriminators: { name: string; offset: number; size: number | null }[]): SkipExpr {
+    // Fold known sizes into one leading literal range and chain `[X.len()..]` for the rest,
+    // so generated code never emits `+` (clippy::arithmetic_side_effects).
+    const knownSize = constantDiscriminators.reduce((sum, d) => sum + (d.size ?? 0), 0);
+    const ranges = constantDiscriminators.filter(d => d.size === null).map(d => `[${d.name}.len()..]`);
+    if (knownSize > 0 || ranges.length === 0) {
+        ranges.unshift(`[${knownSize}..]`);
+    }
+    const comment =
+        constantDiscriminators.length > 1
+            ? constantDiscriminators.map(d => (d.size === null ? d.name : `${d.name} (${d.size})`)).join(' + ')
+            : null;
+    return { comment, expr: `&data${ranges.join('')}` };
 }
 
 /** Renders a fixed-size bytes ConstantValueNode as a Rust `[u8; N] = [b0, b1, ...]` array literal. */
@@ -783,22 +812,30 @@ function buildProgramEventsRender(
                 .map(d => ({
                     name: snakeCase(constantDiscriminatorName(event.name, d, perEventDiscriminators)).toUpperCase(),
                     offset: d.offset,
+                    size: constantDiscriminatorSize(d),
                 }));
 
             let conditions: string[];
-            let hiddenPrefixSkipResult: string | null;
+            let hiddenPrefixSkipResult: SkipExpr | null;
             if (isCpiFramed && framingConstantName) {
                 conditions = [
-                    `data.get(..${framingConstantName}.len()) == Some(&${framingConstantName}[..])`,
+                    renderByteCheck(framingConstantName, programEventFraming!.constant.type, 0),
                     ...perEventConditions,
                 ];
-                const allConstantDiscs = [{ name: framingConstantName, offset: 0 }, ...perEventConstantDiscs];
+                const allConstantDiscs = [
+                    {
+                        name: framingConstantName,
+                        offset: 0,
+                        size: renderConstantBytesArray(programEventFraming!.constant)?.len ?? null,
+                    },
+                    ...perEventConstantDiscs,
+                ];
                 hiddenPrefixSkipResult = getCpiFramedSkip(allConstantDiscs);
             } else {
                 conditions = perEventConditions;
                 hiddenPrefixSkipResult = isNode(event.data, 'hiddenPrefixTypeNode')
-                    ? getHiddenPrefixSkip(event, perEventConstantDiscs)
-                    : '0';
+                    ? getHiddenPrefixSkip(event)
+                    : NO_SKIP;
             }
 
             if (hiddenPrefixSkipResult === null || conditions.length === 0) {

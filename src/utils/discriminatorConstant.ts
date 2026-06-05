@@ -6,9 +6,11 @@ import {
     InstructionArgumentNode,
     isNode,
     isNodeFilter,
+    NumberTypeNode,
     SizeDiscriminatorNode,
     snakeCase,
     StructFieldTypeNode,
+    TypeNode,
     VALUE_NODES,
 } from '@codama/nodes';
 import { visit } from '@codama/visitors-core';
@@ -201,11 +203,60 @@ function getConstantCondition(
     const constName = snakeCase(constantDiscriminatorName(prefix, discriminatorNode, discriminatorNodes)).toUpperCase();
     imports.add(`${importPrefix}::${constName}`);
 
-    const offset = discriminatorNode.offset;
-    if (offset === 0) {
-        return `data.get(..${constName}.len()) == Some(&${constName}[..])`;
+    return renderByteCheck(constName, discriminatorNode.constant.type, discriminatorNode.offset);
+}
+
+/**
+ * Renders a `data` vs discriminator constant check; `negate` inverts it for guards. Scalar number
+ * consts compare via `to_le/be_bytes`; ranges are precomputed literals (clippy::arithmetic_side_effects).
+ */
+export function renderByteCheck(name: string, type: TypeNode, offset: number, negate = false): string {
+    const eq = negate ? '!=' : '==';
+    if (isNode(type, 'numberTypeNode')) {
+        const byteSize = getNumberByteSize(type.format);
+        const range = offset === 0 ? `..${byteSize}` : `${offset}..${offset + byteSize}`;
+        return `data.get(${range}) ${eq} Some(&${name}.${numberBytesFn(type)}())`;
     }
-    return `data.get(${offset}..${offset} + ${constName}.len()) == Some(&${constName}[..])`;
+    if (offset === 0) {
+        return `data.get(..${name}.len()) ${eq} Some(&${name}[..])`;
+    }
+    const size = staticByteSize(type);
+    if (size !== null) {
+        return `data.get(${offset}..${offset + size}) ${eq} Some(&${name}[..])`;
+    }
+    return `${negate ? '!' : ''}data.get(${offset}..).is_some_and(|tail| tail.starts_with(&${name}[..]))`;
+}
+
+/** Byte size of a constant discriminator, when statically known. */
+export function constantDiscriminatorSize(discriminatorNode: ConstantDiscriminatorNode): number | null {
+    const type = discriminatorNode.constant.type;
+    if (isNode(type, 'numberTypeNode')) {
+        return NUMBER_BYTE_SIZES[type.format] ?? null;
+    }
+    return staticByteSize(type);
+}
+
+function numberBytesFn(type: NumberTypeNode): string {
+    return type.endian === 'be' ? 'to_be_bytes' : 'to_le_bytes';
+}
+
+/**
+ * Statically known byte size of a type rendered as `[u8; N]`. u8 arrays only:
+ * other element types wouldn't compile against `&[u8]` data anyway.
+ */
+function staticByteSize(type: TypeNode): number | null {
+    if (isNode(type, 'fixedSizeTypeNode')) {
+        return type.size;
+    }
+    if (
+        isNode(type, 'arrayTypeNode') &&
+        isNode(type.item, 'numberTypeNode') &&
+        type.item.format === 'u8' &&
+        isNode(type.count, 'fixedCountNode')
+    ) {
+        return type.count.value;
+    }
+    return null;
 }
 
 function getFieldCondition(
@@ -225,19 +276,7 @@ function getFieldCondition(
 
     const constName = snakeCase(fieldDiscriminatorName(prefix, discriminatorNode.name)).toUpperCase();
     imports.add(`${importPrefix}::${constName}`);
-    const offset = discriminatorNode.offset;
-
-    if (isNode(field.type, 'numberTypeNode')) {
-        const byteSize = getNumberByteSize(field.type.format);
-        const bytesFn = field.type.endian === 'le' ? 'to_le_bytes' : 'to_be_bytes';
-        const range = offset === 0 ? `..${byteSize}` : `${offset}..${offset + byteSize}`;
-        return `data.get(${range}) == Some(&${constName}.${bytesFn}())`;
-    }
-
-    if (offset === 0) {
-        return `data.get(..${constName}.len()) == Some(&${constName}[..])`;
-    }
-    return `data.get(${offset}..${offset} + ${constName}.len()) == Some(&${constName}[..])`;
+    return renderByteCheck(constName, field.type, discriminatorNode.offset);
 }
 
 const NUMBER_BYTE_SIZES: Record<string, number> = {

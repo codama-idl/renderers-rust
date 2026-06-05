@@ -30,16 +30,14 @@ impl CreateVestingEvent {
                 "invalid event discriminator",
             ));
         }
-        if data.get(8..8 + CREATE_VESTING_EVENT_DISCRIMINATOR.len())
-            != Some(&CREATE_VESTING_EVENT_DISCRIMINATOR[..])
-        {
+        if data.get(8..16) != Some(&CREATE_VESTING_EVENT_DISCRIMINATOR[..]) {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidData,
                 "invalid event discriminator",
             ));
         }
-        let mut data = &data
-            [ANCHOR_EVENT_CPI_DISCRIMINATOR.len() + CREATE_VESTING_EVENT_DISCRIMINATOR.len()..];
+        // ANCHOR_EVENT_CPI_DISCRIMINATOR (8) + CREATE_VESTING_EVENT_DISCRIMINATOR (8)
+        let mut data = &data[16..];
         Self::deserialize(&mut data)
     }
 }

@@ -39,7 +39,7 @@ impl LpChangeEvent {
                 "invalid event discriminator",
             ));
         }
-        let mut data = &data[LP_CHANGE_EVENT_DISCRIMINATOR.len()..];
+        let mut data = &data[8..];
         Self::deserialize(&mut data)
     }
 }

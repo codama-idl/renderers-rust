@@ -31,25 +31,22 @@ pub enum RaydiumLaunchpadEventKind {
 /// Identifies a `raydium_launchpad` event from the provided data.
 pub fn identify_raydium_launchpad_event(data: &[u8]) -> Option<RaydiumLaunchpadEventKind> {
     if data.get(..ANCHOR_EVENT_CPI_DISCRIMINATOR.len()) == Some(&ANCHOR_EVENT_CPI_DISCRIMINATOR[..])
-        && data.get(8..8 + CLAIM_VESTED_EVENT_DISCRIMINATOR.len())
-            == Some(&CLAIM_VESTED_EVENT_DISCRIMINATOR[..])
+        && data.get(8..16) == Some(&CLAIM_VESTED_EVENT_DISCRIMINATOR[..])
     {
         return Some(RaydiumLaunchpadEventKind::ClaimVestedEvent);
     }
     if data.get(..ANCHOR_EVENT_CPI_DISCRIMINATOR.len()) == Some(&ANCHOR_EVENT_CPI_DISCRIMINATOR[..])
-        && data.get(8..8 + CREATE_VESTING_EVENT_DISCRIMINATOR.len())
-            == Some(&CREATE_VESTING_EVENT_DISCRIMINATOR[..])
+        && data.get(8..16) == Some(&CREATE_VESTING_EVENT_DISCRIMINATOR[..])
     {
         return Some(RaydiumLaunchpadEventKind::CreateVestingEvent);
     }
     if data.get(..ANCHOR_EVENT_CPI_DISCRIMINATOR.len()) == Some(&ANCHOR_EVENT_CPI_DISCRIMINATOR[..])
-        && data.get(8..8 + POOL_CREATE_EVENT_DISCRIMINATOR.len())
-            == Some(&POOL_CREATE_EVENT_DISCRIMINATOR[..])
+        && data.get(8..16) == Some(&POOL_CREATE_EVENT_DISCRIMINATOR[..])
     {
         return Some(RaydiumLaunchpadEventKind::PoolCreateEvent);
     }
     if data.get(..ANCHOR_EVENT_CPI_DISCRIMINATOR.len()) == Some(&ANCHOR_EVENT_CPI_DISCRIMINATOR[..])
-        && data.get(8..8 + TRADE_EVENT_DISCRIMINATOR.len()) == Some(&TRADE_EVENT_DISCRIMINATOR[..])
+        && data.get(8..16) == Some(&TRADE_EVENT_DISCRIMINATOR[..])
     {
         return Some(RaydiumLaunchpadEventKind::TradeEvent);
     }
@@ -72,24 +69,24 @@ pub fn try_parse_raydium_launchpad_event(
     let event_kind = identify_raydium_launchpad_event(data)?;
     Some(match event_kind {
         RaydiumLaunchpadEventKind::ClaimVestedEvent => {
-            let mut data = &data
-                [ANCHOR_EVENT_CPI_DISCRIMINATOR.len() + CLAIM_VESTED_EVENT_DISCRIMINATOR.len()..];
+            // ANCHOR_EVENT_CPI_DISCRIMINATOR (8) + CLAIM_VESTED_EVENT_DISCRIMINATOR (8)
+            let mut data = &data[16..];
             ClaimVestedEvent::deserialize(&mut data).map(RaydiumLaunchpadEvent::ClaimVestedEvent)
         }
         RaydiumLaunchpadEventKind::CreateVestingEvent => {
-            let mut data = &data
-                [ANCHOR_EVENT_CPI_DISCRIMINATOR.len() + CREATE_VESTING_EVENT_DISCRIMINATOR.len()..];
+            // ANCHOR_EVENT_CPI_DISCRIMINATOR (8) + CREATE_VESTING_EVENT_DISCRIMINATOR (8)
+            let mut data = &data[16..];
             CreateVestingEvent::deserialize(&mut data)
                 .map(RaydiumLaunchpadEvent::CreateVestingEvent)
         }
         RaydiumLaunchpadEventKind::PoolCreateEvent => {
-            let mut data = &data
-                [ANCHOR_EVENT_CPI_DISCRIMINATOR.len() + POOL_CREATE_EVENT_DISCRIMINATOR.len()..];
+            // ANCHOR_EVENT_CPI_DISCRIMINATOR (8) + POOL_CREATE_EVENT_DISCRIMINATOR (8)
+            let mut data = &data[16..];
             PoolCreateEvent::deserialize(&mut data).map(RaydiumLaunchpadEvent::PoolCreateEvent)
         }
         RaydiumLaunchpadEventKind::TradeEvent => {
-            let mut data =
-                &data[ANCHOR_EVENT_CPI_DISCRIMINATOR.len() + TRADE_EVENT_DISCRIMINATOR.len()..];
+            // ANCHOR_EVENT_CPI_DISCRIMINATOR (8) + TRADE_EVENT_DISCRIMINATOR (8)
+            let mut data = &data[16..];
             TradeEvent::deserialize(&mut data).map(RaydiumLaunchpadEvent::TradeEvent)
         }
     })

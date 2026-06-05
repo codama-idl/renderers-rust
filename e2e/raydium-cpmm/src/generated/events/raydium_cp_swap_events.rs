@@ -43,11 +43,11 @@ pub fn try_parse_raydium_cp_swap_event(
     let event_kind = identify_raydium_cp_swap_event(data)?;
     Some(match event_kind {
         RaydiumCpSwapEventKind::LpChangeEvent => {
-            let mut data = &data[LP_CHANGE_EVENT_DISCRIMINATOR.len()..];
+            let mut data = &data[8..];
             LpChangeEvent::deserialize(&mut data).map(RaydiumCpSwapEvent::LpChangeEvent)
         }
         RaydiumCpSwapEventKind::SwapEvent => {
-            let mut data = &data[SWAP_EVENT_DISCRIMINATOR.len()..];
+            let mut data = &data[8..];
             SwapEvent::deserialize(&mut data).map(RaydiumCpSwapEvent::SwapEvent)
         }
     })

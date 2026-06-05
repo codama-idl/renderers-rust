@@ -6,6 +6,8 @@ import {
     CamelCaseString,
     constantDiscriminatorNode,
     constantValueNode,
+    definedTypeLinkNode,
+    definedTypeNode,
     eventNode,
     fieldDiscriminatorNode,
     fixedCountNode,
@@ -268,8 +270,139 @@ test('it validates all constant discriminators in from_bytes for multi-disc even
     codeContains(code, [
         'pub fn from_bytes',
         'MULTI_DISC_EVENT_DISCRIMINATOR.len()) != Some(&MULTI_DISC_EVENT_DISCRIMINATOR[..])',
-        'data.get(12..12 + MULTI_DISC_EVENT_DISCRIMINATOR2.len()) != Some(&MULTI_DISC_EVENT_DISCRIMINATOR2[..])',
+        'data.get(12..16) != Some(&MULTI_DISC_EVENT_DISCRIMINATOR2[..])',
         'Self::deserialize(&mut data)',
+    ]);
+});
+
+test('it uses a literal range in from_bytes for u8-array constant discriminators at non-zero offset', () => {
+    const prefix = constantValueNode(
+        fixedSizeTypeNode(bytesTypeNode(), 8),
+        bytesValueNode('base16', 'aabbccdd11223344'),
+    );
+    // u8-array constant: no fixedSizeTypeNode, but the fixed count gives a static size of 3.
+    const arrayDisc = constantValueNode(
+        arrayTypeNode(numberTypeNode('u8'), fixedCountNode(3)),
+        arrayValueNode([numberValueNode(1), numberValueNode(2), numberValueNode(3)]),
+    );
+    const node = programNode({
+        events: [
+            eventNode({
+                data: hiddenPrefixTypeNode(
+                    structTypeNode([structFieldTypeNode({ name: 'value', type: numberTypeNode('u64') })]),
+                    [prefix],
+                ),
+                discriminators: [constantDiscriminatorNode(prefix, 0), constantDiscriminatorNode(arrayDisc, 8)],
+                name: 'tailEvent',
+            }),
+        ],
+        name: 'myProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const code = getFromRenderMap(renderMap, 'events/tail_event.rs').content;
+
+    codeContains(code, [
+        'pub const TAIL_EVENT_DISCRIMINATOR2: [u8; 3] = [1, 2, 3];',
+        'if data.get(8..11) != Some(&TAIL_EVENT_DISCRIMINATOR2[..])',
+        'let mut data = &data[8..];',
+    ]);
+});
+
+test('it falls back to starts_with in from_bytes when a non-zero-offset discriminator size is unknown', () => {
+    const prefix = constantValueNode(
+        fixedSizeTypeNode(bytesTypeNode(), 8),
+        bytesValueNode('base16', 'aabbccdd11223344'),
+    );
+    // Link-typed constant: byte size not resolvable at the discriminator site.
+    const linkDisc = constantValueNode(
+        definedTypeLinkNode('discAlias'),
+        arrayValueNode([numberValueNode(1), numberValueNode(2), numberValueNode(3)]),
+    );
+    const node = programNode({
+        definedTypes: [definedTypeNode({ name: 'discAlias', type: fixedSizeTypeNode(bytesTypeNode(), 3) })],
+        events: [
+            eventNode({
+                data: hiddenPrefixTypeNode(
+                    structTypeNode([structFieldTypeNode({ name: 'value', type: numberTypeNode('u64') })]),
+                    [prefix],
+                ),
+                discriminators: [constantDiscriminatorNode(prefix, 0), constantDiscriminatorNode(linkDisc, 8)],
+                name: 'tailEvent',
+            }),
+        ],
+        name: 'myProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const code = getFromRenderMap(renderMap, 'events/tail_event.rs').content;
+
+    codeContains(code, [
+        'pub const TAIL_EVENT_DISCRIMINATOR2: DiscAlias = [1, 2, 3];',
+        'if !data.get(8..).is_some_and(|tail| tail.starts_with(&TAIL_EVENT_DISCRIMINATOR2[..]))',
+        'let mut data = &data[8..];',
+    ]);
+});
+
+test('it compares number constant discriminators via to_le_bytes in from_bytes', () => {
+    // Number constants render as scalar Rust constants (`pub const X: u32`),
+    // so from_bytes must compare their byte encoding, not slice the constant.
+    const numDisc = constantValueNode(numberTypeNode('u32'), numberValueNode(42));
+    const node = programNode({
+        events: [
+            // Number discriminator at offset 0.
+            eventNode({
+                data: hiddenPrefixTypeNode(
+                    structTypeNode([structFieldTypeNode({ name: 'value', type: numberTypeNode('u64') })]),
+                    [constantValueNode(fixedSizeTypeNode(bytesTypeNode(), 4), bytesValueNode('base16', '2a000000'))],
+                ),
+                discriminators: [constantDiscriminatorNode(numDisc, 0)],
+                name: 'numHeadEvent',
+            }),
+            // Number discriminator at non-zero offset.
+            eventNode({
+                data: hiddenPrefixTypeNode(
+                    structTypeNode([structFieldTypeNode({ name: 'value', type: numberTypeNode('u64') })]),
+                    [
+                        constantValueNode(
+                            fixedSizeTypeNode(bytesTypeNode(), 8),
+                            bytesValueNode('base16', 'aabbccdd11223344'),
+                        ),
+                    ],
+                ),
+                discriminators: [
+                    constantDiscriminatorNode(
+                        constantValueNode(
+                            fixedSizeTypeNode(bytesTypeNode(), 8),
+                            bytesValueNode('base16', 'aabbccdd11223344'),
+                        ),
+                        0,
+                    ),
+                    constantDiscriminatorNode(numDisc, 8),
+                ],
+                name: 'numTailEvent',
+            }),
+        ],
+        name: 'myProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+
+    const headCode = getFromRenderMap(renderMap, 'events/num_head_event.rs').content;
+    codeContains(headCode, [
+        'pub const NUM_HEAD_EVENT_DISCRIMINATOR: u32 = 42;',
+        'if data.get(..4) != Some(&NUM_HEAD_EVENT_DISCRIMINATOR.to_le_bytes())',
+        'let mut data = &data[4..];',
+    ]);
+
+    const tailCode = getFromRenderMap(renderMap, 'events/num_tail_event.rs').content;
+    codeContains(tailCode, [
+        'pub const NUM_TAIL_EVENT_DISCRIMINATOR2: u32 = 42;',
+        'if data.get(8..12) != Some(&NUM_TAIL_EVENT_DISCRIMINATOR2.to_le_bytes())',
+        'let mut data = &data[8..];',
     ]);
 });
 
@@ -438,12 +571,9 @@ test('it renders identify and try_parse for events with constant discriminators'
         'return Some(MyProgramEventKind::TradeEvent)',
         'pub fn try_parse_my_program_event(data: &[u8]) -> Option<Result<MyProgramEvent, std::io::Error>>',
         'identify_my_program_event(data)?',
-        'MyProgramEventKind::SettleEvent =>',
-        'let mut data = &data[SETTLE_EVENT_DISCRIMINATOR.len()..]',
-        'SettleEvent::deserialize(&mut data)',
-        'MyProgramEventKind::TradeEvent =>',
-        'let mut data = &data[TRADE_EVENT_DISCRIMINATOR.len()..]',
-        'TradeEvent::deserialize(&mut data)',
+        // Skips are numeric literals (8-byte prefix), so match each arm to keep them distinct.
+        /MyProgramEventKind::SettleEvent => \{\s*let mut data = &data\[8\.\.\];\s*SettleEvent::deserialize\(&mut data\)/,
+        /MyProgramEventKind::TradeEvent => \{\s*let mut data = &data\[8\.\.\];\s*TradeEvent::deserialize\(&mut data\)/,
     ]);
     codeDoesNotContains(code, ['from_bytes', 'Err(std::io::Error::new']);
 });
@@ -492,8 +622,7 @@ test('it uses BorshDeserialize for events without from_bytes in try_parse', () =
     const code = getFromRenderMap(renderMap, 'events/my_program_events.rs').content;
 
     codeContains(code, [
-        'let mut data = &data[TRADE_EVENT_DISCRIMINATOR.len()..]',
-        'TradeEvent::deserialize(&mut data)',
+        /MyProgramEventKind::TradeEvent => \{\s*let mut data = &data\[8\.\.\];\s*TradeEvent::deserialize\(&mut data\)/,
     ]);
     codeContains(code, ['SimpleEvent::deserialize(&mut data)']);
     codeDoesNotContains(code, ['from_bytes']);
@@ -758,10 +887,160 @@ test('it handles non-zero offset in constant discriminator conditions', () => {
 
     codeContains(code, [
         'pub fn identify_my_program_event',
-        'data.get(8..8 + OFFSET_EVENT_DISCRIMINATOR.len()) == Some(&OFFSET_EVENT_DISCRIMINATOR[..])',
+        'data.get(8..12) == Some(&OFFSET_EVENT_DISCRIMINATOR[..])',
         'return Some(MyProgramEventKind::OffsetEvent)',
         'pub fn try_parse_my_program_event',
         'OffsetEvent::deserialize(&mut data)',
+    ]);
+});
+
+test('it uses a literal range in identify for u8-array constant discriminators at non-zero offset', () => {
+    // u8-array constant: no fixedSizeTypeNode, but the fixed count gives a static size of 3.
+    const arrayDisc = constantValueNode(
+        arrayTypeNode(numberTypeNode('u8'), fixedCountNode(3)),
+        arrayValueNode([numberValueNode(1), numberValueNode(2), numberValueNode(3)]),
+    );
+    const node = programNode({
+        events: [
+            eventNode({
+                data: structTypeNode([structFieldTypeNode({ name: 'value', type: numberTypeNode('u64') })]),
+                discriminators: [constantDiscriminatorNode(arrayDisc, 4)],
+                name: 'tailDiscEvent',
+            }),
+        ],
+        name: 'myProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const code = getFromRenderMap(renderMap, 'events/my_program_events.rs').content;
+
+    codeContains(code, [
+        'data.get(4..7) == Some(&TAIL_DISC_EVENT_DISCRIMINATOR[..])',
+        'return Some(MyProgramEventKind::TailDiscEvent)',
+    ]);
+});
+
+test('it falls back to starts_with in identify when a non-zero-offset discriminator size is unknown', () => {
+    // Link-typed constant: byte size not resolvable at the discriminator site.
+    const linkDisc = constantValueNode(
+        definedTypeLinkNode('discAlias'),
+        arrayValueNode([numberValueNode(1), numberValueNode(2), numberValueNode(3)]),
+    );
+    const node = programNode({
+        definedTypes: [definedTypeNode({ name: 'discAlias', type: fixedSizeTypeNode(bytesTypeNode(), 3) })],
+        events: [
+            eventNode({
+                data: structTypeNode([structFieldTypeNode({ name: 'value', type: numberTypeNode('u64') })]),
+                discriminators: [constantDiscriminatorNode(linkDisc, 4)],
+                name: 'tailDiscEvent',
+            }),
+        ],
+        name: 'myProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const code = getFromRenderMap(renderMap, 'events/my_program_events.rs').content;
+
+    codeContains(code, [
+        'data.get(4..).is_some_and(|tail| tail.starts_with(&TAIL_DISC_EVENT_DISCRIMINATOR[..]))',
+        'return Some(MyProgramEventKind::TailDiscEvent)',
+    ]);
+});
+
+test('it compares number constant discriminators via to_le_bytes in identify', () => {
+    // Scalar number constants can't be sliced, so identify compares their byte encoding.
+    // Only LE is reachable: the type manifest visitor rejects big-endian numbers for Borsh.
+    const numDisc = constantValueNode(numberTypeNode('u32'), numberValueNode(42));
+    const shortDisc = constantValueNode(numberTypeNode('u16'), numberValueNode(7));
+    const node = programNode({
+        events: [
+            eventNode({
+                data: structTypeNode([structFieldTypeNode({ name: 'value', type: numberTypeNode('u64') })]),
+                discriminators: [constantDiscriminatorNode(numDisc, 0), constantDiscriminatorNode(shortDisc, 8)],
+                name: 'numDiscEvent',
+            }),
+        ],
+        name: 'myProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+
+    const eventCode = getFromRenderMap(renderMap, 'events/num_disc_event.rs').content;
+    codeContains(eventCode, [
+        'pub const NUM_DISC_EVENT_DISCRIMINATOR: u32 = 42;',
+        'pub const NUM_DISC_EVENT_DISCRIMINATOR2: u16 = 7;',
+    ]);
+
+    const code = getFromRenderMap(renderMap, 'events/my_program_events.rs').content;
+    codeContains(code, [
+        'data.get(..4) == Some(&NUM_DISC_EVENT_DISCRIMINATOR.to_le_bytes())',
+        'data.get(8..10) == Some(&NUM_DISC_EVENT_DISCRIMINATOR2.to_le_bytes())',
+        'return Some(MyProgramEventKind::NumDiscEvent)',
+    ]);
+});
+
+test('it uses a literal range for fixed-size field discriminators at non-zero offset', () => {
+    const node = programNode({
+        events: [
+            eventNode({
+                data: structTypeNode([
+                    structFieldTypeNode({ name: 'header', type: numberTypeNode('u32') }),
+                    structFieldTypeNode({
+                        defaultValue: arrayValueNode([numberValueNode(1), numberValueNode(2), numberValueNode(3)]),
+                        name: 'disc',
+                        type: arrayTypeNode(numberTypeNode('u8'), fixedCountNode(3)),
+                    }),
+                    structFieldTypeNode({ name: 'value', type: numberTypeNode('u64') }),
+                ]),
+                discriminators: [fieldDiscriminatorNode('disc', 4)],
+                name: 'offsetFieldEvent',
+            }),
+        ],
+        name: 'myProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const code = getFromRenderMap(renderMap, 'events/my_program_events.rs').content;
+
+    codeContains(code, [
+        'data.get(4..7) == Some(&OFFSET_FIELD_EVENT_DISC[..])',
+        'return Some(MyProgramEventKind::OffsetFieldEvent)',
+    ]);
+});
+
+test('it falls back to starts_with for field discriminators with unknown size at non-zero offset', () => {
+    const node = programNode({
+        definedTypes: [definedTypeNode({ name: 'discAlias', type: fixedSizeTypeNode(bytesTypeNode(), 3) })],
+        events: [
+            eventNode({
+                data: structTypeNode([
+                    structFieldTypeNode({ name: 'header', type: numberTypeNode('u32') }),
+                    structFieldTypeNode({
+                        defaultValue: arrayValueNode([numberValueNode(1), numberValueNode(2), numberValueNode(3)]),
+                        name: 'disc',
+                        // Link-typed field: byte size not resolvable at the discriminator site.
+                        type: definedTypeLinkNode('discAlias'),
+                    }),
+                    structFieldTypeNode({ name: 'value', type: numberTypeNode('u64') }),
+                ]),
+                discriminators: [fieldDiscriminatorNode('disc', 4)],
+                name: 'offsetFieldEvent',
+            }),
+        ],
+        name: 'myProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const code = getFromRenderMap(renderMap, 'events/my_program_events.rs').content;
+
+    codeContains(code, [
+        'data.get(4..).is_some_and(|tail| tail.starts_with(&OFFSET_FIELD_EVENT_DISC[..]))',
+        'return Some(MyProgramEventKind::OffsetFieldEvent)',
     ]);
 });
 
@@ -795,7 +1074,7 @@ test('it handles multiple constant discriminators and excludes events with unres
 
     codeContains(code, [
         'MULTI_DISC_EVENT_DISCRIMINATOR.len()) == Some(&MULTI_DISC_EVENT_DISCRIMINATOR[..])',
-        'MULTI_DISC_EVENT_DISCRIMINATOR2.len()) == Some(&MULTI_DISC_EVENT_DISCRIMINATOR2[..])',
+        'data.get(4..6) == Some(&MULTI_DISC_EVENT_DISCRIMINATOR2[..])',
         'return Some(MyProgramEventKind::MultiDiscEvent)',
     ]);
     codeContains(code, ['pub enum MyProgramEventKind']);
@@ -876,10 +1155,138 @@ test('it generates from_bytes that validates both the framing prefix and the eve
     codeContains(tradeEventCode, [
         'pub fn from_bytes',
         'data.get(..EVENT_CPI_PREFIX.len()) != Some(&EVENT_CPI_PREFIX[..])',
-        'data.get(8..8 + TRADE_EVENT_DISCRIMINATOR.len()) != Some(&TRADE_EVENT_DISCRIMINATOR[..])',
-        'let mut data = &data[EVENT_CPI_PREFIX.len() + TRADE_EVENT_DISCRIMINATOR.len()..];',
-        'Self::deserialize(&mut data)',
+        'data.get(8..16) != Some(&TRADE_EVENT_DISCRIMINATOR[..])',
+        // Both discriminator sizes are known, so the skip folds to a literal
+        // with an explanatory comment on the line above.
+        /\/\/ EVENT_CPI_PREFIX \(8\) \+ TRADE_EVENT_DISCRIMINATOR \(8\)\n\s*let mut data = &data\[16\.\.\];\n\s*Self::deserialize\(&mut data\)/,
     ]);
+});
+
+test('it folds the framed skip to a literal for u8-array discriminators', () => {
+    // u8-array discriminator: the fixed count gives a static size of 8, so the skip folds to 16.
+    const arrayEventDisc = constantValueNode(
+        arrayTypeNode(numberTypeNode('u8'), fixedCountNode(8)),
+        arrayValueNode([
+            numberValueNode(1),
+            numberValueNode(2),
+            numberValueNode(3),
+            numberValueNode(4),
+            numberValueNode(5),
+            numberValueNode(6),
+            numberValueNode(7),
+            numberValueNode(8),
+        ]),
+    );
+    const node = programNode({
+        events: [
+            eventNode({
+                data: hiddenPrefixTypeNode(
+                    structTypeNode([structFieldTypeNode({ name: 'amount', type: numberTypeNode('u64') })]),
+                    [framingPrefix, arrayEventDisc],
+                ),
+                discriminators: [
+                    constantDiscriminatorNode(framingPrefix, 0),
+                    constantDiscriminatorNode(arrayEventDisc, 8),
+                ],
+                framing: cpiFraming,
+                name: 'mixedEvent',
+            }),
+        ],
+        name: 'myProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const eventCode = getFromRenderMap(renderMap, 'events/mixed_event.rs').content;
+    const programEventsCode = getFromRenderMap(renderMap, 'events/my_program_events.rs').content;
+
+    codeContains(eventCode, [
+        'data.get(..EVENT_CPI_PREFIX.len()) != Some(&EVENT_CPI_PREFIX[..])',
+        'data.get(8..16) != Some(&MIXED_EVENT_DISCRIMINATOR[..])',
+        'let mut data = &data[16..];',
+    ]);
+    codeContains(programEventsCode, [
+        /MyProgramEventKind::MixedEvent => \{\s*\/\/ EVENT_CPI_PREFIX \(8\) \+ MIXED_EVENT_DISCRIMINATOR \(8\)\n\s*let mut data = &data\[16\.\.\];\n\s*MixedEvent::deserialize\(&mut data\)/,
+    ]);
+});
+
+test('it compares number constant discriminators via to_le_bytes in framed from_bytes', () => {
+    const numEventDisc = constantValueNode(numberTypeNode('u32'), numberValueNode(42));
+    const node = programNode({
+        events: [
+            eventNode({
+                data: hiddenPrefixTypeNode(
+                    structTypeNode([structFieldTypeNode({ name: 'amount', type: numberTypeNode('u64') })]),
+                    [framingPrefix, numEventDisc],
+                ),
+                discriminators: [
+                    constantDiscriminatorNode(framingPrefix, 0),
+                    constantDiscriminatorNode(numEventDisc, 8),
+                ],
+                framing: cpiFraming,
+                name: 'numFramedEvent',
+            }),
+        ],
+        name: 'myProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const eventCode = getFromRenderMap(renderMap, 'events/num_framed_event.rs').content;
+    const programEventsCode = getFromRenderMap(renderMap, 'events/my_program_events.rs').content;
+
+    codeContains(eventCode, [
+        'pub const NUM_FRAMED_EVENT_DISCRIMINATOR: u32 = 42;',
+        'data.get(..EVENT_CPI_PREFIX.len()) != Some(&EVENT_CPI_PREFIX[..])',
+        'if data.get(8..12) != Some(&NUM_FRAMED_EVENT_DISCRIMINATOR.to_le_bytes())',
+        // Both sizes are known (8 framing + 4 number), so the skip folds to a literal.
+        'let mut data = &data[12..];',
+    ]);
+    codeContains(programEventsCode, [
+        'data.get(8..12) == Some(&NUM_FRAMED_EVENT_DISCRIMINATOR.to_le_bytes())',
+        /MyProgramEventKind::NumFramedEvent => \{\s*\/\/ EVENT_CPI_PREFIX \(8\) \+ NUM_FRAMED_EVENT_DISCRIMINATOR \(4\)\n\s*let mut data = &data\[12\.\.\];\n\s*NumFramedEvent::deserialize\(&mut data\)/,
+    ]);
+});
+
+test('it falls back to a chained .len() slice skip when a framed discriminator size is unknown', () => {
+    // Link-typed discriminator: the aliased type's byte size is not resolvable
+    // at the discriminator site, so the framed skip can't fold to a literal.
+    const linkEventDisc = constantValueNode(
+        definedTypeLinkNode('discAlias'),
+        arrayValueNode([numberValueNode(1), numberValueNode(2), numberValueNode(3)]),
+    );
+    const node = programNode({
+        definedTypes: [definedTypeNode({ name: 'discAlias', type: fixedSizeTypeNode(bytesTypeNode(), 3) })],
+        events: [
+            eventNode({
+                data: hiddenPrefixTypeNode(
+                    structTypeNode([structFieldTypeNode({ name: 'amount', type: numberTypeNode('u64') })]),
+                    [framingPrefix, linkEventDisc],
+                ),
+                discriminators: [
+                    constantDiscriminatorNode(framingPrefix, 0),
+                    constantDiscriminatorNode(linkEventDisc, 8),
+                ],
+                framing: cpiFraming,
+                name: 'mixedEvent',
+            }),
+        ],
+        name: 'myProgram',
+        publicKey: '11111111111111111111111111111111',
+    });
+
+    const renderMap = visit(node, getRenderMapVisitor());
+    const eventCode = getFromRenderMap(renderMap, 'events/mixed_event.rs').content;
+    const programEventsCode = getFromRenderMap(renderMap, 'events/my_program_events.rs').content;
+
+    codeContains(eventCode, [
+        'data.get(..EVENT_CPI_PREFIX.len()) != Some(&EVENT_CPI_PREFIX[..])',
+        'if !data.get(8..).is_some_and(|tail| tail.starts_with(&MIXED_EVENT_DISCRIMINATOR[..]))',
+        // The framing size (8) is known and folds to a literal; the unknown-size
+        // discriminator chains a `[.len()..]` slice so no `+` arithmetic is emitted.
+        /\/\/ EVENT_CPI_PREFIX \(8\) \+ MIXED_EVENT_DISCRIMINATOR\n\s*let mut data = &data\[8\.\.\]\[MIXED_EVENT_DISCRIMINATOR\.len\(\)\.\.\];/,
+    ]);
+    codeContains(programEventsCode, ['let mut data = &data[8..][MIXED_EVENT_DISCRIMINATOR.len()..];']);
 });
 
 test('it references the hoisted framing constant in identify and try_parse', () => {
@@ -895,11 +1302,12 @@ test('it references the hoisted framing constant in identify and try_parse', () 
     codeContains(programEventsCode, [
         'pub fn identify_my_program_event',
         'data.get(..EVENT_CPI_PREFIX.len()) == Some(&EVENT_CPI_PREFIX[..])',
-        '&& data.get(8..8 + TRADE_EVENT_DISCRIMINATOR.len()) == Some(&TRADE_EVENT_DISCRIMINATOR[..])',
-        '&& data.get(8..8 + SETTLE_EVENT_DISCRIMINATOR.len()) == Some(&SETTLE_EVENT_DISCRIMINATOR[..])',
+        '&& data.get(8..16) == Some(&TRADE_EVENT_DISCRIMINATOR[..])',
+        '&& data.get(8..16) == Some(&SETTLE_EVENT_DISCRIMINATOR[..])',
         'pub fn try_parse_my_program_event',
-        'let mut data = &data[EVENT_CPI_PREFIX.len() + TRADE_EVENT_DISCRIMINATOR.len()..]',
-        'let mut data = &data[EVENT_CPI_PREFIX.len() + SETTLE_EVENT_DISCRIMINATOR.len()..]',
+        // Skips are numeric literals (8 framing + 8 event disc), so match each arm to keep them distinct.
+        /MyProgramEventKind::TradeEvent => \{\s*\/\/ EVENT_CPI_PREFIX \(8\) \+ TRADE_EVENT_DISCRIMINATOR \(8\)\n\s*let mut data = &data\[16\.\.\];\n\s*TradeEvent::deserialize\(&mut data\)/,
+        /MyProgramEventKind::SettleEvent => \{\s*\/\/ EVENT_CPI_PREFIX \(8\) \+ SETTLE_EVENT_DISCRIMINATOR \(8\)\n\s*let mut data = &data\[16\.\.\];\n\s*SettleEvent::deserialize\(&mut data\)/,
     ]);
 });
 

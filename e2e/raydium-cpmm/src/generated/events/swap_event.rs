@@ -36,7 +36,7 @@ impl SwapEvent {
                 "invalid event discriminator",
             ));
         }
-        let mut data = &data[SWAP_EVENT_DISCRIMINATOR.len()..];
+        let mut data = &data[8..];
         Self::deserialize(&mut data)
     }
 }
