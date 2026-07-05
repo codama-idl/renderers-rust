@@ -51,6 +51,40 @@ test('it renders a byte array seed used on an account', () => {
     ]);
 });
 
+test('it renders a numeric seed as little-endian bytes', () => {
+    // Given the following program with 1 account and 1 pda with a numeric seed.
+    const node = programNode({
+        accounts: [
+            accountNode({
+                name: 'testAccount',
+                pda: pdaLinkNode('testPda'),
+            }),
+        ],
+        name: 'splToken',
+        pdas: [
+            // Numeric (u64) seed.
+            pdaNode({
+                name: 'testPda',
+                seeds: [variablePdaSeedNode('nonce', numberTypeNode('u64'))],
+            }),
+        ],
+        publicKey: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+    });
+
+    // When we render it.
+    const renderMap = visit(node, getRenderMapVisitor());
+
+    // Then the seed is encoded via its little-endian bytes, matching how the
+    // program derives the address, not via its decimal string.
+    codeContains(getFromRenderMap(renderMap, 'accounts/test_account.rs').content, [
+        `nonce: u64,`,
+        `&nonce.to_le_bytes(),`,
+    ]);
+    codeDoesNotContains(getFromRenderMap(renderMap, 'accounts/test_account.rs').content, [
+        `nonce.to_string().as_ref(),`,
+    ]);
+});
+
 test('it renders an empty array of seeds for seedless PDAs', () => {
     // Given the following program with 1 account and 1 pda with empty seeds.
     const node = programNode({

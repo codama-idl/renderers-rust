@@ -72,6 +72,8 @@ impl {{ account.name | pascalCase }} {
               {{ seed.name | snakeCase }}.as_ref(),
             {% elif seed.kind == 'variablePdaSeedNode' and seed.resolvedType.kind == 'bytesTypeNode' %}
               &{{ seed.name | snakeCase }},
+            {% elif seed.kind == 'variablePdaSeedNode' and seed.resolvedType.kind == 'numberTypeNode' %}
+              &{{ seed.name | snakeCase }}.{{ 'to_le_bytes' if seed.resolvedType.endian == 'le' else 'to_be_bytes' }}(),
             {% else %}
               {{ seed.name | snakeCase }}.to_string().as_ref(),
             {% endif %}
@@ -104,6 +106,8 @@ impl {{ account.name | pascalCase }} {
               {{ seed.name | snakeCase }}.as_ref(),
             {% elif seed.kind == 'variablePdaSeedNode' and seed.resolvedType.kind == 'bytesTypeNode' %}
               &{{ seed.name | snakeCase }},
+            {% elif seed.kind == 'variablePdaSeedNode' and seed.resolvedType.kind == 'numberTypeNode' %}
+              &{{ seed.name | snakeCase }}.{{ 'to_le_bytes' if seed.resolvedType.endian == 'le' else 'to_be_bytes' }}(),
             {% else %}
               {{ seed.name | snakeCase }}.to_string().as_ref(),
             {% endif %}
