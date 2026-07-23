@@ -1,5 +1,13 @@
 # @codama/renderers-rust
 
+## 3.1.1
+
+### Patch Changes
+
+- [#82](https://github.com/codama-idl/renderers-rust/pull/82) [`13cfd0f`](https://github.com/codama-idl/renderers-rust/commit/13cfd0f3689c7a0535496d4ba59de2899db18d9e) Thanks [@ShuhaoQing](https://github.com/ShuhaoQing)! - Fix remaining accounts is_writable, is_signer order when invoke
+
+- [#99](https://github.com/codama-idl/renderers-rust/pull/99) [`f90173a`](https://github.com/codama-idl/renderers-rust/commit/f90173a2f489f63beabf2bf702f6467848ee0bc1) Thanks [@lorisleiva](https://github.com/lorisleiva)! - Bump Codama dependencies to the latest version.
+
 ## 3.1.0
 
 ### Minor Changes
