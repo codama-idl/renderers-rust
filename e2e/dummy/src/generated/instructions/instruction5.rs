@@ -161,8 +161,8 @@ impl<'a, 'b> Instruction5Cpi<'a, 'b> {
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
-                is_signer: remaining_account.1,
-                is_writable: remaining_account.2,
+                is_writable: remaining_account.1,
+                is_signer: remaining_account.2,
             })
         });
         let mut data = Instruction5InstructionData::new().try_to_vec().unwrap();
