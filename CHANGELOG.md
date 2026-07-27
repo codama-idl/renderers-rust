@@ -1,5 +1,11 @@
 # @codama/renderers-rust
 
+## 3.1.2
+
+### Patch Changes
+
+- [#117](https://github.com/codama-idl/renderers-rust/pull/117) [`9b7ff9c`](https://github.com/codama-idl/renderers-rust/commit/9b7ff9cee4fcace4c9f6f6b9096382127e98a1ec) Thanks [@lorisleiva](https://github.com/lorisleiva)! - Support `@codama/nodes@1.10`, whose node array attributes are now optional (`Array<T> | undefined`). Array reads are guarded with `?? []` throughout the renderer, and the new `injectedValueNode` value kind now throws an explicit unsupported-node error rather than being silently mishandled.
+
 ## 3.1.1
 
 ### Patch Changes
