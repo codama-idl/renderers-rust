@@ -76,7 +76,7 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                     const typeManifest = visit(node, typeManifestVisitor);
 
                     // Discriminator constants.
-                    const fields = resolveNestedTypeNode(node.data).fields;
+                    const fields = resolveNestedTypeNode(node.data).fields ?? [];
                     const discriminatorConstants = getDiscriminatorConstants({
                         discriminatorNodes: node.discriminators ?? [],
                         fields,
@@ -166,7 +166,7 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                     // Discriminator constants.
                     const discriminatorConstants = getDiscriminatorConstants({
                         discriminatorNodes: node.discriminators ?? [],
-                        fields: node.arguments,
+                        fields: node.arguments ?? [],
                         getImportFrom,
                         prefix: node.name,
                         typeManifestVisitor,
@@ -184,7 +184,7 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                     let hasArgs = false;
                     let hasOptional = false;
 
-                    node.arguments.forEach(argument => {
+                    (node.arguments ?? []).forEach(argument => {
                         const argumentVisitor = getTypeManifestVisitor({
                             getImportFrom,
                             getTraitsFromNode,
@@ -225,7 +225,7 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                         });
                     });
 
-                    const struct = structTypeNodeFromInstructionArgumentNodes(node.arguments);
+                    const struct = structTypeNodeFromInstructionArgumentNodes(node.arguments ?? []);
                     const structVisitor = getTypeManifestVisitor({
                         getImportFrom,
                         getTraitsFromNode,
@@ -258,18 +258,18 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                 visitProgram(node, { self }) {
                     program = node;
                     let renders = mergeRenderMaps([
-                        ...node.accounts.map(account => visit(account, self)),
-                        ...node.definedTypes.map(type => visit(type, self)),
+                        ...(node.accounts ?? []).map(account => visit(account, self)),
+                        ...(node.definedTypes ?? []).map(type => visit(type, self)),
                         ...getAllInstructionsWithSubs(node, {
                             leavesOnly: !renderParentInstructions,
                         }).map(ix => visit(ix, self)),
                     ]);
 
                     // Errors.
-                    if (node.errors.length > 0) {
+                    if ((node.errors ?? []).length > 0) {
                         renders = addToRenderMap(renders, `errors/${snakeCase(node.name)}.rs`, {
                             content: render('errorsPage.njk', {
-                                errors: node.errors,
+                                errors: node.errors ?? [],
                                 imports: new ImportMap().toString(dependencyMap),
                                 program: node,
                             }),
@@ -342,8 +342,8 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
 
 function getConflictsForInstructionAccountsAndArgs(instruction: InstructionNode): string[] {
     const allNames = [
-        ...instruction.accounts.map(account => account.name),
-        ...instruction.arguments.map(argument => argument.name),
+        ...(instruction.accounts ?? []).map(account => account.name),
+        ...(instruction.arguments ?? []).map(argument => argument.name),
     ];
     const duplicates = allNames.filter((e, i, a) => a.indexOf(e) !== i);
     return [...new Set(duplicates)];
