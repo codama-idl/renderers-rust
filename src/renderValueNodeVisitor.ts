@@ -35,7 +35,7 @@ export function renderValueNodeVisitor(
 > {
     return {
         visitArrayValue(node) {
-            const list = node.items.map(v => visit(v, this));
+            const list = (node.items ?? []).map(v => visit(v, this));
             return {
                 imports: new ImportMap().mergeWith(...list.map(c => c.imports)),
                 render: `[${list.map(c => c.render).join(', ')}]`,
@@ -84,6 +84,11 @@ export function renderValueNodeVisitor(
                 render: `${enumName}::${variantName} ${fields}`,
             };
         },
+        visitInjectedValue() {
+            // An injected value is resolved by key from a surrounding provider at a later stage,
+            // so it has no concrete Rust rendering here.
+            throw new Error('Unsupported injected value node.');
+        },
         visitMapEntryValue(node) {
             const mapKey = visit(node.key, this);
             const mapValue = visit(node.value, this);
@@ -93,7 +98,7 @@ export function renderValueNodeVisitor(
             };
         },
         visitMapValue(node) {
-            const map = node.entries.map(entry => visit(entry, this));
+            const map = (node.entries ?? []).map(entry => visit(entry, this));
             const imports = new ImportMap().add('std::collection::HashMap');
             return {
                 imports: imports.mergeWith(...map.map(c => c.imports)),
@@ -119,7 +124,7 @@ export function renderValueNodeVisitor(
             };
         },
         visitSetValue(node) {
-            const set = node.items.map(v => visit(v, this));
+            const set = (node.items ?? []).map(v => visit(v, this));
             const imports = new ImportMap().add('std::collection::HashSet');
             return {
                 imports: imports.mergeWith(...set.map(c => c.imports)),
@@ -147,14 +152,14 @@ export function renderValueNodeVisitor(
             };
         },
         visitStructValue(node) {
-            const struct = node.fields.map(field => visit(field, this));
+            const struct = (node.fields ?? []).map(field => visit(field, this));
             return {
                 imports: new ImportMap().mergeWith(...struct.map(c => c.imports)),
                 render: `{ ${struct.map(c => c.render).join(', ')} }`,
             };
         },
         visitTupleValue(node) {
-            const tuple = node.items.map(v => visit(v, this));
+            const tuple = (node.items ?? []).map(v => visit(v, this));
             return {
                 imports: new ImportMap().mergeWith(...tuple.map(c => c.imports)),
                 render: `(${tuple.map(c => c.render).join(', ')})`,
