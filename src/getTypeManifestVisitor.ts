@@ -246,7 +246,7 @@ export function getTypeManifestVisitor(options: {
                         throw new Error('Enum type must have a parent name.');
                     }
 
-                    const variants = enumType.variants.map(variant => visit(variant, self));
+                    const variants = (enumType.variants ?? []).map(variant => visit(variant, self));
                     const variantNames = variants.map(variant => variant.type).join('\n');
                     const mergedManifest = mergeManifests(variants);
 
@@ -454,7 +454,7 @@ export function getTypeManifestVisitor(options: {
                         throw new Error('Struct type must have a parent name.');
                     }
 
-                    const fields = structType.fields.map(field => visit(field, self));
+                    const fields = (structType.fields ?? []).map(field => visit(field, self));
                     const fieldTypes = fields.map(field => field.type).join('\n');
                     const mergedManifest = mergeManifests(fields);
 
@@ -484,7 +484,7 @@ export function getTypeManifestVisitor(options: {
                 },
 
                 visitTupleType(tupleType, { self }) {
-                    const items = tupleType.items.map(item => visit(item, self));
+                    const items = (tupleType.items ?? []).map(item => visit(item, self));
                     const mergedManifest = mergeManifests(items);
 
                     return {
