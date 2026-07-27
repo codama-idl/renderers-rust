@@ -2,7 +2,7 @@ name: Main
 
 on:
   push:
-    branches: [main]
+    branches: [main, '*.x']
   pull_request:
 
 env:
@@ -11,6 +11,7 @@ env:
   NODE_VERSION: 20
   SOLANA_VERSION: 2.1.9
   RUST_TOOLCHAIN: '1.86.0'
+  RELEASE_VERSION: 2.x
 
 jobs:
   lint:
@@ -106,8 +107,8 @@ jobs:
         id: changesets
         uses: changesets/action@v1
         with:
-          commit: 'Publish package'
-          title: 'Publish package'
+          commit: '[${{ env.RELEASE_VERSION }}] Publish package'
+          title: '[${{ env.RELEASE_VERSION }}] Publish package'
           publish: pnpm publish-package
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
