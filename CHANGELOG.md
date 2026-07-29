@@ -1,5 +1,11 @@
 # @codama/renderers-rust
 
+## 3.1.3
+
+### Patch Changes
+
+- [#102](https://github.com/codama-idl/renderers-rust/pull/102) [`c82d7e6`](https://github.com/codama-idl/renderers-rust/commit/c82d7e6ad61576b6453ad143a96c67fc2159a83f) Thanks [@plutohan](https://github.com/plutohan)! - Encode numeric PDA seeds as little-endian bytes in `find_pda`/`create_pda`
+
 ## 3.1.2
 
 ### Patch Changes
