@@ -4,11 +4,19 @@ on:
   push:
     branches: [main, '*.x']
   pull_request:
+    branches: [main, '*.x']
+
+concurrency:
+  group: main-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
 
 env:
   # Among other things, opts out of Turborepo telemetry. See https://consoledonottrack.com/.
   DO_NOT_TRACK: '1'
-  NODE_VERSION: 20
+  NODE_VERSION: 24
   SOLANA_VERSION: 2.1.9
   RUST_TOOLCHAIN: '1.86.0'
   RELEASE_VERSION: 3.x
@@ -18,33 +26,33 @@ jobs:
     name: Check styling
     runs-on: ubuntu-latest
     steps:
-      - name: Git checkout
-        uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v7
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
 
-      - name: Setup Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Compile JS and types
-        run: pnpm run build
+        run: pnpm build
 
       - name: Check linting
-        run: pnpm run lint
+        run: pnpm lint
 
   tests:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - name: Git checkout
-        uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v7
 
       - name: Install Rust Toolchain and Components
         uses: dtolnay/rust-toolchain@master
@@ -57,14 +65,14 @@ jobs:
         with:
           version: ${{ env.SOLANA_VERSION }}
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
 
-      - name: Setup Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -88,33 +96,44 @@ jobs:
     outputs:
       published: ${{ steps.changesets.outputs.published }}
     steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ secrets.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          token: ${{ steps.app-token.outputs.token }}
 
-      - name: Setup Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
+          cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Create Release Pull Request or Publish
         id: changesets
-        uses: changesets/action@v1
+        uses: changesets/action@v2.1.1
         with:
-          commit: '[${{ env.RELEASE_VERSION }}] Publish package'
-          title: '[${{ env.RELEASE_VERSION }}] Publish package'
-          publish: pnpm publish-package
+          github-token: ${{ steps.app-token.outputs.token }}
+          commit-message: '[${{ env.RELEASE_VERSION }}] Publish package'
+          pr-title: '[${{ env.RELEASE_VERSION }}] Publish package'
+          publish-script: pnpm publish-package
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   dependabot:
+    name: Dependabot
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'codama-idl/renderers-rust'
     needs: [lint, tests]
@@ -122,12 +141,19 @@ jobs:
       contents: write
       pull-requests: write
     steps:
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v3
+
       - name: Auto-approve the PR
+        if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
         run: gh pr review --approve "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Enable auto-merge
+        if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
         run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
