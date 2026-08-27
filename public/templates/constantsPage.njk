@@ -1,0 +1,13 @@
+{% extends "layout.njk" %}
+{% import "macros.njk" as macros %}
+
+{% block main %}
+
+{{ imports }}
+
+{% for constant in constants | sort(false, false, 'name') %}
+{{ macros.docblock(constant.docs) }}
+pub const {{ constant.name | snakeCase | upper }}: {{ constant.type }} = {{ constant.value }};
+{% endfor %}
+
+{% endblock %}
