@@ -126,6 +126,7 @@ jobs:
         uses: changesets/action@v2.1.1
         with:
           github-token: ${{ steps.app-token.outputs.token }}
+          version-script: pnpm release:version
           commit-message: '[${{ env.RELEASE_VERSION }}] Publish package'
           pr-title: '[${{ env.RELEASE_VERSION }}] Publish package'
           publish-script: pnpm publish-package
