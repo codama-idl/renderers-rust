@@ -145,10 +145,10 @@ impl CreateAccountBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
-        let accounts = CreateAccount {
-            payer: self.payer.expect("payer is not set"),
-            new_account: self.new_account.expect("new_account is not set"),
-        };
+        let payer = self.payer.expect("payer is not set");
+        let new_account = self.new_account.expect("new_account is not set");
+
+        let accounts = CreateAccount { payer, new_account };
         let args = CreateAccountInstructionArgs {
             lamports: self.lamports.clone().expect("lamports is not set"),
             space: self.space.clone().expect("space is not set"),

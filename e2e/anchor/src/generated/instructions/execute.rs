@@ -121,7 +121,7 @@ impl ExecuteInstructionArgs {
 ///   1. `[]` mint
 ///   2. `[]` destination_account
 ///   3. `[]` owner_delegate
-///   4. `[]` extra_metas_account
+///   4. `[optional]` extra_metas_account (default to PDA)
 ///   5. `[]` guard
 ///   6. `[optional]` instruction_sysvar_account (default to `Sysvar1nstructions1111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
@@ -164,6 +164,7 @@ impl ExecuteBuilder {
         self.owner_delegate = Some(owner_delegate);
         self
     }
+    /// `[optional account, default to PDA]`
     #[inline(always)]
     pub fn extra_metas_account(
         &mut self,
@@ -208,20 +209,40 @@ impl ExecuteBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let source_account = self.source_account.expect("source_account is not set");
+        let mint = self.mint.expect("mint is not set");
+        let destination_account = self
+            .destination_account
+            .expect("destination_account is not set");
+        let owner_delegate = self.owner_delegate.expect("owner_delegate is not set");
+        let extra_metas_account = self.extra_metas_account.unwrap_or_else(|| {
+            solana_address::Address::find_program_address(
+                &[
+                    &[
+                        101, 120, 116, 114, 97, 45, 97, 99, 99, 111, 117, 110, 116, 45, 109, 101,
+                        116, 97, 115,
+                    ],
+                    mint.as_ref(),
+                ],
+                &crate::WEN_TRANSFER_GUARD_ID,
+            )
+            .0
+        });
+        let guard = self.guard.expect("guard is not set");
+        let instruction_sysvar_account =
+            self.instruction_sysvar_account
+                .unwrap_or(solana_address::address!(
+                    "Sysvar1nstructions1111111111111111111111111"
+                ));
+
         let accounts = Execute {
-            source_account: self.source_account.expect("source_account is not set"),
-            mint: self.mint.expect("mint is not set"),
-            destination_account: self
-                .destination_account
-                .expect("destination_account is not set"),
-            owner_delegate: self.owner_delegate.expect("owner_delegate is not set"),
-            extra_metas_account: self
-                .extra_metas_account
-                .expect("extra_metas_account is not set"),
-            guard: self.guard.expect("guard is not set"),
-            instruction_sysvar_account: self.instruction_sysvar_account.unwrap_or(
-                solana_address::address!("Sysvar1nstructions1111111111111111111111111"),
-            ),
+            source_account,
+            mint,
+            destination_account,
+            owner_delegate,
+            extra_metas_account,
+            guard,
+            instruction_sysvar_account,
         };
         let args = ExecuteInstructionArgs {
             amount: self.amount.clone().expect("amount is not set"),

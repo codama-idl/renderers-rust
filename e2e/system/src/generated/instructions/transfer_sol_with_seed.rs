@@ -163,10 +163,14 @@ impl TransferSolWithSeedBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let source = self.source.expect("source is not set");
+        let base_account = self.base_account.expect("base_account is not set");
+        let destination = self.destination.expect("destination is not set");
+
         let accounts = TransferSolWithSeed {
-            source: self.source.expect("source is not set"),
-            base_account: self.base_account.expect("base_account is not set"),
-            destination: self.destination.expect("destination is not set"),
+            source,
+            base_account,
+            destination,
         };
         let args = TransferSolWithSeedInstructionArgs {
             amount: self.amount.clone().expect("amount is not set"),

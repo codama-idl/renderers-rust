@@ -177,10 +177,14 @@ impl CreateAccountWithSeedBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let payer = self.payer.expect("payer is not set");
+        let new_account = self.new_account.expect("new_account is not set");
+        let base_account = self.base_account.expect("base_account is not set");
+
         let accounts = CreateAccountWithSeed {
-            payer: self.payer.expect("payer is not set"),
-            new_account: self.new_account.expect("new_account is not set"),
-            base_account: self.base_account.expect("base_account is not set"),
+            payer,
+            new_account,
+            base_account,
         };
         let args = CreateAccountWithSeedInstructionArgs {
             base: self.base.clone().expect("base is not set"),

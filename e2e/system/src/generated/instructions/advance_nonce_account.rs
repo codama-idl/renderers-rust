@@ -132,12 +132,18 @@ impl AdvanceNonceAccountBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_instruction::Instruction {
+        let nonce_account = self.nonce_account.expect("nonce_account is not set");
+        let recent_blockhashes_sysvar =
+            self.recent_blockhashes_sysvar
+                .unwrap_or(solana_address::address!(
+                    "SysvarRecentB1ockHashes11111111111111111111"
+                ));
+        let nonce_authority = self.nonce_authority.expect("nonce_authority is not set");
+
         let accounts = AdvanceNonceAccount {
-            nonce_account: self.nonce_account.expect("nonce_account is not set"),
-            recent_blockhashes_sysvar: self.recent_blockhashes_sysvar.unwrap_or(
-                solana_address::address!("SysvarRecentB1ockHashes11111111111111111111"),
-            ),
-            nonce_authority: self.nonce_authority.expect("nonce_authority is not set"),
+            nonce_account,
+            recent_blockhashes_sysvar,
+            nonce_authority,
         };
 
         accounts.instruction_with_remaining_accounts(&self.__remaining_accounts)

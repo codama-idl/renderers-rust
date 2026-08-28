@@ -10,11 +10,12 @@
   {% if account.isSigner %}
     {% set modifiers = modifiers + ', signer' if modifiers.length > 0 else 'signer' %}
   {% endif %}
-  {% if account.isOptional or account.defaultValue.kind === 'publicKeyValueNode' %}
+  {% if account.isOptional or account.defaultValue.kind === 'publicKeyValueNode' or account.defaultValue.kind === 'pdaValueNode' %}
     {% set modifiers = modifiers + ', optional' if modifiers.length > 0 else 'optional' %}
   {% endif %}
   {{ '///   ' + loop.index0 + '. `[' + modifiers + ']` ' + account.name | snakeCase }}
   {{- " (default to `" + account.defaultValue.publicKey + "`)" if account.defaultValue.kind === 'publicKeyValueNode' }}
+  {{- " (default to PDA)" if account.defaultValue.kind === 'pdaValueNode' }}
 {% endfor %}
 #[derive(Clone, Debug, Default)]
 pub struct {{ instruction.name | pascalCase }}Builder {
@@ -40,8 +41,10 @@ impl {{ instruction.name | pascalCase }}Builder {
   {% for account in instruction.accounts %}
     {% if account.isOptional %}
       {{ '/// `[optional account]`\n' -}}
-    {% else %}
-      {{ "/// `[optional account, default to '" + account.defaultValue.publicKey + "']`\n" if account.defaultValue.kind === 'publicKeyValueNode' -}}
+    {% elif account.defaultValue.kind === 'publicKeyValueNode' %}
+      {{ "/// `[optional account, default to '" + account.defaultValue.publicKey + "']`\n" -}}
+    {% elif account.defaultValue.kind === 'pdaValueNode' %}
+      {{ '/// `[optional account, default to PDA]`\n' -}}
     {% endif %}
     {{- macros.docblock(account.docs) -}}
     #[inline(always)]
@@ -92,17 +95,48 @@ impl {{ instruction.name | pascalCase }}Builder {
   }
   #[allow(clippy::clone_on_copy)]
   pub fn instruction(&self) -> solana_instruction::Instruction {
+    {% for account in resolvedAccounts %}
+      {% if account.isOptional %}
+        let {{ account.name | snakeCase }} = self.{{ account.name | snakeCase }};
+      {% elif account.defaultValue.kind === 'programId' %}
+        let {{ account.name | snakeCase }} = self.{{ account.name | snakeCase }}; {# Program ID set on the instruction creation. #}
+      {% elif account.pdaDefault %}
+        {% if account.pdaDefault.isLinked and account.pdaDefault.linkedAccountName %}
+          let {{ account.name | snakeCase }} = self.{{ account.name | snakeCase }}.unwrap_or_else(|| {
+            {{ account.pdaDefault.linkedAccountName | pascalCase }}::find_pda(
+              {% for seed in account.pdaDefault.renderedSeeds %}
+                {% if seed.kind === 'accountRef' %}
+                  &{{ seed.rawName }},
+                {% elif seed.kind === 'argumentRef' %}
+                  {{ seed.render }},
+                {% elif seed.kind === 'value' %}
+                  {{ seed.render }},
+                {% endif %}
+              {% endfor %}
+            ).0
+          });
+        {% else %}
+          let {{ account.name | snakeCase }} = self.{{ account.name | snakeCase }}.unwrap_or_else(|| {
+            solana_address::Address::find_program_address(
+              &[
+                {% for seed in account.pdaDefault.renderedSeeds %}
+                  {{ seed.render }},
+                {% endfor %}
+              ],
+              &{{ account.pdaDefault.programAddressExpr }},
+            ).0
+          });
+        {% endif %}
+      {% elif account.defaultValue.kind === 'publicKeyValueNode' %}
+        let {{ account.name | snakeCase }} = self.{{ account.name | snakeCase }}.unwrap_or(solana_address::address!("{{ account.defaultValue.publicKey }}"));
+      {% else %}
+        let {{ account.name | snakeCase }} = self.{{ account.name | snakeCase }}.expect("{{ account.name | snakeCase }} is not set");
+      {% endif %}
+    {% endfor %}
+
     let accounts = {{ instruction.name | pascalCase }} {
         {% for account in instruction.accounts %}
-          {% if account.isOptional %}
-            {{ account.name | snakeCase }}: self.{{ account.name | snakeCase }},
-          {% elif account.defaultValue.kind === 'programId' %}
-            {{ account.name | snakeCase }}: self.{{ account.name | snakeCase }}, {# Program ID set on the instruction creation. #}
-          {% elif account.defaultValue.kind === 'publicKeyValueNode' %}
-            {{ account.name | snakeCase }}: self.{{ account.name | snakeCase }}.unwrap_or(solana_address::address!("{{ account.defaultValue.publicKey }}")),
-          {% else %}
-            {{ account.name | snakeCase }}: self.{{ account.name | snakeCase }}.expect("{{ account.name | snakeCase }} is not set"),
-          {% endif %}
+          {{ account.name | snakeCase }},
         {% endfor %}
     };
     {% if hasArgs %}
