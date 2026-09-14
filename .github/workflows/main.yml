@@ -19,7 +19,6 @@ env:
   NODE_VERSION: 24
   SOLANA_VERSION: 2.1.9
   RUST_TOOLCHAIN: '1.86.0'
-  RELEASE_VERSION: 3.x
 
 jobs:
   lint:
@@ -87,51 +86,16 @@ jobs:
 
   release:
     name: Release
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push'
     needs: [lint, tests]
+    if: github.event_name == 'push'
     permissions:
       contents: write
       pull-requests: write
-    outputs:
-      published: ${{ steps.changesets.outputs.published }}
-    steps:
-      - name: Create GitHub App token
-        id: app-token
-        uses: actions/create-github-app-token@v3
-        with:
-          client-id: ${{ secrets.RELEASE_APP_CLIENT_ID }}
-          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
-
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          token: ${{ steps.app-token.outputs.token }}
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: pnpm
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Create Release Pull Request or Publish
-        id: changesets
-        uses: changesets/action@v2.1.1
-        with:
-          github-token: ${{ steps.app-token.outputs.token }}
-          version-script: pnpm release:version
-          commit-message: '[${{ env.RELEASE_VERSION }}] Publish package'
-          pr-title: '[${{ env.RELEASE_VERSION }}] Publish package'
-          publish-script: pnpm publish-package
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      id-token: write
+    uses: codama-idl/release-tools/.github/workflows/release.yml@v1
+    with:
+      release-version: 3.x
+    secrets: inherit
 
   dependabot:
     name: Dependabot
