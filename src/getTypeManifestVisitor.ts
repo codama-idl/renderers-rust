@@ -5,6 +5,7 @@ import {
     CountNode,
     DefinedTypeNode,
     definedTypeNode,
+    EventNode,
     fixedCountNode,
     InstructionNode,
     isNode,
@@ -47,7 +48,7 @@ export function getTypeManifestVisitor(options: {
     let nestedStruct: boolean = options.nestedStruct ?? false;
     let inlineStruct: boolean = false;
     let parentSize: NumberTypeNode | number | null = null;
-    let parentNode: AccountNode | DefinedTypeNode | InstructionNode | null = null;
+    let parentNode: AccountNode | DefinedTypeNode | EventNode | InstructionNode | null = null;
 
     return pipe(
         mergeVisitor(
@@ -56,7 +57,15 @@ export function getTypeManifestVisitor(options: {
                 ...mergeManifests(values),
                 type: values.map(v => v.type).join('\n'),
             }),
-            { keys: [...REGISTERED_TYPE_NODE_KINDS, 'definedTypeLinkNode', 'definedTypeNode', 'accountNode'] },
+            {
+                keys: [
+                    ...REGISTERED_TYPE_NODE_KINDS,
+                    'definedTypeLinkNode',
+                    'definedTypeNode',
+                    'accountNode',
+                    'eventNode',
+                ],
+            },
         ),
         v =>
             extendVisitor(v, {
@@ -253,6 +262,20 @@ export function getTypeManifestVisitor(options: {
                     return {
                         ...mergedManifest,
                         type: `pub enum ${pascalCase(originalParentName)} {\n${variantNames}\n}`,
+                    };
+                },
+
+                visitEvent(event, { self }) {
+                    parentName = pascalCase(event.name);
+                    parentNode = event;
+                    const manifest = visit(event.data, self);
+                    const traits = getTraitsFromNode(event);
+                    manifest.imports.mergeWith(traits.imports);
+                    parentName = null;
+                    parentNode = null;
+                    return {
+                        ...manifest,
+                        type: traits.render + manifest.type,
                     };
                 },
 

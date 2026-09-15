@@ -1,0 +1,26 @@
+[package]
+name = "codama-renderers-rust-e2e-offerbook"
+version = "0.0.0"
+edition = "2021"
+
+[features]
+anchor = ["dep:anchor-lang"]
+anchor-idl-build = ["anchor", "anchor-lang?/idl-build"]
+test-sbf = []
+fetch = ["dep:solana-rpc-client"]
+
+[dependencies]
+anchor-lang = { workspace = true, optional = true }
+borsh = { workspace = true }
+num-derive = { workspace = true }
+num-traits = { workspace = true }
+solana-account = { workspace = true }
+solana-account-info = { workspace = true }
+solana-address = { workspace = true, features = ["borsh", "copy", "curve25519", "decode"] }
+solana-cpi = { workspace = true }
+solana-decode-error = { workspace = true }
+solana-instruction = { workspace = true }
+solana-program-error = { workspace = true }
+solana-rpc-client = { workspace = true, optional = true }
+spl-collections = { workspace = true, features = ["borsh"] }
+thiserror = { workspace = true }

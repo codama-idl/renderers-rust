@@ -1,0 +1,23 @@
+{% extends "layout.njk" %}
+{% import "macros.njk" as macros %}
+
+{% block main %}
+
+{{ imports }}
+
+{{ macros.docblock(event.docs) }}
+{{ typeManifest.type }}
+
+{% for nestedStruct in typeManifest.nestedStructs %}
+{{ nestedStruct }}
+{% endfor %}
+
+impl {{ event.name | pascalCase }} {
+  #[inline(always)]
+  pub fn from_bytes(data: &[u8]) -> Result<Self, std::io::Error> {
+    let mut data = data;
+    Self::deserialize(&mut data)
+  }
+}
+
+{% endblock %}
