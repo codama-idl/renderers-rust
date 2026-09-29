@@ -20,3 +20,4 @@ test_project system
 test_project memo
 # test_project meteora  # TODO: uncomment after some internal fixes
 test_anchor_project anchor
+test_anchor_project offerbook

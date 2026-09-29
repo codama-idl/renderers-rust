@@ -9,6 +9,9 @@
   {% if programsToExport.length > 0 %}
     pub mod errors;
   {% endif %}
+  {% if eventsToExport.length > 0 %}
+    pub mod events;
+  {% endif %}
   {% if instructionsToExport.length > 0 %}
     pub mod instructions;
   {% endif %}

@@ -3,6 +3,7 @@ import {
     assertIsNode,
     camelCase,
     DefinedTypeNode,
+    EventNode,
     InstructionNode,
     isNode,
     isScalarEnum,
@@ -47,7 +48,7 @@ export const DEFAULT_TRAIT_OPTIONS: Required<TraitOptions> = {
     useFullyQualifiedName: false,
 };
 
-export type GetTraitsFromNodeFunction = (node: AccountNode | DefinedTypeNode | InstructionNode) => {
+export type GetTraitsFromNodeFunction = (node: AccountNode | DefinedTypeNode | EventNode | InstructionNode) => {
     imports: ImportMap;
     render: string;
 };
@@ -57,10 +58,10 @@ export function getTraitsFromNodeFactory(options: TraitOptions = {}): GetTraitsF
 }
 
 export function getTraitsFromNode(
-    node: AccountNode | DefinedTypeNode | InstructionNode,
+    node: AccountNode | DefinedTypeNode | EventNode | InstructionNode,
     userOptions: TraitOptions = {},
 ): { imports: ImportMap; render: string } {
-    assertIsNode(node, ['accountNode', 'definedTypeNode', 'instructionNode']);
+    assertIsNode(node, ['accountNode', 'definedTypeNode', 'eventNode', 'instructionNode']);
     const options: Required<TraitOptions> = { ...DEFAULT_TRAIT_OPTIONS, ...userOptions };
 
     // Get the node type and return early if it's a type alias.
@@ -99,9 +100,9 @@ export function getTraitsFromNode(
 }
 
 function getNodeType(
-    node: AccountNode | DefinedTypeNode | InstructionNode,
+    node: AccountNode | DefinedTypeNode | EventNode | InstructionNode,
 ): 'alias' | 'dataEnum' | 'scalarEnum' | 'struct' {
-    if (isNode(node, ['accountNode', 'instructionNode'])) return 'struct';
+    if (isNode(node, ['accountNode', 'eventNode', 'instructionNode'])) return 'struct';
     if (isNode(node.type, 'structTypeNode')) return 'struct';
     if (isNode(node.type, 'enumTypeNode')) {
         return isScalarEnum(node.type) ? 'scalarEnum' : 'dataEnum';
@@ -172,10 +173,10 @@ function extractFullyQualifiedNames(traits: string[], imports: ImportMap): strin
  */
 export function getSerdeFieldAttribute(
     serdeWith: string,
-    node: AccountNode | DefinedTypeNode | InstructionNode,
+    node: AccountNode | DefinedTypeNode | EventNode | InstructionNode,
     userOptions: TraitOptions = {},
 ): string {
-    assertIsNode(node, ['accountNode', 'definedTypeNode', 'instructionNode']);
+    assertIsNode(node, ['accountNode', 'definedTypeNode', 'eventNode', 'instructionNode']);
     const options: Required<TraitOptions> = { ...DEFAULT_TRAIT_OPTIONS, ...userOptions };
 
     // Get the node type and return early if it's a type alias.
