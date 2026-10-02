@@ -246,13 +246,38 @@ export function getTypeManifestVisitor(options: {
                         throw new Error('Enum type must have a parent name.');
                     }
 
-                    const variants = (enumType.variants ?? []).map(variant => visit(variant, self));
-                    const variantNames = variants.map(variant => variant.type).join('\n');
+                    const variantNodes = enumType.variants ?? [];
+                    const variants = variantNodes.map(variant => visit(variant, self));
                     const mergedManifest = mergeManifests(variants);
 
+                    // Variants without a custom discriminator keep their position, which is
+                    // what Borsh writes by default, so nothing changes unless one is set.
+                    const hasCustomDiscriminators = variantNodes.some(variant => variant.discriminator !== undefined);
+                    if (!hasCustomDiscriminators) {
+                        const variantNames = variants.map(variant => variant.type).join('\n');
+                        return {
+                            ...mergedManifest,
+                            type: `pub enum ${pascalCase(originalParentName)} {\n${variantNames}\n}`,
+                        };
+                    }
+
+                    const enumSize = resolveNestedTypeNode(enumType.size);
+                    if (enumSize.format !== 'u8') {
+                        // TODO: Add to the Rust validator.
+                        throw new Error('Custom enum discriminators are only supported by Borsh on u8-sized enums');
+                    }
+
+                    // Borsh only honors explicit discriminants with `use_discriminant`, and Rust
+                    // only allows them on data-carrying enums under an explicit `repr`.
+                    const variantNames = variants
+                        .map((variant, index) => {
+                            const discriminator = variantNodes[index].discriminator ?? index;
+                            return variant.type.replace(/,$/, ` = ${discriminator},`);
+                        })
+                        .join('\n');
                     return {
                         ...mergedManifest,
-                        type: `pub enum ${pascalCase(originalParentName)} {\n${variantNames}\n}`,
+                        type: `#[repr(u8)]\n#[borsh(use_discriminant = true)]\npub enum ${pascalCase(originalParentName)} {\n${variantNames}\n}`,
                     };
                 },
 
