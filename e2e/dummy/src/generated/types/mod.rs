@@ -5,9 +5,8 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
-pub mod errors;
-pub mod instructions;
-pub mod programs;
-pub mod types;
+pub(crate) mod r#command;
+pub(crate) mod r#priority;
 
-pub(crate) use programs::*;
+pub use self::r#command::*;
+pub use self::r#priority::*;

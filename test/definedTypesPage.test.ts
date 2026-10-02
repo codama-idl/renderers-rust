@@ -2,6 +2,7 @@ import {
     definedTypeNode,
     enumEmptyVariantTypeNode,
     enumStructVariantTypeNode,
+    enumTupleVariantTypeNode,
     enumTypeNode,
     numberTypeNode,
     programNode,
@@ -9,10 +10,11 @@ import {
     stringTypeNode,
     structFieldTypeNode,
     structTypeNode,
+    tupleTypeNode,
 } from '@codama/nodes';
 import { getFromRenderMap } from '@codama/renderers-core';
 import { visit } from '@codama/visitors-core';
-import { test } from 'vitest';
+import { expect, test } from 'vitest';
 
 import { getRenderMapVisitor } from '../src';
 import { codeContains, codeDoesNotContains } from './_setup';
@@ -99,4 +101,113 @@ test('it renders a non-scalar enum without Copy derive', () => {
     ]);
     // And we expect the Copy derive to be missing.
     codeDoesNotContains(getFromRenderMap(renderMap, 'types/tag_with_struct.rs').content, `Copy`);
+});
+
+test('it renders scalar enum variants with their custom discriminators', () => {
+    // Given a scalar enum whose variants carry custom discriminators.
+    const node = programNode({
+        definedTypes: [
+            definedTypeNode({
+                name: 'direction',
+                type: enumTypeNode([
+                    enumEmptyVariantTypeNode('up'),
+                    enumEmptyVariantTypeNode('down', 3),
+                    enumEmptyVariantTypeNode('left', 5),
+                ]),
+            }),
+        ],
+        name: 'splToken',
+        publicKey: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+    });
+
+    // When we render it.
+    const renderMap = visit(node, getRenderMapVisitor());
+
+    // Then every variant gets an explicit value, with omitted ones falling back to their position.
+    codeContains(getFromRenderMap(renderMap, 'types/direction.rs').content, [
+        '#[repr(u8)]',
+        '#[borsh(use_discriminant = true)]',
+        'pub enum Direction',
+        'Up = 0,',
+        'Down = 3,',
+        'Left = 5,',
+    ]);
+});
+
+test('it renders data enum variants with their custom discriminators', () => {
+    // Given a data enum whose variants carry custom discriminators.
+    const node = programNode({
+        definedTypes: [
+            definedTypeNode({
+                name: 'command',
+                type: enumTypeNode([
+                    enumEmptyVariantTypeNode('quit'),
+                    enumTupleVariantTypeNode('write', tupleTypeNode([numberTypeNode('u32')]), 3),
+                    enumStructVariantTypeNode(
+                        'move',
+                        structTypeNode([structFieldTypeNode({ name: 'x', type: numberTypeNode('u32') })]),
+                        5,
+                    ),
+                ]),
+            }),
+        ],
+        name: 'splToken',
+        publicKey: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+    });
+
+    // When we render it.
+    const renderMap = visit(node, getRenderMapVisitor());
+
+    // Then the explicit values follow the variant payloads.
+    codeContains(getFromRenderMap(renderMap, 'types/command.rs').content, [
+        '#[repr(u8)]',
+        '#[borsh(use_discriminant = true)]',
+        'Quit = 0,',
+        'Write(u32) = 3,',
+        '} = 5,',
+    ]);
+});
+
+test('it rejects custom discriminators on enums that are not u8-sized', () => {
+    // Given a u16-sized enum with a custom discriminator.
+    const node = programNode({
+        definedTypes: [
+            definedTypeNode({
+                name: 'direction',
+                type: enumTypeNode([enumEmptyVariantTypeNode('up', 300), enumEmptyVariantTypeNode('down')], {
+                    size: numberTypeNode('u16'),
+                }),
+            }),
+        ],
+        name: 'splToken',
+        publicKey: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+    });
+
+    // Then rendering it throws, since Borsh only supports u8 discriminants.
+    expect(() => visit(node, getRenderMapVisitor())).toThrow(/u8-sized/);
+});
+
+test('it renders enums without custom discriminators as before', () => {
+    // Given a scalar enum without custom discriminators.
+    const node = programNode({
+        definedTypes: [
+            definedTypeNode({
+                name: 'direction',
+                type: enumTypeNode([enumEmptyVariantTypeNode('up'), enumEmptyVariantTypeNode('down')]),
+            }),
+        ],
+        name: 'splToken',
+        publicKey: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
+    });
+
+    // When we render it.
+    const renderMap = visit(node, getRenderMapVisitor());
+
+    // Then no attributes or explicit values are added.
+    codeContains(getFromRenderMap(renderMap, 'types/direction.rs').content, ['Up,', 'Down,']);
+    codeDoesNotContains(getFromRenderMap(renderMap, 'types/direction.rs').content, [
+        'use_discriminant',
+        '#[repr(u8)]',
+        '= 0,',
+    ]);
 });
