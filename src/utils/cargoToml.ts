@@ -39,6 +39,19 @@ type CargoDependencyObject = {
     workspace?: boolean;
 };
 
+/**
+ * Proc-macro crates whose generated code depends on runtime crates that
+ * won't appear in the rendered source text. When a key crate is detected
+ * as used, all its peer crates are implicitly included.
+ *
+ * Example: `#[derive(num_derive::FromPrimitive)]` expands to code that
+ * references `num_traits::FromPrimitive`, so `num-traits` must be present
+ * in Cargo.toml whenever `num-derive` is used.
+ */
+export const PEER_DEPENDENCIES: Record<string, string[]> = {
+    'num-derive': ['num-traits'],
+};
+
 export const DEFAULT_DEPENDENCY_VERSIONS: CargoDependencies = {
     'anchor-lang': { optional: true, version: '~0.31' },
     borsh: '^1.0',
@@ -226,6 +239,12 @@ export function getUsedDependencyVersions(
         [{} as CargoDependencies, new Set<string>()],
     );
 
+    // Expand peer dependencies: proc-macro crates like `num-derive` generate
+    // code that depends on runtime crates like `num-traits` at compile time.
+    // Since these runtime crates never appear in the rendered source text,
+    // they won't be detected by import scanning — we must add them explicitly.
+    expandPeerDependencies(usedDependencyVersion, dependencyVersionsWithDefaults, missingDependencies);
+
     if (missingDependencies.size > 0) {
         throw new CodamaError(CODAMA_ERROR__RENDERERS__MISSING_DEPENDENCY_VERSIONS, {
             dependencies: [...missingDependencies],
@@ -234,6 +253,42 @@ export function getUsedDependencyVersions(
     }
 
     return usedDependencyVersion;
+}
+
+/**
+ * For each detected dependency, check if it has peer dependencies that must
+ * also be present (e.g. `num-derive` requires `num-traits` at runtime).
+ * If a peer is not already in the used set, look it up in the version map
+ * and add it. If it can't be resolved, add it to missingDependencies so
+ * the caller can surface the error.
+ */
+function expandPeerDependencies(
+    usedDependencyVersion: CargoDependencies,
+    dependencyVersionsWithDefaults: CargoDependencies,
+    missingDependencies: Set<string>,
+): void {
+    // Snapshot keys to avoid iterating over newly added entries.
+    const currentKeys = Object.keys(usedDependencyVersion);
+
+    for (const depKey of currentKeys) {
+        const peers = PEER_DEPENDENCIES[depKey];
+        if (!peers) continue;
+
+        for (const peerCrateName of peers) {
+            // Skip if already resolved.
+            const peerImportName = getCargoDependencyImportName(peerCrateName);
+            const alreadyPresent = findCargoDependencyByImportName(usedDependencyVersion, peerImportName);
+            if (alreadyPresent) continue;
+
+            // Look up the peer in the version map.
+            const peerDep = findCargoDependencyByImportName(dependencyVersionsWithDefaults, peerImportName);
+            if (peerDep) {
+                usedDependencyVersion[peerDep[0]] = peerDep[1];
+            } else {
+                missingDependencies.add(peerCrateName);
+            }
+        }
+    }
 }
 
 function getUsedImportNames(renderMap: RenderMap<Fragment>, dependencyMap: Record<string, string>): Set<string> {
