@@ -1,0 +1,7208 @@
+{
+  "address": "offerbkFMvVfpQhL8ZQ5iromnjct5rz3r52B9ewu3ie",
+  "metadata": {
+    "name": "offerbook",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Offerbook Program"
+  },
+  "instructions": [
+    {
+      "name": "cancel_offer",
+      "discriminator": [
+        92,
+        203,
+        223,
+        40,
+        92,
+        89,
+        53,
+        119
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "offer"
+          ]
+        },
+        {
+          "name": "offer",
+          "writable": true
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "claim_fee",
+      "discriminator": [
+        169,
+        32,
+        79,
+        137,
+        136,
+        232,
+        70,
+        137
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config"
+        },
+        {
+          "name": "fee_authority",
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "protocol_fee_token_account",
+          "writable": true
+        },
+        {
+          "name": "dest_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "claim_non_fungible_loan",
+      "discriminator": [
+        152,
+        212,
+        201,
+        200,
+        206,
+        13,
+        149,
+        210
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "signer_user",
+          "writable": true
+        },
+        {
+          "name": "borrower",
+          "writable": true
+        },
+        {
+          "name": "borrower_user",
+          "writable": true
+        },
+        {
+          "name": "loan",
+          "writable": true
+        },
+        {
+          "name": "loan_vault",
+          "writable": true,
+          "optional": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "loan"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "claim_token_loan",
+      "discriminator": [
+        0,
+        112,
+        210,
+        85,
+        238,
+        81,
+        159,
+        29
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "signer_user",
+          "writable": true
+        },
+        {
+          "name": "borrower",
+          "writable": true
+        },
+        {
+          "name": "borrower_user",
+          "writable": true
+        },
+        {
+          "name": "loan",
+          "writable": true
+        },
+        {
+          "name": "loan_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "loan"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config"
+        },
+        {
+          "name": "collateral_mint"
+        },
+        {
+          "name": "lender_collateral_escrow",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "signer_user"
+              },
+              {
+                "kind": "account",
+                "path": "collateral_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "protocol_fee_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "config"
+              },
+              {
+                "kind": "account",
+                "path": "collateral_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "collateral_token_program"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_nft_collateral_offer",
+      "discriminator": [
+        48,
+        34,
+        52,
+        189,
+        81,
+        11,
+        169,
+        8
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "docs": [
+            "The borrower creating the offer; pays for the offer account allocation."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "signer_user",
+          "docs": [
+            "Registered user profile for the signer.",
+            "We want to ensure that the signer is a registered user before creating an offer."
+          ],
+          "writable": true
+        },
+        {
+          "name": "config",
+          "docs": [
+            "Global protocol configuration that defines valid offer parameter ranges",
+            "(duration, expiry, APY, minimum amounts) and pause state."
+          ]
+        },
+        {
+          "name": "offer",
+          "docs": [
+            "Newly initialized offer account that will store all offer terms."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  102,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "signer"
+              },
+              {
+                "kind": "account",
+                "path": "signer_user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "principal_mint",
+          "docs": [
+            "The token mint the borrower wants to receive as principal."
+          ]
+        },
+        {
+          "name": "countered_offer",
+          "docs": [
+            "Optional: the offer this one is countering. When present, must be",
+            "on the opposite side (Principal), created by someone other than",
+            "the signer, still fillable (Active or PartiallyFilled), and for the",
+            "same principal token. The collateral asset is carried in the IX",
+            "params rather than as an account, so collateral-side consistency",
+            "isn't enforceable at the constraint level.",
+            "When absent, the field stays at Pubkey::default()."
+          ],
+          "optional": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "offer_params",
+          "type": {
+            "defined": {
+              "name": "NftCollateralOfferParams"
+            }
+          }
+        },
+        {
+          "name": "collateral",
+          "type": {
+            "defined": {
+              "name": "NftCollateralAsset"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "create_nft_principal_offer",
+      "discriminator": [
+        2,
+        36,
+        83,
+        39,
+        177,
+        98,
+        126,
+        75
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "docs": [
+            "The lender creating the offer; pays for the offer account allocation."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "signer_user",
+          "docs": [
+            "Registered user profile for the signer.",
+            "We want to ensure that the signer is a registered user before creating an offer."
+          ],
+          "writable": true
+        },
+        {
+          "name": "config",
+          "docs": [
+            "Global protocol configuration that defines valid offer parameter ranges",
+            "(duration, expiry, APY, minimum amounts) and pause state."
+          ]
+        },
+        {
+          "name": "offer",
+          "docs": [
+            "Newly initialized offer account that will store all offer terms."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  102,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "signer"
+              },
+              {
+                "kind": "account",
+                "path": "signer_user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "principal_mint",
+          "docs": [
+            "The token mint the lender is offering to lend."
+          ]
+        },
+        {
+          "name": "countered_offer",
+          "docs": [
+            "Optional: the offer this one is countering. When present, must be",
+            "on the opposite side (Collateral), created by someone other than",
+            "the signer, still fillable (Active or PartiallyFilled), and for the",
+            "same principal token. The collateral asset is carried in the IX",
+            "params rather than as an account, so collateral-side consistency",
+            "isn't enforceable at the constraint level.",
+            "When absent, the field stays at Pubkey::default()."
+          ],
+          "optional": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "offer_params",
+          "type": {
+            "defined": {
+              "name": "NftPrincipalOfferParams"
+            }
+          }
+        },
+        {
+          "name": "collateral",
+          "type": {
+            "defined": {
+              "name": "NftCollateral"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "create_token_collateral_offer",
+      "discriminator": [
+        38,
+        75,
+        182,
+        254,
+        173,
+        13,
+        240,
+        41
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "docs": [
+            "The borrower creating the offer; pays for the offer account allocation."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "signer_user",
+          "docs": [
+            "Registered user profile for the signer.",
+            "We want to ensure that the signer is a registered user before creating an offer."
+          ],
+          "writable": true
+        },
+        {
+          "name": "config",
+          "docs": [
+            "Global protocol configuration that defines valid offer parameter ranges",
+            "(duration, expiry, APY, minimum amounts) and pause state."
+          ]
+        },
+        {
+          "name": "offer",
+          "docs": [
+            "Newly initialized offer account that will store all offer terms."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  102,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "signer"
+              },
+              {
+                "kind": "account",
+                "path": "signer_user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "principal_mint",
+          "docs": [
+            "The token mint the borrower wants to receive as principal. Must differ",
+            "from the collateral mint."
+          ]
+        },
+        {
+          "name": "collateral_mint",
+          "docs": [
+            "The token mint the borrower is offering as collateral. Must differ",
+            "from the principal mint."
+          ]
+        },
+        {
+          "name": "countered_offer",
+          "docs": [
+            "Optional: the offer this one is countering. When present, must be",
+            "on the opposite side (Principal), created by someone other than",
+            "the signer, still fillable (Active or PartiallyFilled), and for the",
+            "same asset pair (same principal mint, same collateral mint).",
+            "When absent, the field stays at Pubkey::default()."
+          ],
+          "optional": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "offer_params",
+          "type": {
+            "defined": {
+              "name": "TokenCollateralOfferParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "create_token_principal_offer",
+      "discriminator": [
+        78,
+        9,
+        69,
+        142,
+        189,
+        64,
+        171,
+        13
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "docs": [
+            "The lender creating the offer; pays for the offer account allocation."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "signer_user",
+          "docs": [
+            "Registered user profile for the signer.",
+            "We want to ensure that the signer is a registered user before creating an offer."
+          ],
+          "writable": true
+        },
+        {
+          "name": "config",
+          "docs": [
+            "Global protocol configuration that defines valid offer parameter ranges",
+            "(duration, expiry, APY, minimum amounts) and pause state."
+          ]
+        },
+        {
+          "name": "offer",
+          "docs": [
+            "Newly initialized offer account that will store all offer terms."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  102,
+                  102,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "signer"
+              },
+              {
+                "kind": "account",
+                "path": "signer_user"
+              }
+            ]
+          }
+        },
+        {
+          "name": "principal_mint",
+          "docs": [
+            "The token mint the lender is offering to lend. Must differ from",
+            "the collateral mint."
+          ]
+        },
+        {
+          "name": "collateral_mint",
+          "docs": [
+            "The token mint the lender expects as collateral. Must differ from",
+            "the principal mint."
+          ]
+        },
+        {
+          "name": "countered_offer",
+          "docs": [
+            "Optional: the offer this one is countering. When present, must be",
+            "on the opposite side (Collateral), created by someone other than",
+            "the signer, still fillable (Active or PartiallyFilled), and for the",
+            "same asset pair (same principal mint, same collateral mint).",
+            "When absent, the field stays at Pubkey::default()."
+          ],
+          "optional": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "offer_params",
+          "type": {
+            "defined": {
+              "name": "TokenPrincipalOfferParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "create_user",
+      "discriminator": [
+        108,
+        227,
+        130,
+        130,
+        252,
+        109,
+        75,
+        218
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "signer_user",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  117,
+                  115,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "signer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "referrer",
+          "optional": true
+        },
+        {
+          "name": "referrer_user",
+          "writable": true,
+          "optional": true
+        },
+        {
+          "name": "config"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "escrow_classic_nft_deposit",
+      "discriminator": [
+        148,
+        223,
+        191,
+        56,
+        93,
+        16,
+        156,
+        207
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "signer_nft_token_account",
+          "writable": true
+        },
+        {
+          "name": "signer_user"
+        },
+        {
+          "name": "nft_mint"
+        },
+        {
+          "name": "nft_metadata"
+        },
+        {
+          "name": "nft_edition"
+        },
+        {
+          "name": "user_escrow_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "signer_user"
+              },
+              {
+                "kind": "account",
+                "path": "token_program"
+              },
+              {
+                "kind": "account",
+                "path": "nft_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "metadata_program",
+          "address": "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "escrow_classic_nft_withdraw",
+      "discriminator": [
+        58,
+        102,
+        79,
+        16,
+        208,
+        182,
+        217,
+        35
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "signer_nft_token_account"
+        },
+        {
+          "name": "signer_user"
+        },
+        {
+          "name": "nft_mint"
+        },
+        {
+          "name": "user_escrow_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "signer_user"
+              },
+              {
+                "kind": "account",
+                "path": "token_program"
+              },
+              {
+                "kind": "account",
+                "path": "nft_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "escrow_core_nft_deposit",
+      "discriminator": [
+        190,
+        224,
+        133,
+        134,
+        189,
+        147,
+        71,
+        90
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "signer_user"
+        },
+        {
+          "name": "asset",
+          "writable": true
+        },
+        {
+          "name": "collection",
+          "optional": true
+        },
+        {
+          "name": "mpl_core_program",
+          "address": "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "escrow_core_nft_withdraw",
+      "discriminator": [
+        171,
+        155,
+        79,
+        152,
+        236,
+        174,
+        29,
+        57
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "signer_user"
+        },
+        {
+          "name": "asset",
+          "writable": true
+        },
+        {
+          "name": "collection",
+          "optional": true
+        },
+        {
+          "name": "mpl_core_program",
+          "address": "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "escrow_programmable_nft_deposit",
+      "discriminator": [
+        223,
+        29,
+        48,
+        71,
+        26,
+        14,
+        246,
+        101
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "signer_user"
+        },
+        {
+          "name": "nft_mint"
+        },
+        {
+          "name": "nft_metadata",
+          "writable": true
+        },
+        {
+          "name": "nft_edition"
+        },
+        {
+          "name": "signer_nft_token_account",
+          "writable": true
+        },
+        {
+          "name": "signer_token_record",
+          "writable": true
+        },
+        {
+          "name": "user_escrow_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "signer_user"
+              },
+              {
+                "kind": "account",
+                "path": "token_program"
+              },
+              {
+                "kind": "account",
+                "path": "nft_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "escrow_token_record",
+          "writable": true
+        },
+        {
+          "name": "authorization_rules",
+          "optional": true
+        },
+        {
+          "name": "metadata_program",
+          "address": "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+        },
+        {
+          "name": "instructions",
+          "address": "Sysvar1nstructions1111111111111111111111111"
+        },
+        {
+          "name": "authorization_program",
+          "optional": true,
+          "address": "auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "escrow_programmable_nft_withdraw",
+      "discriminator": [
+        28,
+        157,
+        21,
+        234,
+        59,
+        222,
+        170,
+        178
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "signer_user"
+        },
+        {
+          "name": "nft_mint"
+        },
+        {
+          "name": "nft_metadata",
+          "writable": true
+        },
+        {
+          "name": "nft_edition"
+        },
+        {
+          "name": "signer_nft_token_account",
+          "writable": true
+        },
+        {
+          "name": "signer_token_record",
+          "writable": true
+        },
+        {
+          "name": "user_escrow_token_account",
+          "writable": true
+        },
+        {
+          "name": "escrow_token_record",
+          "writable": true
+        },
+        {
+          "name": "authorization_rules",
+          "optional": true
+        },
+        {
+          "name": "metadata_program",
+          "address": "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+        },
+        {
+          "name": "instructions",
+          "address": "Sysvar1nstructions1111111111111111111111111"
+        },
+        {
+          "name": "authorization_program",
+          "optional": true,
+          "address": "auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "escrow_token_deposit",
+      "discriminator": [
+        170,
+        3,
+        249,
+        121,
+        68,
+        108,
+        240,
+        239
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "signer_token_account",
+          "writable": true
+        },
+        {
+          "name": "signer_user"
+        },
+        {
+          "name": "user_escrow_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "signer_user"
+              },
+              {
+                "kind": "account",
+                "path": "token_program"
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "escrow_token_withdraw",
+      "discriminator": [
+        183,
+        204,
+        14,
+        69,
+        17,
+        76,
+        223,
+        105
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "signer": true
+        },
+        {
+          "name": "signer_token_account",
+          "writable": true
+        },
+        {
+          "name": "signer_user"
+        },
+        {
+          "name": "user_escrow_token_account",
+          "writable": true
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "extend_loan",
+      "discriminator": [
+        2,
+        208,
+        222,
+        190,
+        109,
+        148,
+        247,
+        117
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "signer_user"
+        },
+        {
+          "name": "lender"
+        },
+        {
+          "name": "lender_user"
+        },
+        {
+          "name": "loan",
+          "writable": true
+        },
+        {
+          "name": "config"
+        },
+        {
+          "name": "principal_mint"
+        },
+        {
+          "name": "signer_principal_token_account",
+          "writable": true
+        },
+        {
+          "name": "lender_principal_escrow",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "lender_user"
+              },
+              {
+                "kind": "account",
+                "path": "principal_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "principal_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "protocol_fee_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "config"
+              },
+              {
+                "kind": "account",
+                "path": "principal_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "principal_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "principal_token_program"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "fill_non_fungible_collateral_offer",
+      "discriminator": [
+        135,
+        55,
+        123,
+        43,
+        115,
+        61,
+        143,
+        145
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "signer_user",
+          "writable": true
+        },
+        {
+          "name": "borrower",
+          "writable": true
+        },
+        {
+          "name": "borrower_user",
+          "writable": true
+        },
+        {
+          "name": "offer",
+          "writable": true
+        },
+        {
+          "name": "loan",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "offer"
+              },
+              {
+                "kind": "account",
+                "path": "offer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "loan_vault",
+          "writable": true,
+          "optional": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "loan"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config"
+        },
+        {
+          "name": "principal_mint"
+        },
+        {
+          "name": "collateral_mint",
+          "optional": true
+        },
+        {
+          "name": "lender_principal_escrow",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "signer_user"
+              },
+              {
+                "kind": "account",
+                "path": "principal_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "principal_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "borrower_principal_token_account",
+          "writable": true
+        },
+        {
+          "name": "protocol_fee_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "config"
+              },
+              {
+                "kind": "account",
+                "path": "principal_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "principal_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "principal_token_program"
+        },
+        {
+          "name": "collateral_token_program",
+          "optional": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "fill_params",
+          "type": {
+            "defined": {
+              "name": "FillNftCollateralOfferParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "fill_non_fungible_principal_offer",
+      "discriminator": [
+        99,
+        127,
+        177,
+        155,
+        175,
+        160,
+        24,
+        234
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "signer_user",
+          "writable": true
+        },
+        {
+          "name": "lender",
+          "writable": true
+        },
+        {
+          "name": "lender_user",
+          "writable": true
+        },
+        {
+          "name": "offer",
+          "writable": true
+        },
+        {
+          "name": "loan",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "offer"
+              },
+              {
+                "kind": "account",
+                "path": "offer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "loan_vault",
+          "writable": true,
+          "optional": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "loan"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config"
+        },
+        {
+          "name": "principal_mint"
+        },
+        {
+          "name": "collateral_mint",
+          "optional": true
+        },
+        {
+          "name": "lender_principal_escrow",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "lender_user"
+              },
+              {
+                "kind": "account",
+                "path": "principal_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "principal_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "borrower_principal_token_account",
+          "writable": true
+        },
+        {
+          "name": "protocol_fee_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "config"
+              },
+              {
+                "kind": "account",
+                "path": "principal_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "principal_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "principal_token_program"
+        },
+        {
+          "name": "collateral_token_program",
+          "optional": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "fill_params",
+          "type": {
+            "defined": {
+              "name": "FillNftPrincipalOfferParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "fill_token_collateral_offer",
+      "discriminator": [
+        170,
+        251,
+        0,
+        181,
+        163,
+        83,
+        106,
+        228
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "signer_user",
+          "writable": true
+        },
+        {
+          "name": "borrower",
+          "writable": true
+        },
+        {
+          "name": "borrower_user",
+          "writable": true
+        },
+        {
+          "name": "offer",
+          "writable": true
+        },
+        {
+          "name": "loan",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "offer"
+              },
+              {
+                "kind": "account",
+                "path": "offer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "loan_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "loan"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config"
+        },
+        {
+          "name": "principal_mint"
+        },
+        {
+          "name": "collateral_mint"
+        },
+        {
+          "name": "lender_principal_escrow",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "signer_user"
+              },
+              {
+                "kind": "account",
+                "path": "principal_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "principal_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "borrower_collateral_escrow",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "borrower_user"
+              },
+              {
+                "kind": "account",
+                "path": "collateral_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "borrower_principal_token_account",
+          "writable": true
+        },
+        {
+          "name": "protocol_fee_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "config"
+              },
+              {
+                "kind": "account",
+                "path": "principal_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "principal_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "principal_token_program"
+        },
+        {
+          "name": "collateral_token_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "fill_params",
+          "type": {
+            "defined": {
+              "name": "FillTokenCollateralOfferParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "fill_token_principal_offer",
+      "discriminator": [
+        83,
+        215,
+        176,
+        161,
+        176,
+        105,
+        129,
+        177
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "signer_user",
+          "writable": true
+        },
+        {
+          "name": "lender",
+          "writable": true
+        },
+        {
+          "name": "lender_user",
+          "writable": true
+        },
+        {
+          "name": "offer",
+          "writable": true
+        },
+        {
+          "name": "loan",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "offer"
+              },
+              {
+                "kind": "account",
+                "path": "offer"
+              }
+            ]
+          }
+        },
+        {
+          "name": "loan_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "loan"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config"
+        },
+        {
+          "name": "principal_mint"
+        },
+        {
+          "name": "collateral_mint"
+        },
+        {
+          "name": "lender_principal_escrow",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "lender_user"
+              },
+              {
+                "kind": "account",
+                "path": "principal_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "principal_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "borrower_collateral_escrow",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "signer_user"
+              },
+              {
+                "kind": "account",
+                "path": "collateral_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "borrower_principal_token_account",
+          "writable": true
+        },
+        {
+          "name": "protocol_fee_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "config"
+              },
+              {
+                "kind": "account",
+                "path": "principal_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "principal_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "principal_token_program"
+        },
+        {
+          "name": "collateral_token_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "fill_params",
+          "type": {
+            "defined": {
+              "name": "FillTokenPrincipalOfferParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "init",
+      "discriminator": [
+        220,
+        59,
+        207,
+        236,
+        108,
+        250,
+        47,
+        100
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "upgrade_authority",
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "fee_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  101,
+                  101
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program_data"
+        },
+        {
+          "name": "program",
+          "address": "offerbkFMvVfpQhL8ZQ5iromnjct5rz3r52B9ewu3ie"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "repay_non_fungible_loan",
+      "discriminator": [
+        148,
+        211,
+        15,
+        57,
+        173,
+        27,
+        26,
+        49
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "signer_user",
+          "writable": true
+        },
+        {
+          "name": "lender",
+          "writable": true
+        },
+        {
+          "name": "lender_user",
+          "writable": true
+        },
+        {
+          "name": "loan",
+          "writable": true
+        },
+        {
+          "name": "loan_vault",
+          "writable": true,
+          "optional": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "loan"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config"
+        },
+        {
+          "name": "principal_mint"
+        },
+        {
+          "name": "signer_principal_token_account",
+          "writable": true
+        },
+        {
+          "name": "lender_principal_escrow",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "lender_user"
+              },
+              {
+                "kind": "account",
+                "path": "principal_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "principal_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "protocol_fee_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "config"
+              },
+              {
+                "kind": "account",
+                "path": "principal_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "principal_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "principal_token_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "repay_token_loan",
+      "discriminator": [
+        208,
+        50,
+        208,
+        39,
+        189,
+        153,
+        25,
+        251
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "signer_user"
+        },
+        {
+          "name": "lender",
+          "writable": true
+        },
+        {
+          "name": "lender_user"
+        },
+        {
+          "name": "loan",
+          "writable": true
+        },
+        {
+          "name": "loan_vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  108,
+                  111,
+                  97,
+                  110,
+                  95,
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "loan"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config"
+        },
+        {
+          "name": "principal_mint"
+        },
+        {
+          "name": "collateral_mint"
+        },
+        {
+          "name": "signer_principal_token_account",
+          "writable": true
+        },
+        {
+          "name": "lender_principal_escrow",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "lender_user"
+              },
+              {
+                "kind": "account",
+                "path": "principal_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "principal_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "borrower_collateral_escrow",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "signer_user"
+              },
+              {
+                "kind": "account",
+                "path": "collateral_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "collateral_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "protocol_fee_token_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "config"
+              },
+              {
+                "kind": "account",
+                "path": "principal_token_program"
+              },
+              {
+                "kind": "account",
+                "path": "principal_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "principal_token_program"
+        },
+        {
+          "name": "collateral_token_program"
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "set_loan_extendable",
+      "discriminator": [
+        130,
+        168,
+        137,
+        148,
+        29,
+        17,
+        239,
+        228
+      ],
+      "accounts": [
+        {
+          "name": "signer",
+          "signer": true
+        },
+        {
+          "name": "loan",
+          "writable": true
+        },
+        {
+          "name": "event_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  95,
+                  95,
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "program"
+        }
+      ],
+      "args": [
+        {
+          "name": "allow",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "update_config",
+      "discriminator": [
+        29,
+        158,
+        252,
+        191,
+        10,
+        83,
+        219,
+        99
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "action",
+          "type": {
+            "defined": {
+              "name": "UpdateConfigAction"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "BaseAssetV1",
+      "discriminator": [
+        1
+      ]
+    },
+    {
+      "name": "Config",
+      "discriminator": [
+        155,
+        12,
+        170,
+        224,
+        30,
+        250,
+        204,
+        130
+      ]
+    },
+    {
+      "name": "Loan",
+      "discriminator": [
+        20,
+        195,
+        70,
+        117,
+        165,
+        227,
+        182,
+        1
+      ]
+    },
+    {
+      "name": "Offer",
+      "discriminator": [
+        215,
+        88,
+        60,
+        71,
+        170,
+        162,
+        73,
+        229
+      ]
+    },
+    {
+      "name": "User",
+      "discriminator": [
+        159,
+        117,
+        95,
+        227,
+        239,
+        151,
+        58,
+        236
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "EscrowDeposit",
+      "discriminator": [
+        43,
+        90,
+        49,
+        176,
+        134,
+        148,
+        50,
+        32
+      ]
+    },
+    {
+      "name": "EscrowWithdraw",
+      "discriminator": [
+        171,
+        17,
+        164,
+        116,
+        122,
+        66,
+        183,
+        34
+      ]
+    },
+    {
+      "name": "LoanCreated",
+      "discriminator": [
+        142,
+        148,
+        28,
+        215,
+        65,
+        185,
+        246,
+        200
+      ]
+    },
+    {
+      "name": "LoanCreatedV1",
+      "discriminator": [
+        53,
+        204,
+        20,
+        133,
+        220,
+        71,
+        214,
+        128
+      ]
+    },
+    {
+      "name": "LoanDefaulted",
+      "discriminator": [
+        194,
+        98,
+        51,
+        88,
+        228,
+        118,
+        173,
+        46
+      ]
+    },
+    {
+      "name": "LoanDefaultedV1",
+      "discriminator": [
+        232,
+        160,
+        77,
+        36,
+        232,
+        60,
+        14,
+        73
+      ]
+    },
+    {
+      "name": "LoanExtendabilityUpdated",
+      "discriminator": [
+        132,
+        189,
+        244,
+        21,
+        191,
+        39,
+        88,
+        94
+      ]
+    },
+    {
+      "name": "LoanExtended",
+      "discriminator": [
+        146,
+        18,
+        190,
+        31,
+        50,
+        17,
+        133,
+        1
+      ]
+    },
+    {
+      "name": "LoanRepaid",
+      "discriminator": [
+        202,
+        183,
+        88,
+        60,
+        211,
+        54,
+        142,
+        243
+      ]
+    },
+    {
+      "name": "LoanRepaidV1",
+      "discriminator": [
+        68,
+        118,
+        134,
+        24,
+        25,
+        250,
+        199,
+        187
+      ]
+    },
+    {
+      "name": "OfferCancelled",
+      "discriminator": [
+        45,
+        42,
+        175,
+        214,
+        51,
+        192,
+        154,
+        9
+      ]
+    },
+    {
+      "name": "OfferCancelledV1",
+      "discriminator": [
+        148,
+        210,
+        209,
+        158,
+        129,
+        50,
+        15,
+        166
+      ]
+    },
+    {
+      "name": "OfferCancelledV2",
+      "discriminator": [
+        39,
+        55,
+        186,
+        129,
+        177,
+        241,
+        117,
+        121
+      ]
+    },
+    {
+      "name": "OfferCreated",
+      "discriminator": [
+        31,
+        236,
+        215,
+        144,
+        75,
+        45,
+        157,
+        87
+      ]
+    },
+    {
+      "name": "OfferCreatedV1",
+      "discriminator": [
+        113,
+        118,
+        59,
+        240,
+        159,
+        129,
+        104,
+        196
+      ]
+    },
+    {
+      "name": "OfferCreatedV2",
+      "discriminator": [
+        107,
+        228,
+        58,
+        148,
+        11,
+        235,
+        232,
+        181
+      ]
+    },
+    {
+      "name": "OfferFilled",
+      "discriminator": [
+        173,
+        104,
+        95,
+        161,
+        144,
+        206,
+        72,
+        57
+      ]
+    },
+    {
+      "name": "OfferFilledV1",
+      "discriminator": [
+        53,
+        129,
+        248,
+        144,
+        138,
+        91,
+        209,
+        155
+      ]
+    },
+    {
+      "name": "OfferFilledV2",
+      "discriminator": [
+        140,
+        79,
+        66,
+        108,
+        81,
+        186,
+        66,
+        29
+      ]
+    },
+    {
+      "name": "ProtocolFee",
+      "discriminator": [
+        152,
+        79,
+        46,
+        229,
+        127,
+        92,
+        192,
+        21
+      ]
+    },
+    {
+      "name": "RefereeReward",
+      "discriminator": [
+        187,
+        218,
+        102,
+        136,
+        212,
+        206,
+        49,
+        127
+      ]
+    },
+    {
+      "name": "ReferralReward",
+      "discriminator": [
+        30,
+        218,
+        84,
+        175,
+        188,
+        85,
+        219,
+        99
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "DuplicateResources",
+      "msg": "deprecated"
+    },
+    {
+      "code": 6001,
+      "name": "AdminArrayFull",
+      "msg": "deprecated"
+    },
+    {
+      "code": 6002,
+      "name": "NewAdminIsOldAdmin",
+      "msg": "New Admin Is Old Admin"
+    },
+    {
+      "code": 6003,
+      "name": "NotAuthorized",
+      "msg": "Not Authorized"
+    },
+    {
+      "code": 6004,
+      "name": "BadInput",
+      "msg": "Bad Input"
+    },
+    {
+      "code": 6005,
+      "name": "ProtocolPaused",
+      "msg": "Protocol Paused"
+    },
+    {
+      "code": 6006,
+      "name": "AlreadyPaused",
+      "msg": "Already Paused"
+    },
+    {
+      "code": 6007,
+      "name": "AlreadyUnpaused",
+      "msg": "Already Unpaused"
+    },
+    {
+      "code": 6008,
+      "name": "InvalidReferrer",
+      "msg": "Invalid Referrer"
+    },
+    {
+      "code": 6009,
+      "name": "InvalidTokenMint",
+      "msg": "Invalid Token Mint"
+    },
+    {
+      "code": 6010,
+      "name": "InvalidDuration",
+      "msg": "Invalid Duration"
+    },
+    {
+      "code": 6011,
+      "name": "InvalidExpiry",
+      "msg": "Invalid Expiry"
+    },
+    {
+      "code": 6012,
+      "name": "InvalidAPY",
+      "msg": "Invalid APY"
+    },
+    {
+      "code": 6013,
+      "name": "InvalidOwner",
+      "msg": "Invalid Owner"
+    },
+    {
+      "code": 6014,
+      "name": "InvalidOfferStatus",
+      "msg": "Invalid Offer Status"
+    },
+    {
+      "code": 6015,
+      "name": "InvalidOfferOrigin",
+      "msg": "deprecated"
+    },
+    {
+      "code": 6016,
+      "name": "InvalidCollateral",
+      "msg": "Invalid Collateral"
+    },
+    {
+      "code": 6017,
+      "name": "OfferExpired",
+      "msg": "Offer Expired"
+    },
+    {
+      "code": 6018,
+      "name": "InvalidFillAmount",
+      "msg": "Invalid Fill Amount"
+    },
+    {
+      "code": 6019,
+      "name": "InvalidLoanStatus",
+      "msg": "Invalid Loan Status"
+    },
+    {
+      "code": 6020,
+      "name": "LoanNotDue",
+      "msg": "Loan is not due"
+    },
+    {
+      "code": 6021,
+      "name": "InvalidOfferSide",
+      "msg": "Invalid Offer Side"
+    },
+    {
+      "code": 6022,
+      "name": "InvalidAsset",
+      "msg": "Invalid Asset"
+    },
+    {
+      "code": 6023,
+      "name": "MissingLoanVault",
+      "msg": "Missing Loan Vault"
+    },
+    {
+      "code": 6024,
+      "name": "NotExtendable",
+      "msg": "Loan Not Extendable"
+    },
+    {
+      "code": 6025,
+      "name": "LoanDue",
+      "msg": "Loan is due"
+    }
+  ],
+  "types": [
+    {
+      "name": "Asset",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "None"
+          },
+          {
+            "name": "Token",
+            "fields": [
+              {
+                "defined": {
+                  "name": "TokenAsset"
+                }
+              }
+            ]
+          },
+          {
+            "name": "ClassicNft",
+            "fields": [
+              {
+                "defined": {
+                  "name": "ClassicNftAsset"
+                }
+              }
+            ]
+          },
+          {
+            "name": "ProgrammableNft",
+            "fields": [
+              {
+                "defined": {
+                  "name": "ProgrammableNftAsset"
+                }
+              }
+            ]
+          },
+          {
+            "name": "CoreNft",
+            "fields": [
+              {
+                "defined": {
+                  "name": "CoreNftAsset"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "AssetFilter",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "NoFilter",
+            "fields": [
+              {
+                "defined": {
+                  "name": "NoFilter"
+                }
+              }
+            ]
+          },
+          {
+            "name": "Collection",
+            "fields": [
+              {
+                "defined": {
+                  "name": "CollectionFilter"
+                }
+              }
+            ]
+          },
+          {
+            "name": "FirstVerifiedCreator",
+            "fields": [
+              {
+                "defined": {
+                  "name": "FirstVerifiedCreatorFilter"
+                }
+              }
+            ]
+          },
+          {
+            "name": "CollectionWithAttribute",
+            "fields": [
+              {
+                "defined": {
+                  "name": "CollectionWithAttributeFilter"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "BaseAssetV1",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "key",
+            "type": {
+              "defined": {
+                "name": "Key"
+              }
+            }
+          },
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "update_authority",
+            "type": {
+              "defined": {
+                "name": "UpdateAuthority"
+              }
+            }
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "uri",
+            "type": "string"
+          },
+          {
+            "name": "seq",
+            "type": {
+              "option": "u64"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ClassicNftAsset",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "token_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                200
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "CollectionFilter",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "collection",
+            "type": "pubkey"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                232
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "CollectionWithAttributeFilter",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "collection",
+            "type": "pubkey"
+          },
+          {
+            "name": "attributes",
+            "type": {
+              "array": [
+                "u8",
+                232
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Config",
+      "serialization": "bytemuck",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "fee_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "config_bump",
+            "type": "u8"
+          },
+          {
+            "name": "fee_authority_bump",
+            "type": "u8"
+          },
+          {
+            "name": "_padding",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "interest_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "repay_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "liquidation_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "referral_rewards_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "referee_rewards_fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "_padding1",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "min_principal_amount",
+            "type": "u64"
+          },
+          {
+            "name": "min_collateral_amount",
+            "type": "u64"
+          },
+          {
+            "name": "min_duration",
+            "type": "u32"
+          },
+          {
+            "name": "min_expiry",
+            "type": "u32"
+          },
+          {
+            "name": "max_apy",
+            "type": "u32"
+          },
+          {
+            "name": "max_duration",
+            "type": "u32"
+          },
+          {
+            "name": "max_expiry",
+            "type": "u32"
+          },
+          {
+            "name": "is_paused",
+            "type": "u8"
+          },
+          {
+            "name": "disable_repayment",
+            "type": "u8"
+          },
+          {
+            "name": "_padding2",
+            "type": {
+              "array": [
+                "u8",
+                2
+              ]
+            }
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                400
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "CoreNftAsset",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "asset",
+            "type": "pubkey"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                232
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "EscrowDeposit",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "asset",
+            "type": {
+              "defined": {
+                "name": "EventAsset"
+              }
+            }
+          },
+          {
+            "name": "deposit_amount",
+            "type": "u64"
+          },
+          {
+            "name": "total_amount",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EscrowWithdraw",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "asset",
+            "type": {
+              "defined": {
+                "name": "EventAsset"
+              }
+            }
+          },
+          {
+            "name": "withdraw_amount",
+            "type": "u64"
+          },
+          {
+            "name": "total_amount",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventAsset",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "None"
+          },
+          {
+            "name": "Token",
+            "fields": [
+              {
+                "defined": {
+                  "name": "EventTokenAsset"
+                }
+              }
+            ]
+          },
+          {
+            "name": "ClassicNft",
+            "fields": [
+              {
+                "defined": {
+                  "name": "EventClassicNftAsset"
+                }
+              }
+            ]
+          },
+          {
+            "name": "ProgrammableNft",
+            "fields": [
+              {
+                "defined": {
+                  "name": "EventProgrammableNftAsset"
+                }
+              }
+            ]
+          },
+          {
+            "name": "CoreNft",
+            "fields": [
+              {
+                "defined": {
+                  "name": "EventCoreNftAsset"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventAssetFilter",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "None"
+          },
+          {
+            "name": "Collection",
+            "fields": [
+              {
+                "defined": {
+                  "name": "EventCollectionFilter"
+                }
+              }
+            ]
+          },
+          {
+            "name": "FirstVerifiedCreator",
+            "fields": [
+              {
+                "defined": {
+                  "name": "EventFirstVerifiedCreatorFilter"
+                }
+              }
+            ]
+          },
+          {
+            "name": "CollectionWithAttribute",
+            "fields": [
+              {
+                "defined": {
+                  "name": "EventCollectionWithAttributeFilter"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventClassicNftAsset",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "token_program",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventCollectionFilter",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "collection",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventCollectionWithAttributeFilter",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "collection",
+            "type": "pubkey"
+          },
+          {
+            "name": "attributes",
+            "type": {
+              "array": [
+                "u8",
+                232
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventCoreNftAsset",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "asset",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventFirstVerifiedCreatorFilter",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "creator",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventProgrammableNftAsset",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "token_program",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventTokenAsset",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "token_program",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FillNftCollateralOfferParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "duration",
+            "type": "u32"
+          },
+          {
+            "name": "apy",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FillNftPrincipalOfferParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "duration",
+            "type": "u32"
+          },
+          {
+            "name": "apy",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FillTokenCollateralOfferParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "collateral_fill_amount",
+            "type": "u64"
+          },
+          {
+            "name": "max_principal",
+            "type": "u64"
+          },
+          {
+            "name": "duration",
+            "type": "u32"
+          },
+          {
+            "name": "apy",
+            "type": "u32"
+          },
+          {
+            "name": "loan_type",
+            "type": {
+              "defined": {
+                "name": "LoanType"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "FillTokenPrincipalOfferParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "principal_fill_amount",
+            "type": "u64"
+          },
+          {
+            "name": "max_collateral",
+            "type": "u64"
+          },
+          {
+            "name": "duration",
+            "type": "u32"
+          },
+          {
+            "name": "apy",
+            "type": "u32"
+          },
+          {
+            "name": "loan_type",
+            "type": {
+              "defined": {
+                "name": "LoanType"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "FirstVerifiedCreatorFilter",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                232
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Key",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Uninitialized"
+          },
+          {
+            "name": "AssetV1"
+          },
+          {
+            "name": "HashedAssetV1"
+          },
+          {
+            "name": "PluginHeaderV1"
+          },
+          {
+            "name": "PluginRegistryV1"
+          },
+          {
+            "name": "CollectionV1"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Loan",
+      "serialization": "bytemuck",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lender",
+            "type": "pubkey"
+          },
+          {
+            "name": "borrower",
+            "type": "pubkey"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "offer",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "LoanStatus"
+              }
+            }
+          },
+          {
+            "name": "loan_type",
+            "type": {
+              "defined": {
+                "name": "LoanType"
+              }
+            }
+          },
+          {
+            "name": "_padding",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "fill_index",
+            "type": "u64"
+          },
+          {
+            "name": "principal",
+            "type": {
+              "defined": {
+                "name": "Asset"
+              }
+            }
+          },
+          {
+            "name": "_padding1",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          },
+          {
+            "name": "collateral",
+            "type": {
+              "defined": {
+                "name": "Asset"
+              }
+            }
+          },
+          {
+            "name": "_padding2",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          },
+          {
+            "name": "apy",
+            "type": "u32"
+          },
+          {
+            "name": "duration",
+            "type": "u32"
+          },
+          {
+            "name": "principal_amount",
+            "type": "u64"
+          },
+          {
+            "name": "collateral_amount",
+            "type": "u64"
+          },
+          {
+            "name": "interest",
+            "type": "u64"
+          },
+          {
+            "name": "created_at",
+            "type": "u64"
+          },
+          {
+            "name": "expired_at",
+            "type": "u64"
+          },
+          {
+            "name": "updated_at",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "collateral_account_bump",
+            "type": "u8"
+          },
+          {
+            "name": "extendable",
+            "type": "u8"
+          },
+          {
+            "name": "extension_count",
+            "type": "u8"
+          },
+          {
+            "name": "_padding4",
+            "type": {
+              "array": [
+                "u8",
+                4
+              ]
+            }
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                48
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "LoanCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "loan",
+            "type": {
+              "defined": {
+                "name": "LoanEventV0"
+              }
+            }
+          },
+          {
+            "name": "pubkey",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LoanCreatedV1",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "loan",
+            "type": {
+              "defined": {
+                "name": "LoanEventV1"
+              }
+            }
+          },
+          {
+            "name": "pubkey",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LoanDefaulted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "loan",
+            "type": {
+              "defined": {
+                "name": "LoanEventV0"
+              }
+            }
+          },
+          {
+            "name": "pubkey",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LoanDefaultedV1",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "loan",
+            "type": {
+              "defined": {
+                "name": "LoanEventV1"
+              }
+            }
+          },
+          {
+            "name": "pubkey",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LoanEventV0",
+      "docs": [
+        "Frozen pre-extension loan event schema. Kept in the IDL so historical events",
+        "remain parseable; not emitted by current code (see `LoanEventV1`)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lender",
+            "type": "pubkey"
+          },
+          {
+            "name": "borrower",
+            "type": "pubkey"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "offer",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "LoanStatus"
+              }
+            }
+          },
+          {
+            "name": "fill_index",
+            "type": "u64"
+          },
+          {
+            "name": "principal",
+            "type": {
+              "defined": {
+                "name": "EventAsset"
+              }
+            }
+          },
+          {
+            "name": "collateral",
+            "type": {
+              "defined": {
+                "name": "EventAsset"
+              }
+            }
+          },
+          {
+            "name": "apy",
+            "type": "u32"
+          },
+          {
+            "name": "duration",
+            "type": "u32"
+          },
+          {
+            "name": "principal_amount",
+            "type": "u64"
+          },
+          {
+            "name": "collateral_amount",
+            "type": "u64"
+          },
+          {
+            "name": "interest",
+            "type": "u64"
+          },
+          {
+            "name": "created_at",
+            "type": "u64"
+          },
+          {
+            "name": "expired_at",
+            "type": "u64"
+          },
+          {
+            "name": "updated_at",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "collateral_account_bump",
+            "type": "u8"
+          },
+          {
+            "name": "loan_type",
+            "type": {
+              "defined": {
+                "name": "LoanType"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "LoanEventV1",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lender",
+            "type": "pubkey"
+          },
+          {
+            "name": "borrower",
+            "type": "pubkey"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "offer",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "LoanStatus"
+              }
+            }
+          },
+          {
+            "name": "fill_index",
+            "type": "u64"
+          },
+          {
+            "name": "principal",
+            "type": {
+              "defined": {
+                "name": "EventAsset"
+              }
+            }
+          },
+          {
+            "name": "collateral",
+            "type": {
+              "defined": {
+                "name": "EventAsset"
+              }
+            }
+          },
+          {
+            "name": "apy",
+            "type": "u32"
+          },
+          {
+            "name": "duration",
+            "type": "u32"
+          },
+          {
+            "name": "principal_amount",
+            "type": "u64"
+          },
+          {
+            "name": "collateral_amount",
+            "type": "u64"
+          },
+          {
+            "name": "interest",
+            "type": "u64"
+          },
+          {
+            "name": "created_at",
+            "type": "u64"
+          },
+          {
+            "name": "expired_at",
+            "type": "u64"
+          },
+          {
+            "name": "updated_at",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "collateral_account_bump",
+            "type": "u8"
+          },
+          {
+            "name": "loan_type",
+            "type": {
+              "defined": {
+                "name": "LoanType"
+              }
+            }
+          },
+          {
+            "name": "extendable",
+            "type": "u8"
+          },
+          {
+            "name": "extension_count",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LoanExtendabilityUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "loan",
+            "type": "pubkey"
+          },
+          {
+            "name": "extendable",
+            "type": "u8"
+          },
+          {
+            "name": "timestamp",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LoanExtended",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "loan",
+            "type": {
+              "defined": {
+                "name": "LoanEventV1"
+              }
+            }
+          },
+          {
+            "name": "pubkey",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LoanRepaid",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "loan",
+            "type": {
+              "defined": {
+                "name": "LoanEventV0"
+              }
+            }
+          },
+          {
+            "name": "pubkey",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LoanRepaidV1",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "loan",
+            "type": {
+              "defined": {
+                "name": "LoanEventV1"
+              }
+            }
+          },
+          {
+            "name": "pubkey",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LoanStatus",
+      "repr": {
+        "kind": "rust"
+      },
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Repaid"
+          },
+          {
+            "name": "Defaulted"
+          }
+        ]
+      }
+    },
+    {
+      "name": "LoanType",
+      "repr": {
+        "kind": "rust"
+      },
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Classic"
+          },
+          {
+            "name": "Leverage"
+          }
+        ]
+      }
+    },
+    {
+      "name": "NftCollateral",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "ClassicNft",
+            "fields": [
+              {
+                "name": "mint",
+                "type": "pubkey"
+              },
+              {
+                "name": "token_program",
+                "type": "pubkey"
+              }
+            ]
+          },
+          {
+            "name": "ProgrammableNft",
+            "fields": [
+              {
+                "name": "mint",
+                "type": "pubkey"
+              },
+              {
+                "name": "token_program",
+                "type": "pubkey"
+              }
+            ]
+          },
+          {
+            "name": "CoreNft",
+            "fields": [
+              {
+                "name": "asset",
+                "type": "pubkey"
+              }
+            ]
+          },
+          {
+            "name": "Collection",
+            "fields": [
+              {
+                "name": "collection",
+                "type": "pubkey"
+              }
+            ]
+          },
+          {
+            "name": "FirstVerifiedCreator",
+            "fields": [
+              {
+                "name": "creator",
+                "type": "pubkey"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "NftCollateralAsset",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "ClassicNft",
+            "fields": [
+              {
+                "name": "mint",
+                "type": "pubkey"
+              },
+              {
+                "name": "token_program",
+                "type": "pubkey"
+              }
+            ]
+          },
+          {
+            "name": "ProgrammableNft",
+            "fields": [
+              {
+                "name": "mint",
+                "type": "pubkey"
+              },
+              {
+                "name": "token_program",
+                "type": "pubkey"
+              }
+            ]
+          },
+          {
+            "name": "CoreNft",
+            "fields": [
+              {
+                "name": "asset",
+                "type": "pubkey"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "NftCollateralOfferParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "principal_amount",
+            "type": "u64"
+          },
+          {
+            "name": "apy",
+            "type": "u32"
+          },
+          {
+            "name": "duration",
+            "type": "u32"
+          },
+          {
+            "name": "expiry",
+            "type": "u32"
+          },
+          {
+            "name": "allow_extend",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "NftPrincipalOfferParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "principal_amount",
+            "type": "u64"
+          },
+          {
+            "name": "apy",
+            "type": "u32"
+          },
+          {
+            "name": "duration",
+            "type": "u32"
+          },
+          {
+            "name": "expiry",
+            "type": "u32"
+          },
+          {
+            "name": "allow_extend",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "NoFilter",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                264
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "Offer",
+      "serialization": "bytemuck",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "side",
+            "type": {
+              "defined": {
+                "name": "OfferSide"
+              }
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "OfferStatus"
+              }
+            }
+          },
+          {
+            "name": "_padding",
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "principal",
+            "type": {
+              "defined": {
+                "name": "Asset"
+              }
+            }
+          },
+          {
+            "name": "_padding2",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          },
+          {
+            "name": "collateral",
+            "type": {
+              "defined": {
+                "name": "Asset"
+              }
+            }
+          },
+          {
+            "name": "_padding3",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          },
+          {
+            "name": "filter",
+            "type": {
+              "defined": {
+                "name": "AssetFilter"
+              }
+            }
+          },
+          {
+            "name": "_padding4",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          },
+          {
+            "name": "principal_amount",
+            "type": "u64"
+          },
+          {
+            "name": "remaining_principal",
+            "type": "u64"
+          },
+          {
+            "name": "collateral_amount",
+            "type": "u64"
+          },
+          {
+            "name": "remaining_collateral",
+            "type": "u64"
+          },
+          {
+            "name": "_padding5",
+            "type": {
+              "array": [
+                "u8",
+                8
+              ]
+            }
+          },
+          {
+            "name": "apy",
+            "type": "u32"
+          },
+          {
+            "name": "duration",
+            "type": "u32"
+          },
+          {
+            "name": "created_at",
+            "type": "u64"
+          },
+          {
+            "name": "expired_at",
+            "type": "u64"
+          },
+          {
+            "name": "updated_at",
+            "type": "u64"
+          },
+          {
+            "name": "min_fill_amount",
+            "type": "u64"
+          },
+          {
+            "name": "fill_counter",
+            "type": "u64"
+          },
+          {
+            "name": "allow_partial_fill",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "allow_extend",
+            "type": "u8"
+          },
+          {
+            "name": "_padding6",
+            "type": {
+              "array": [
+                "u8",
+                5
+              ]
+            }
+          },
+          {
+            "name": "countered_offer",
+            "type": "pubkey"
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                232
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "OfferCancelled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "offer",
+            "type": {
+              "defined": {
+                "name": "OfferEventV0"
+              }
+            }
+          },
+          {
+            "name": "pubkey",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OfferCancelledV1",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "offer",
+            "type": {
+              "defined": {
+                "name": "OfferEventV1"
+              }
+            }
+          },
+          {
+            "name": "pubkey",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OfferCancelledV2",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "offer",
+            "type": {
+              "defined": {
+                "name": "OfferEventV2"
+              }
+            }
+          },
+          {
+            "name": "pubkey",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OfferCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "offer",
+            "type": {
+              "defined": {
+                "name": "OfferEventV0"
+              }
+            }
+          },
+          {
+            "name": "pubkey",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OfferCreatedV1",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "offer",
+            "type": {
+              "defined": {
+                "name": "OfferEventV1"
+              }
+            }
+          },
+          {
+            "name": "pubkey",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OfferCreatedV2",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "offer",
+            "type": {
+              "defined": {
+                "name": "OfferEventV2"
+              }
+            }
+          },
+          {
+            "name": "pubkey",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OfferEventV0",
+      "docs": [
+        "Frozen pre-counter-offers offer event schema. Kept in the IDL so historical",
+        "events remain parseable; not emitted by current code (see `OfferEventV2`)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "side",
+            "type": {
+              "defined": {
+                "name": "OfferSide"
+              }
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "OfferStatus"
+              }
+            }
+          },
+          {
+            "name": "principal",
+            "type": {
+              "defined": {
+                "name": "EventAsset"
+              }
+            }
+          },
+          {
+            "name": "collateral",
+            "type": {
+              "defined": {
+                "name": "EventAsset"
+              }
+            }
+          },
+          {
+            "name": "filter",
+            "type": {
+              "defined": {
+                "name": "EventAssetFilter"
+              }
+            }
+          },
+          {
+            "name": "principal_amount",
+            "type": "u64"
+          },
+          {
+            "name": "remaining_principal",
+            "type": "u64"
+          },
+          {
+            "name": "collateral_amount",
+            "type": "u64"
+          },
+          {
+            "name": "remaining_collateral",
+            "type": "u64"
+          },
+          {
+            "name": "apy",
+            "type": "u32"
+          },
+          {
+            "name": "duration",
+            "type": "u32"
+          },
+          {
+            "name": "created_at",
+            "type": "u64"
+          },
+          {
+            "name": "expired_at",
+            "type": "u64"
+          },
+          {
+            "name": "updated_at",
+            "type": "u64"
+          },
+          {
+            "name": "min_fill_amount",
+            "type": "u64"
+          },
+          {
+            "name": "fill_counter",
+            "type": "u64"
+          },
+          {
+            "name": "allow_partial_fill",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OfferEventV1",
+      "docs": [
+        "Frozen pre-extension offer event schema. Kept in the IDL so historical",
+        "events remain parseable; not emitted by current code (see `OfferEventV2`)."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "side",
+            "type": {
+              "defined": {
+                "name": "OfferSide"
+              }
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "OfferStatus"
+              }
+            }
+          },
+          {
+            "name": "principal",
+            "type": {
+              "defined": {
+                "name": "EventAsset"
+              }
+            }
+          },
+          {
+            "name": "collateral",
+            "type": {
+              "defined": {
+                "name": "EventAsset"
+              }
+            }
+          },
+          {
+            "name": "filter",
+            "type": {
+              "defined": {
+                "name": "EventAssetFilter"
+              }
+            }
+          },
+          {
+            "name": "principal_amount",
+            "type": "u64"
+          },
+          {
+            "name": "remaining_principal",
+            "type": "u64"
+          },
+          {
+            "name": "collateral_amount",
+            "type": "u64"
+          },
+          {
+            "name": "remaining_collateral",
+            "type": "u64"
+          },
+          {
+            "name": "apy",
+            "type": "u32"
+          },
+          {
+            "name": "duration",
+            "type": "u32"
+          },
+          {
+            "name": "created_at",
+            "type": "u64"
+          },
+          {
+            "name": "expired_at",
+            "type": "u64"
+          },
+          {
+            "name": "updated_at",
+            "type": "u64"
+          },
+          {
+            "name": "min_fill_amount",
+            "type": "u64"
+          },
+          {
+            "name": "fill_counter",
+            "type": "u64"
+          },
+          {
+            "name": "allow_partial_fill",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "countered_offer",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OfferEventV2",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "side",
+            "type": {
+              "defined": {
+                "name": "OfferSide"
+              }
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "OfferStatus"
+              }
+            }
+          },
+          {
+            "name": "principal",
+            "type": {
+              "defined": {
+                "name": "EventAsset"
+              }
+            }
+          },
+          {
+            "name": "collateral",
+            "type": {
+              "defined": {
+                "name": "EventAsset"
+              }
+            }
+          },
+          {
+            "name": "filter",
+            "type": {
+              "defined": {
+                "name": "EventAssetFilter"
+              }
+            }
+          },
+          {
+            "name": "principal_amount",
+            "type": "u64"
+          },
+          {
+            "name": "remaining_principal",
+            "type": "u64"
+          },
+          {
+            "name": "collateral_amount",
+            "type": "u64"
+          },
+          {
+            "name": "remaining_collateral",
+            "type": "u64"
+          },
+          {
+            "name": "apy",
+            "type": "u32"
+          },
+          {
+            "name": "duration",
+            "type": "u32"
+          },
+          {
+            "name": "created_at",
+            "type": "u64"
+          },
+          {
+            "name": "expired_at",
+            "type": "u64"
+          },
+          {
+            "name": "updated_at",
+            "type": "u64"
+          },
+          {
+            "name": "min_fill_amount",
+            "type": "u64"
+          },
+          {
+            "name": "fill_counter",
+            "type": "u64"
+          },
+          {
+            "name": "allow_partial_fill",
+            "type": "u8"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "countered_offer",
+            "type": "pubkey"
+          },
+          {
+            "name": "allow_extend",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OfferFilled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "offer",
+            "type": {
+              "defined": {
+                "name": "OfferEventV0"
+              }
+            }
+          },
+          {
+            "name": "pubkey",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OfferFilledV1",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "offer",
+            "type": {
+              "defined": {
+                "name": "OfferEventV1"
+              }
+            }
+          },
+          {
+            "name": "pubkey",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OfferFilledV2",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "offer",
+            "type": {
+              "defined": {
+                "name": "OfferEventV2"
+              }
+            }
+          },
+          {
+            "name": "pubkey",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OfferSide",
+      "repr": {
+        "kind": "rust"
+      },
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Principal"
+          },
+          {
+            "name": "Collateral"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OfferStatus",
+      "repr": {
+        "kind": "rust"
+      },
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Active"
+          },
+          {
+            "name": "PartiallyFilled"
+          },
+          {
+            "name": "Fulfilled"
+          },
+          {
+            "name": "Cancelled"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProgrammableNftAsset",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "token_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                200
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ProtocolFee",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "net_amount",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RefereeReward",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "referee",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ReferralReward",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "referrer",
+            "type": "pubkey"
+          },
+          {
+            "name": "referee",
+            "type": "pubkey"
+          },
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "u64"
+          },
+          {
+            "name": "referral_type",
+            "type": {
+              "defined": {
+                "name": "ReferralType"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ReferralType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Lender"
+          },
+          {
+            "name": "Borrower"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenAsset",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "token_program",
+            "type": "pubkey"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                200
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenCollateralOfferParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "principal_amount",
+            "type": "u64"
+          },
+          {
+            "name": "collateral_amount",
+            "type": "u64"
+          },
+          {
+            "name": "apy",
+            "type": "u32"
+          },
+          {
+            "name": "duration",
+            "type": "u32"
+          },
+          {
+            "name": "expiry",
+            "type": "u32"
+          },
+          {
+            "name": "allow_partial_fill",
+            "type": "bool"
+          },
+          {
+            "name": "min_fill_amount",
+            "type": "u64"
+          },
+          {
+            "name": "allow_extend",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TokenPrincipalOfferParams",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "principal_amount",
+            "type": "u64"
+          },
+          {
+            "name": "collateral_amount",
+            "type": "u64"
+          },
+          {
+            "name": "apy",
+            "type": "u32"
+          },
+          {
+            "name": "duration",
+            "type": "u32"
+          },
+          {
+            "name": "expiry",
+            "type": "u32"
+          },
+          {
+            "name": "allow_partial_fill",
+            "type": "bool"
+          },
+          {
+            "name": "min_fill_amount",
+            "type": "u64"
+          },
+          {
+            "name": "allow_extend",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateAuthority",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "None"
+          },
+          {
+            "name": "Address",
+            "fields": [
+              "pubkey"
+            ]
+          },
+          {
+            "name": "Collection",
+            "fields": [
+              "pubkey"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateConfigAction",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "UpdateAdmin",
+            "fields": [
+              {
+                "name": "admin",
+                "type": "pubkey"
+              }
+            ]
+          },
+          {
+            "name": "PauseProtocol"
+          },
+          {
+            "name": "UnpauseProtocol"
+          },
+          {
+            "name": "SetDisableRepayment",
+            "fields": [
+              {
+                "name": "disable_repayment",
+                "type": "bool"
+              }
+            ]
+          },
+          {
+            "name": "SetInterestFeeBps",
+            "fields": [
+              {
+                "name": "interest_fee_bps",
+                "type": "u16"
+              }
+            ]
+          },
+          {
+            "name": "SetLiquidationFeeBps",
+            "fields": [
+              {
+                "name": "liquidation_fee_bps",
+                "type": "u16"
+              }
+            ]
+          },
+          {
+            "name": "SetReferralRewardsFeeBps",
+            "fields": [
+              {
+                "name": "referral_rewards_fee_bps",
+                "type": "u16"
+              }
+            ]
+          },
+          {
+            "name": "SetRefereeRewardsFeeBps",
+            "fields": [
+              {
+                "name": "referee_rewards_fee_bps",
+                "type": "u16"
+              }
+            ]
+          },
+          {
+            "name": "SetRepayFeeBps",
+            "fields": [
+              {
+                "name": "repay_fee_bps",
+                "type": "u16"
+              }
+            ]
+          },
+          {
+            "name": "SetMinPrincipalAmount",
+            "fields": [
+              {
+                "name": "min_principal_amount",
+                "type": "u64"
+              }
+            ]
+          },
+          {
+            "name": "SetMinCollateralAmount",
+            "fields": [
+              {
+                "name": "min_collateral_amount",
+                "type": "u64"
+              }
+            ]
+          },
+          {
+            "name": "SetMinDuration",
+            "fields": [
+              {
+                "name": "min_duration",
+                "type": "u32"
+              }
+            ]
+          },
+          {
+            "name": "SetMinExpiry",
+            "fields": [
+              {
+                "name": "min_expiry",
+                "type": "u32"
+              }
+            ]
+          },
+          {
+            "name": "SetMaxApy",
+            "fields": [
+              {
+                "name": "max_apy",
+                "type": "u32"
+              }
+            ]
+          },
+          {
+            "name": "SetMaxDuration",
+            "fields": [
+              {
+                "name": "max_duration",
+                "type": "u32"
+              }
+            ]
+          },
+          {
+            "name": "SetMaxExpiry",
+            "fields": [
+              {
+                "name": "max_expiry",
+                "type": "u32"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "User",
+      "serialization": "bytemuck",
+      "repr": {
+        "kind": "c"
+      },
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "referrer",
+            "type": "pubkey"
+          },
+          {
+            "name": "referral_count",
+            "type": "u64"
+          },
+          {
+            "name": "offer_count",
+            "type": "u64"
+          },
+          {
+            "name": "total_lender_loans",
+            "type": "u64"
+          },
+          {
+            "name": "total_borrower_loans",
+            "type": "u64"
+          },
+          {
+            "name": "total_lender_liquidations",
+            "type": "u64"
+          },
+          {
+            "name": "total_borrower_liquidations",
+            "type": "u64"
+          },
+          {
+            "name": "updated_at",
+            "type": "u64"
+          },
+          {
+            "name": "created_at",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "_padding",
+            "type": {
+              "array": [
+                "u8",
+                7
+              ]
+            }
+          },
+          {
+            "name": "_reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
