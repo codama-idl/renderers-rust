@@ -135,7 +135,47 @@
           "arguments": []
         }
       ],
-      "definedTypes": [],
+      "definedTypes": [
+            {
+                "kind": "definedTypeNode",
+                "name": "priority",
+                "type": {
+                    "kind": "enumTypeNode",
+                    "variants": [
+                        { "kind": "enumEmptyVariantTypeNode", "name": "low" },
+                        { "kind": "enumEmptyVariantTypeNode", "name": "medium", "discriminator": 3 },
+                        { "kind": "enumEmptyVariantTypeNode", "name": "high", "discriminator": 5 }
+                    ],
+                    "size": { "kind": "numberTypeNode", "format": "u8", "endian": "le" }
+                }
+            },
+            {
+                "kind": "definedTypeNode",
+                "name": "command",
+                "type": {
+                    "kind": "enumTypeNode",
+                    "variants": [
+                        { "kind": "enumEmptyVariantTypeNode", "name": "quit" },
+                        {
+                            "kind": "enumTupleVariantTypeNode",
+                            "name": "write",
+                            "discriminator": 3,
+                            "tuple": { "kind": "tupleTypeNode", "items": [{ "kind": "numberTypeNode", "format": "u32", "endian": "le" }] }
+                        },
+                        {
+                            "kind": "enumStructVariantTypeNode",
+                            "name": "move",
+                            "discriminator": 5,
+                            "struct": {
+                                "kind": "structTypeNode",
+                                "fields": [{ "kind": "structFieldTypeNode", "name": "x", "type": { "kind": "numberTypeNode", "format": "u32", "endian": "le" } }]
+                            }
+                        }
+                    ],
+                    "size": { "kind": "numberTypeNode", "format": "u8", "endian": "le" }
+                }
+            }
+        ],
       "errors": [],
       "name": "dummy",
       "prefix": "",
