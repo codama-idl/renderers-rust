@@ -2,6 +2,7 @@ import { logWarn } from '@codama/errors';
 import {
     getAllAccounts,
     getAllDefinedTypes,
+    getAllEvents,
     getAllInstructionsWithSubs,
     getAllPrograms,
     InstructionNode,
@@ -68,7 +69,7 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
 
     return pipe(
         staticVisitor(() => createRenderMap<Fragment>(), {
-            keys: ['rootNode', 'programNode', 'instructionNode', 'accountNode', 'definedTypeNode'],
+            keys: ['rootNode', 'programNode', 'instructionNode', 'accountNode', 'definedTypeNode', 'eventNode'],
         }),
         v =>
             extendVisitor(v, {
@@ -141,6 +142,20 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                     return createRenderMap(`types/${snakeCase(node.name)}.rs`, {
                         content: render('definedTypesPage.njk', {
                             definedType: node,
+                            imports: imports.toString(dependencyMap),
+                            typeManifest,
+                        }),
+                        imports,
+                    });
+                },
+
+                visitEvent(node) {
+                    const typeManifest = visit(node, typeManifestVisitor);
+                    const imports = typeManifest.imports.remove(`generatedEvents::${pascalCase(node.name)}`);
+
+                    return createRenderMap(`events/${snakeCase(node.name)}.rs`, {
+                        content: render('eventsPage.njk', {
+                            event: node,
                             imports: imports.toString(dependencyMap),
                             typeManifest,
                         }),
@@ -260,6 +275,7 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                     let renders = mergeRenderMaps([
                         ...(node.accounts ?? []).map(account => visit(account, self)),
                         ...(node.definedTypes ?? []).map(type => visit(type, self)),
+                        ...(node.events ?? []).map(event => visit(event, self)),
                         ...getAllInstructionsWithSubs(node, {
                             leavesOnly: !renderParentInstructions,
                         }).map(ix => visit(ix, self)),
@@ -288,15 +304,18 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                         leavesOnly: !renderParentInstructions,
                     });
                     const definedTypesToExport = getAllDefinedTypes(node);
+                    const eventsToExport = getAllEvents(node);
                     const hasAnythingToExport =
                         programsToExport.length > 0 ||
                         accountsToExport.length > 0 ||
                         instructionsToExport.length > 0 ||
-                        definedTypesToExport.length > 0;
+                        definedTypesToExport.length > 0 ||
+                        eventsToExport.length > 0;
 
                     const ctx = {
                         accountsToExport,
                         definedTypesToExport,
+                        eventsToExport,
                         hasAnythingToExport,
                         instructionsToExport,
                         programsToExport,
@@ -312,6 +331,10 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                             ['errors/mod.rs']:
                                 programsToExport.length > 0
                                     ? { content: render('errorsMod.njk', ctx), imports: new ImportMap() }
+                                    : undefined,
+                            ['events/mod.rs']:
+                                eventsToExport.length > 0
+                                    ? { content: render('eventsMod.njk', ctx), imports: new ImportMap() }
                                     : undefined,
                             ['instructions/mod.rs']:
                                 instructionsToExport.length > 0
