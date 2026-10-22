@@ -6,6 +6,9 @@
   {% if accountsToExport.length > 0 %}
     pub mod accounts;
   {% endif %}
+  {% if constantsToExport.length > 0 %}
+    pub mod constants;
+  {% endif %}
   {% if programsToExport.length > 0 %}
     pub mod errors;
   {% endif %}
