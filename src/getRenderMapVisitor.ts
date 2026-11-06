@@ -1,6 +1,7 @@
 import { logWarn } from '@codama/errors';
 import {
     getAllAccounts,
+    getAllConstants,
     getAllDefinedTypes,
     getAllInstructionsWithSubs,
     getAllPrograms,
@@ -284,6 +285,7 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                 visitRoot(node, { self }) {
                     const programsToExport = getAllPrograms(node);
                     const accountsToExport = getAllAccounts(node);
+                    const constantsToExport = getAllConstants(node);
                     const instructionsToExport = getAllInstructionsWithSubs(node, {
                         leavesOnly: !renderParentInstructions,
                     });
@@ -291,11 +293,36 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                     const hasAnythingToExport =
                         programsToExport.length > 0 ||
                         accountsToExport.length > 0 ||
+                        constantsToExport.length > 0 ||
                         instructionsToExport.length > 0 ||
                         definedTypesToExport.length > 0;
 
+                    const constants = constantsToExport.map(constant => {
+                        const isBytes = isNode(constant.type, 'bytesTypeNode');
+                        const isString = isNode(constant.type, 'stringTypeNode');
+                        const fixedByteArray =
+                            isNode(constant.type, 'fixedSizeTypeNode') &&
+                            isNode(constant.type.type, 'bytesTypeNode') &&
+                            isNode(constant.value, 'stringValueNode')
+                                ? parseByteArrayConstant(constant.value.string, constant.type.size)
+                                : null;
+                        const typeManifest = isBytes || isString ? null : visit(constant.type, typeManifestVisitor);
+                        const valueManifest = renderValueNode(constant.value, getImportFrom, true);
+
+                        return {
+                            ...constant,
+                            imports: new ImportMap()
+                                .mergeWith(typeManifest?.imports ?? new ImportMap())
+                                .mergeWith(valueManifest.imports),
+                            type: isBytes ? "&'static [u8]" : isString ? "&'static str" : typeManifest!.type,
+                            value: fixedByteArray ?? `${isBytes ? '&' : ''}${valueManifest.render}`,
+                        };
+                    });
+                    const constantsImports = new ImportMap().mergeWith(...constants.map(constant => constant.imports));
+
                     const ctx = {
                         accountsToExport,
+                        constantsToExport,
                         definedTypesToExport,
                         hasAnythingToExport,
                         instructionsToExport,
@@ -308,6 +335,16 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
                             ['accounts/mod.rs']:
                                 accountsToExport.length > 0
                                     ? { content: render('accountsMod.njk', ctx), imports: new ImportMap() }
+                                    : undefined,
+                            ['constants.rs']:
+                                constantsToExport.length > 0
+                                    ? {
+                                          content: render('constantsPage.njk', {
+                                              constants,
+                                              imports: constantsImports.toString(dependencyMap),
+                                          }),
+                                          imports: constantsImports,
+                                      }
                                     : undefined,
                             ['errors/mod.rs']:
                                 programsToExport.length > 0
@@ -338,6 +375,23 @@ export function getRenderMapVisitor(options: GetRenderMapOptions = {}) {
         v => recordNodeStackVisitor(v, stack),
         v => recordLinkablesOnFirstVisitVisitor(v, linkables),
     );
+}
+
+function parseByteArrayConstant(value: string, expectedLength: number): string | null {
+    try {
+        const bytes: unknown = JSON.parse(value);
+        if (
+            !Array.isArray(bytes) ||
+            bytes.length !== expectedLength ||
+            !bytes.every(byte => typeof byte === 'number' && Number.isInteger(byte) && byte >= 0 && byte <= 255)
+        ) {
+            return null;
+        }
+
+        return `[${bytes.join(', ')}]`;
+    } catch {
+        return null;
+    }
 }
 
 function getConflictsForInstructionAccountsAndArgs(instruction: InstructionNode): string[] {
